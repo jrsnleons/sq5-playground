@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { useSimulationStore } from '../../../store/simulationStore';
+import { StageItem } from '@foh-sim/simulation-core';
 import {
   Mic,
   Music,
@@ -13,9 +14,12 @@ import {
   Trash2
 } from 'lucide-react';
 
-export const StageItemNode: React.FC<NodeProps> = ({ id, selected, data }) => {
-  const { setSelectedNodeId, removeStageItem, sim } = useSimulationStore();
-  const stageItem = sim.physical.stageItems.find((i) => i.id === id);
+export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) => {
+  const setSelectedNodeId = useSimulationStore((s) => s.setSelectedNodeId);
+  const removeStageItem = useSimulationStore((s) => s.removeStageItem);
+  const storeItem = useSimulationStore((s) => s.sim.physical.stageItems.find((i) => i.id === id));
+  
+  const stageItem = (data?.item as StageItem) || storeItem;
 
   if (!stageItem) return null;
 
@@ -64,13 +68,15 @@ export const StageItemNode: React.FC<NodeProps> = ({ id, selected, data }) => {
   };
 
   const isDI = stageItem.category === 'di-box';
-  const isOutput = stageItem.category === 'speaker' || stageItem.category === 'iem';
-  const isStereo = stageItem.typeId.includes('stereo') || stageItem.typeId.includes('propresenter');
+  const isSpeaker = stageItem.category === 'speaker';
+  const isIEM = stageItem.category === 'iem';
+  const isWirelessDualRx = stageItem.typeId === 'rx-wireless-dual' || stageItem.id === 'item-wireless-rx';
+  const isStereo = stageItem.typeId.includes('stereo') || stageItem.typeId.includes('propresenter') || isWirelessDualRx;
 
   return (
     <div
       onClick={() => setSelectedNodeId(id)}
-      className={`min-w-[150px] max-w-[200px] bg-slate-900/95 backdrop-blur border rounded-lg shadow-xl px-2.5 py-1.5 text-slate-100 font-sans cursor-pointer transition-all ${getBorderColor()}`}
+      className={`min-w-[160px] max-w-[210px] bg-slate-900/95 backdrop-blur border rounded-lg shadow-xl px-2.5 py-1.5 text-slate-100 font-sans cursor-pointer transition-all ${getBorderColor()}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between pb-1 border-b border-slate-800/80 mb-1">
@@ -95,57 +101,116 @@ export const StageItemNode: React.FC<NodeProps> = ({ id, selected, data }) => {
       </div>
 
       {/* Ports Area */}
-      <div className="flex items-center justify-between text-[9px] font-mono text-slate-400">
-        {/* Input Handle (if DI box or speaker or IEM) */}
-        {(isDI || isOutput) ? (
-          <div className="flex items-center space-x-1">
-            <Handle
-              type="target"
-              position={Position.Left}
-              id="in-1"
-              className="!w-3 !h-3 !rounded-full !bg-amber-500 !border-2 !border-slate-950"
-            />
-            <span className="text-[9px] text-amber-300">IN</span>
+      <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 py-0.5">
+        {/* Left Side: Input Handles */}
+        {isWirelessDualRx ? (
+          // Dual Wireless Receiver RF Inputs
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center space-x-1">
+              <Handle
+                type="target"
+                position={Position.Left}
+                id="in-1"
+                className="!w-3 !h-3 !rounded-full !bg-sky-400 !border-2 !border-slate-950"
+              />
+              <span className="text-[9px] text-sky-300">RF A</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Handle
+                type="target"
+                position={Position.Left}
+                id="in-2"
+                className="!w-3 !h-3 !rounded-full !bg-sky-400 !border-2 !border-slate-950"
+              />
+              <span className="text-[9px] text-sky-300">RF B</span>
+            </div>
+          </div>
+        ) : (isDI || isSpeaker || isIEM) ? (
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center space-x-1">
+              <Handle
+                type="target"
+                position={Position.Left}
+                id="in-1"
+                className="!w-3 !h-3 !rounded-full !bg-amber-500 !border-2 !border-slate-950"
+              />
+              <span className="text-[9px] text-amber-300">{isStereo ? 'IN L' : 'IN'}</span>
+            </div>
+            {isStereo && isDI && (
+              <div className="flex items-center space-x-1">
+                <Handle
+                  type="target"
+                  position={Position.Left}
+                  id="in-2"
+                  className="!w-3 !h-3 !rounded-full !bg-amber-500 !border-2 !border-slate-950"
+                />
+                <span className="text-[9px] text-amber-300">IN R</span>
+              </div>
+            )}
           </div>
         ) : (
           <div />
         )}
 
-        {/* Output Handles */}
-        {!isOutput && (
-          <div className="flex items-center space-x-2 ml-auto">
-            {isDI && (
-              <div className="flex items-center space-x-1">
-                <span className="text-[9px] text-slate-400">THRU</span>
-                <Handle
-                  type="source"
-                  position={Position.Right}
-                  id="thru-1"
-                  className="!w-2.5 !h-2.5 !rounded-full !bg-slate-600 !border !border-slate-950"
-                />
-              </div>
-            )}
+        {/* Right Side: Output & Thru Handles */}
+        <div className="flex items-center space-x-2 ml-auto">
+          {/* DI Thru Jack */}
+          {isDI && (
             <div className="flex items-center space-x-1">
-              <span className="text-[9px] text-sky-400">OUT</span>
+              <span className="text-[9px] text-slate-400">THRU</span>
               <Handle
                 type="source"
                 position={Position.Right}
-                id="out-1"
-                className="!w-3 !h-3 !rounded-full !bg-sky-500 !border-2 !border-slate-950"
+                id="thru-1"
+                className="!w-2.5 !h-2.5 !rounded-full !bg-slate-600 !border !border-slate-950"
               />
-              {isStereo && (
+            </div>
+          )}
+
+          {/* Speaker Thru / Daisy Chain Jack */}
+          {isSpeaker && (
+            <div className="flex items-center space-x-1">
+              <span className="text-[9px] text-teal-300">THRU</span>
+              <Handle
+                type="source"
+                position={Position.Right}
+                id="thru-1"
+                className="!w-3 !h-3 !rounded-full !bg-teal-500 !border-2 !border-slate-950 shadow-[0_0_6px_#14b8a6]"
+              />
+            </div>
+          )}
+
+          {/* Audio Outputs */}
+          {!isSpeaker && !isIEM && (
+            <div className="flex flex-col space-y-1 items-end">
+              <div className="flex items-center space-x-1">
+                <span className="text-[9px] text-sky-400">
+                  {isWirelessDualRx ? 'CH A' : isStereo ? 'OUT L' : 'OUT'}
+                </span>
                 <Handle
                   type="source"
                   position={Position.Right}
-                  id="out-2"
-                  style={{ top: '75%' }}
+                  id="out-1"
                   className="!w-3 !h-3 !rounded-full !bg-sky-500 !border-2 !border-slate-950"
                 />
+              </div>
+              {isStereo && (
+                <div className="flex items-center space-x-1">
+                  <span className="text-[9px] text-sky-400">
+                    {isWirelessDualRx ? 'CH B' : 'OUT R'}
+                  </span>
+                  <Handle
+                    type="source"
+                    position={Position.Right}
+                    id="out-2"
+                    className="!w-3 !h-3 !rounded-full !bg-sky-500 !border-2 !border-slate-950"
+                  />
+                </div>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
-};
+});

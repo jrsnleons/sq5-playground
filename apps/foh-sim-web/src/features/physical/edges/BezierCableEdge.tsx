@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { EdgeProps, getBezierPath } from '@xyflow/react';
 import { useSimulationStore } from '../../../store/simulationStore';
 import { SignalType } from '@foh-sim/simulation-core';
 
-export const BezierCableEdge: React.FC<EdgeProps> = ({
+export const BezierCableEdge: React.FC<EdgeProps> = memo(({
   id,
   sourceX,
   sourceY,
@@ -14,9 +14,9 @@ export const BezierCableEdge: React.FC<EdgeProps> = ({
   selected,
   data
 }) => {
-  const { removeCable, signalPresence } = useSimulationStore();
+  const removeCable = useSimulationStore((s) => s.removeCable);
+  const hasSignal = useSimulationStore((s) => s.signalPresence.cableHasSignal[id]);
   const signalType = (data?.signalType as SignalType) || 'generic';
-  const hasSignal = signalPresence.cableHasSignal[id];
 
   // Calculate standard bezier path
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -26,7 +26,7 @@ export const BezierCableEdge: React.FC<EdgeProps> = ({
     targetX,
     targetY,
     targetPosition,
-    curvature: 0.35 // realistic cable curve
+    curvature: 0.35
   });
 
   const getCableColor = () => {
@@ -53,14 +53,23 @@ export const BezierCableEdge: React.FC<EdgeProps> = ({
 
   return (
     <>
+      {/* Invisible wide hit area for easy clicking */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={24}
+        className="cursor-pointer pointer-events-stroke"
+      />
+
       {/* Glow shadow when carrying signal */}
       {hasSignal && (
         <path
           d={edgePath}
           fill="none"
           stroke={cableColor}
-          strokeWidth={6}
-          strokeOpacity={0.25}
+          strokeWidth={7}
+          strokeOpacity={0.3}
           className="pointer-events-none filter blur-[2px]"
         />
       )}
@@ -70,32 +79,36 @@ export const BezierCableEdge: React.FC<EdgeProps> = ({
         id={id}
         d={edgePath}
         fill="none"
-        stroke={cableColor}
+        stroke={selected ? '#ffffff' : cableColor}
         strokeWidth={selected ? 4 : signalType === 'dsnake' ? 3.5 : 2.5}
         strokeDasharray={signalType === 'dsnake' ? '6 3' : undefined}
         className={`transition-all cursor-pointer ${
-          hasSignal ? 'opacity-100' : 'opacity-60'
+          hasSignal ? 'opacity-100' : 'opacity-70'
         } hover:stroke-white`}
       />
 
-      {/* Interactive Delete Handle on Hover / Selection */}
+      {/* Interactive Unplug Button when cable is selected */}
       {selected && (
         <foreignObject
-          width={24}
-          height={24}
-          x={labelX - 12}
-          y={labelY - 12}
+          width={70}
+          height={28}
+          x={labelX - 35}
+          y={labelY - 14}
           className="overflow-visible"
         >
           <button
-            onClick={() => removeCable(id)}
-            title="Unplug cable"
-            className="w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center text-xs font-bold shadow-lg border border-white/40 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              removeCable(id);
+            }}
+            title="Unplug Cable (Backspace / Delete)"
+            className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold shadow-xl border border-white/50 cursor-pointer transition-transform hover:scale-105"
           >
-            ×
+            <span>×</span>
+            <span>Unplug</span>
           </button>
         </foreignObject>
       )}
     </>
   );
-};
+});

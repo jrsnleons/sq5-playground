@@ -55,7 +55,9 @@
 
       { "id": "item-pc", "typeId": "playback-propresenter-pc", "name": "ProPresenter PC", "category": "playback", "position": { "x": 1080, "y": 40 } },
       { "id": "item-di-pc", "typeId": "di-stereo-passive", "name": "DI 5 (PC Stereo)", "category": "di-box", "position": { "x": 1240, "y": 40 } },
-      { "id": "item-wireless-rx", "typeId": "rx-wireless-dual", "name": "Shure SVX288 Dual Rx", "category": "mic", "position": { "x": 1240, "y": 140 } },
+      { "id": "item-wl-mic-1", "typeId": "mic-wireless-hh-1", "name": "WL Handheld 1 (Lead)", "category": "mic", "position": { "x": 1080, "y": 140 } },
+      { "id": "item-wl-mic-2", "typeId": "mic-wireless-hh-2", "name": "WL Handheld 2 (Backup)", "category": "mic", "position": { "x": 1080, "y": 230 } },
+      { "id": "item-wireless-rx", "typeId": "rx-wireless-dual", "name": "Shure SVX288 Dual Rx", "category": "mic", "position": { "x": 1260, "y": 180 } },
 
       { "id": "item-iem-ag", "typeId": "iem-behringer-p1", "name": "IEM AG", "category": "iem", "position": { "x": 420, "y": 500 } },
       { "id": "item-iem-wl", "typeId": "iem-xtuga-iem1200", "name": "IEM WL (Wireless)", "category": "iem", "position": { "x": 420, "y": 590 } },
@@ -65,8 +67,10 @@
       { "id": "item-iem-bass", "typeId": "iem-behringer-p1", "name": "IEM Bass", "category": "iem", "position": { "x": 420, "y": 950 } },
       { "id": "item-iem-drums", "typeId": "iem-behringer-p1", "name": "IEM Drums", "category": "iem", "position": { "x": 420, "y": 1040 } },
 
-      { "id": "item-front-fills", "typeId": "speaker-front-fill", "name": "Front Fills Pair", "category": "speaker", "position": { "x": 1080, "y": 680 } },
-      { "id": "item-subs", "typeId": "speaker-subwoofer", "name": "Subwoofers Pair", "category": "speaker", "position": { "x": 1080, "y": 770 } },
+      { "id": "item-front-fill-1", "typeId": "speaker-front-fill", "name": "Front Fill 1 (Stage L)", "category": "speaker", "position": { "x": 1080, "y": 640 } },
+      { "id": "item-front-fill-2", "typeId": "speaker-front-fill", "name": "Front Fill 2 (Stage R)", "category": "speaker", "position": { "x": 1260, "y": 640 } },
+      { "id": "item-sub-1", "typeId": "speaker-subwoofer", "name": "Subwoofer 1", "category": "speaker", "position": { "x": 1080, "y": 740 } },
+      { "id": "item-sub-2", "typeId": "speaker-subwoofer", "name": "Subwoofer 2", "category": "speaker", "position": { "x": 1260, "y": 740 } },
       { "id": "item-array-r", "typeId": "speaker-array-r", "name": "Line Array Right", "category": "speaker", "position": { "x": 1080, "y": 860 } },
       { "id": "item-array-l", "typeId": "speaker-array-l", "name": "Line Array Left", "category": "speaker", "position": { "x": 1080, "y": 950 } }
     ],
@@ -111,6 +115,8 @@
       { "id": "cable-pc-di-r", "fromNode": "item-pc", "fromPort": "out-2", "toNode": "item-di-pc", "toPort": "in-2", "signalType": "instrument" },
       { "id": "cable-sq-in-1", "fromNode": "item-di-pc", "fromPort": "out-1", "toNode": "console-sq5", "toPort": "sq-in-1", "signalType": "mic" },
       { "id": "cable-sq-in-2", "fromNode": "item-di-pc", "fromPort": "out-2", "toNode": "console-sq5", "toPort": "sq-in-2", "signalType": "mic" },
+      { "id": "cable-wl-rf-1", "fromNode": "item-wl-mic-1", "fromPort": "out-1", "toNode": "item-wireless-rx", "toPort": "in-1", "signalType": "mic" },
+      { "id": "cable-wl-rf-2", "fromNode": "item-wl-mic-2", "fromPort": "out-1", "toNode": "item-wireless-rx", "toPort": "in-2", "signalType": "mic" },
       { "id": "cable-sq-in-4", "fromNode": "item-wireless-rx", "fromPort": "out-1", "toNode": "console-sq5", "toPort": "sq-in-4", "signalType": "mic" },
       { "id": "cable-sq-in-5", "fromNode": "item-wireless-rx", "fromPort": "out-2", "toNode": "console-sq5", "toPort": "sq-in-5", "signalType": "mic" },
 
@@ -122,8 +128,10 @@
       { "id": "cable-out-7", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-7", "toNode": "item-iem-bass", "toPort": "in-1", "signalType": "iem" },
       { "id": "cable-out-8", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-8", "toNode": "item-iem-drums", "toPort": "in-1", "signalType": "iem" },
 
-      { "id": "cable-out-9", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-9", "toNode": "item-front-fills", "toPort": "in-1", "signalType": "speaker" },
-      { "id": "cable-out-10", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-10", "toNode": "item-subs", "toPort": "in-1", "signalType": "speaker" },
+      { "id": "cable-out-9", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-9", "toNode": "item-front-fill-1", "toPort": "in-1", "signalType": "speaker" },
+      { "id": "cable-fill-daisy", "fromNode": "item-front-fill-1", "fromPort": "thru-1", "toNode": "item-front-fill-2", "toPort": "in-1", "signalType": "speaker" },
+      { "id": "cable-out-10", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-10", "toNode": "item-sub-1", "toPort": "in-1", "signalType": "speaker" },
+      { "id": "cable-sub-daisy", "fromNode": "item-sub-1", "fromPort": "thru-1", "toNode": "item-sub-2", "toPort": "in-1", "signalType": "speaker" },
       { "id": "cable-out-11", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-11", "toNode": "item-array-r", "toPort": "in-1", "signalType": "speaker" },
       { "id": "cable-out-12", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-12", "toNode": "item-array-l", "toPort": "in-1", "signalType": "speaker" }
     ]

@@ -78,6 +78,8 @@ interface SimulationStoreState {
   // I/O Patch Matrix
   patchInputSocket: (channelId: string, sourceType: 'local' | 'slink' | 'usb', socketId: string, label: string) => void;
   unpatchInputSocket: (channelId: string) => void;
+  patchOutputSocket: (socketId: string, destType: 'mix' | 'matrix' | 'main-lr' | 'direct-out', busId: string, label: string) => void;
+  unpatchOutputSocket: (socketId: string) => void;
 
   // Scenes
   saveScene: (sceneId: number, name?: string) => void;
@@ -456,6 +458,20 @@ export const useSimulationStore = create<SimulationStoreState>()(
     unpatchInputSocket: (channelId) =>
       set((state) => {
         delete state.sim.digital.ioPatch.inputs[channelId];
+        state.signalPresence = computeSignalPresence(state.sim);
+        state.validationNotices = validateSystemState(state.sim);
+      }),
+
+    patchOutputSocket: (socketId, destType, busId, label) =>
+      set((state) => {
+        state.sim.digital.ioPatch.outputs[socketId] = { destType, busId, label };
+        state.signalPresence = computeSignalPresence(state.sim);
+        state.validationNotices = validateSystemState(state.sim);
+      }),
+
+    unpatchOutputSocket: (socketId) =>
+      set((state) => {
+        delete state.sim.digital.ioPatch.outputs[socketId];
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
       }),

@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { useSimulationStore } from '../../../store/simulationStore';
 import { Radio } from 'lucide-react';
 
-export const AR2412Node: React.FC<NodeProps> = ({ id, selected }) => {
-  const { signalPresence, sim } = useSimulationStore();
-  const isConnected = signalPresence.slinkHasSignal;
+export const AR2412Node: React.FC<NodeProps> = memo(({ id, selected }) => {
+  const isConnected = useSimulationStore((s) => s.signalPresence.slinkHasSignal);
+  const cables = useSimulationStore((s) => s.sim.physical.cables);
 
   return (
     <div
@@ -59,7 +59,7 @@ export const AR2412Node: React.FC<NodeProps> = ({ id, selected }) => {
               {Array.from({ length: 24 }, (_, i) => {
                 const portNum = i + 1;
                 const socketId = `ar-in-${portNum}`;
-                const hasConnectedCable = sim.physical.cables.some(
+                const hasConnectedCable = cables.some(
                   (c) => c.toPort === socketId || c.fromPort === socketId
                 );
 
@@ -96,7 +96,7 @@ export const AR2412Node: React.FC<NodeProps> = ({ id, selected }) => {
               {Array.from({ length: 12 }, (_, i) => {
                 const portNum = i + 1;
                 const socketId = `ar-out-${portNum}`;
-                const hasConnectedCable = sim.physical.cables.some(
+                const hasConnectedCable = cables.some(
                   (c) => c.fromPort === socketId || c.toPort === socketId
                 );
 
@@ -170,4 +170,5 @@ export const AR2412Node: React.FC<NodeProps> = ({ id, selected }) => {
       </div>
     </div>
   );
-};
+});
+

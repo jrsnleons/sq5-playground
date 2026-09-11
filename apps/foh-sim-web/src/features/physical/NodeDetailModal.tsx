@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSimulationStore } from '../../store/simulationStore';
 import stageItemsCatalog from '@foh-sim/hardware-profiles/stage-items.json';
-import { X, Trash2, Edit3, Check, Plug } from 'lucide-react';
+import { X, Trash2, Edit3, Check, Plug, Unlink } from 'lucide-react';
 
 export const NodeDetailModal: React.FC = () => {
   const {
@@ -9,7 +9,8 @@ export const NodeDetailModal: React.FC = () => {
     setSelectedNodeId,
     sim,
     updateStageItemDetails,
-    removeStageItem
+    removeStageItem,
+    removeCable
   } = useSimulationStore();
 
   const stageItem = sim.physical.stageItems.find((i) => i.id === selectedNodeId);
@@ -135,15 +136,28 @@ export const NodeDetailModal: React.FC = () => {
               No cables connected. Drag from the ports to patch.
             </div>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {connectedCables.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center justify-between p-1.5 bg-slate-950/60 rounded border border-slate-800/80 font-mono text-[10px]"
+                  className="flex items-center justify-between p-2 bg-slate-950/80 rounded border border-slate-800 font-mono text-[11px]"
                 >
-                  <span className="text-sky-300">{c.fromPort}</span>
-                  <span className="text-slate-500">──►</span>
-                  <span className="text-amber-300">{c.toPort}</span>
+                  <div className="flex items-center space-x-1.5 truncate">
+                    <span className="text-sky-300 font-bold">{c.fromPort}</span>
+                    <span className="text-slate-500">──►</span>
+                    <span className="text-amber-300 font-bold">{c.toPort}</span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 font-mono uppercase">
+                      {c.signalType}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => removeCable(c.id)}
+                    title="Unplug / disconnect this cable"
+                    className="flex items-center space-x-1 px-2 py-1 rounded bg-rose-600/90 hover:bg-rose-500 text-white text-[10px] font-bold transition-colors ml-2 shrink-0 cursor-pointer shadow"
+                  >
+                    <Unlink className="w-3 h-3" />
+                    <span>Unplug</span>
+                  </button>
                 </div>
               ))}
             </div>

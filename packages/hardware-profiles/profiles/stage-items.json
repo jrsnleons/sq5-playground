@@ -36,13 +36,37 @@
     "defaultPhotoAlt": "Lavalier tie-clip microphone with receiver base"
   },
   {
+    "id": "mic-wireless-hh-1",
+    "category": "mic",
+    "subcategory": "wireless-hh",
+    "displayName": "Wireless Handheld 1 (Lead)",
+    "makeModel": "Shure PG28 Handheld Transmitter",
+    "stockPhotoId": "wireless-hh",
+    "connectorTypes": ["RF-out"],
+    "requiresDI": false,
+    "requiresPhantom": false,
+    "defaultPhotoAlt": "Shure wireless handheld microphone transmitter"
+  },
+  {
+    "id": "mic-wireless-hh-2",
+    "category": "mic",
+    "subcategory": "wireless-hh",
+    "displayName": "Wireless Handheld 2 (Backup)",
+    "makeModel": "Shure PG28 Handheld Transmitter",
+    "stockPhotoId": "wireless-hh",
+    "connectorTypes": ["RF-out"],
+    "requiresDI": false,
+    "requiresPhantom": false,
+    "defaultPhotoAlt": "Shure wireless handheld microphone transmitter"
+  },
+  {
     "id": "rx-wireless-dual",
     "category": "mic",
     "subcategory": "wireless-rx",
     "displayName": "Dual Wireless Handheld Receiver",
     "makeModel": "Shure SVX288/PG28",
     "stockPhotoId": "wireless-rx",
-    "connectorTypes": ["XLR-out", "XLR-out"],
+    "connectorTypes": ["RF-in", "RF-in", "XLR-out", "XLR-out"],
     "requiresDI": false,
     "requiresPhantom": false,
     "defaultPhotoAlt": "Shure SVX288 dual channel wireless receiver unit"
@@ -279,25 +303,25 @@
     "id": "speaker-subwoofer",
     "category": "speaker",
     "subcategory": "subwoofer",
-    "displayName": "Subwoofer Pair",
-    "makeModel": "Dual 18\" Active Sub",
+    "displayName": "Subwoofer (Active)",
+    "makeModel": "Active 18\" Subwoofer",
     "stockPhotoId": "subwoofer",
-    "connectorTypes": ["XLR-in", "XLR-link"],
+    "connectorTypes": ["XLR-in", "XLR-thru"],
     "requiresDI": false,
     "requiresPhantom": false,
-    "defaultPhotoAlt": "Floor mounted high power subwoofer cabinet"
+    "defaultPhotoAlt": "Floor mounted high power subwoofer with XLR In and Thru"
   },
   {
     "id": "speaker-front-fill",
     "category": "speaker",
     "subcategory": "front-fill",
-    "displayName": "Front Fills Pair",
+    "displayName": "Front Fill Speaker (Active)",
     "makeModel": "Compact Active Speaker",
     "stockPhotoId": "front-fill",
-    "connectorTypes": ["XLR-in", "XLR-link"],
+    "connectorTypes": ["XLR-in", "XLR-thru"],
     "requiresDI": false,
     "requiresPhantom": false,
-    "defaultPhotoAlt": "Low profile stage lip front fill speaker"
+    "defaultPhotoAlt": "Low profile stage lip front fill speaker with XLR In and Thru"
   },
   {
     "id": "iem-behringer-p1",

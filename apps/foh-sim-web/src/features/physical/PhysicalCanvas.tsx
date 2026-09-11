@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -7,7 +7,6 @@ import {
   Node,
   Edge,
   Connection,
-  addEdge,
   useNodesState,
   useEdgesState,
   BackgroundVariant
@@ -24,13 +23,11 @@ import { NodeDetailModal } from './NodeDetailModal';
 import { SignalType } from '@foh-sim/simulation-core';
 
 export const PhysicalCanvas: React.FC = () => {
-  const {
-    sim,
-    updateStageItemPosition,
-    connectCable,
-    removeCable,
-    setSelectedNodeId
-  } = useSimulationStore();
+  const sim = useSimulationStore((s) => s.sim);
+  const updateStageItemPosition = useSimulationStore((s) => s.updateStageItemPosition);
+  const connectCable = useSimulationStore((s) => s.connectCable);
+  const removeCable = useSimulationStore((s) => s.removeCable);
+  const setSelectedNodeId = useSimulationStore((s) => s.setSelectedNodeId);
 
   const nodeTypes = useMemo(
     () => ({
@@ -48,7 +45,7 @@ export const PhysicalCanvas: React.FC = () => {
     []
   );
 
-  const nodes: Node[] = useMemo(() => {
+  const initialNodes: Node[] = useMemo(() => {
     const list: Node[] = [
       {
         id: 'stagebox-ar2412',
@@ -74,9 +71,9 @@ export const PhysicalCanvas: React.FC = () => {
     }
 
     return list;
-  }, [sim.physical]);
+  }, [sim.physical.stageBox.position, sim.physical.console.position, sim.physical.stageItems]);
 
-  const edges: Edge[] = useMemo(() => {
+  const initialEdges: Edge[] = useMemo(() => {
     return sim.physical.cables.map((cable) => ({
       id: cable.id,
       source: cable.fromNode,
@@ -88,11 +85,72 @@ export const PhysicalCanvas: React.FC = () => {
     }));
   }, [sim.physical.cables]);
 
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // Synchronize state when store items or cables change
+  useEffect(() => {
+    setNodes((prevNodes) => {
+      const prevMap = new Map(prevNodes.map((n) => [n.id, n]));
+      const nextList: Node[] = [
+        {
+          id: 'stagebox-ar2412',
+          type: 'ar2412',
+          position: sim.physical.stageBox.position,
+          data: { label: 'AR2412 Stage Box' }
+        },
+        {
+          id: 'console-sq5',
+          type: 'sq5rear',
+          position: sim.physical.console.position,
+          data: { label: 'SQ-5 Console' }
+        }
+      ];
+
+      for (const item of sim.physical.stageItems) {
+        const existing = prevMap.get(item.id);
+        nextList.push({
+          id: item.id,
+          type: 'stageItem',
+          position: existing?.position || item.position,
+          data: { item }
+        });
+      }
+      return nextList;
+    });
+  }, [sim.physical.stageItems, sim.physical.stageBox.position, sim.physical.console.position, setNodes]);
+
+  useEffect(() => {
+    setEdges(
+      sim.physical.cables.map((cable) => ({
+        id: cable.id,
+        source: cable.fromNode,
+        target: cable.toNode,
+        sourceHandle: cable.fromPort,
+        targetHandle: cable.toPort,
+        type: 'bezierCable',
+        data: { signalType: cable.signalType }
+      }))
+    );
+  }, [sim.physical.cables, setEdges]);
+
   const handleNodeDragStop = useCallback(
     (_event: MouseEvent | TouchEvent, node: Node) => {
       updateStageItemPosition(node.id, node.position);
     },
     [updateStageItemPosition]
+  );
+
+  const handleEdgeClick = useCallback(
+    (_event: React.MouseEvent, edge: Edge) => {
+      setEdges((eds) =>
+        eds.map((e) => ({
+          ...e,
+          selected: e.id === edge.id
+        }))
+      );
+    },
+    [setEdges]
   );
 
   const handleConnect = useCallback(
@@ -109,6 +167,8 @@ export const PhysicalCanvas: React.FC = () => {
       let signalType: SignalType = 'mic';
       if (connection.sourceHandle.includes('dsnake') || connection.targetHandle.includes('slink')) {
         signalType = 'dsnake';
+      } else if (connection.sourceHandle.includes('thru-1') && (connection.source.includes('speaker') || connection.source.includes('fill') || connection.source.includes('sub'))) {
+        signalType = 'speaker';
       } else if (connection.sourceHandle.includes('thru') || connection.sourceHandle.includes('in-1')) {
         signalType = 'instrument';
       } else if (connection.sourceHandle.includes('ar-out-') && Number(connection.sourceHandle.split('-')[2]) <= 8) {
@@ -166,7 +226,10 @@ export const PhysicalCanvas: React.FC = () => {
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         onNodeDragStop={handleNodeDragStop}
+        onEdgeClick={handleEdgeClick}
         onConnect={handleConnect}
         onPaneClick={() => setSelectedNodeId(null)}
         fitView

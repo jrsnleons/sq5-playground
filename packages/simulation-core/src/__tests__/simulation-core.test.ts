@@ -315,4 +315,68 @@ describe('FOH SQ-5 Simulator — Acceptance Criteria (AC-1 to AC-16)', () => {
     presence = computeSignalPresence(state);
     expect(presence.channelsWithSignal[kick.id]).toBe(false);
   });
+
+  it('Feature: Shure SVX dual wireless receiver has dual RF inputs and dual console outputs', () => {
+    const state = createInitialState('church');
+    const svx = state.physical.stageItems.find((i) => i.id === 'item-wireless-rx')!;
+    expect(svx).toBeDefined();
+
+    // Check RF transmitter cables
+    const rfLead = state.physical.cables.find(
+      (c) => c.fromNode === 'item-wl-mic-1' && c.toNode === 'item-wireless-rx' && c.toPort === 'in-1'
+    );
+    const rfBackup = state.physical.cables.find(
+      (c) => c.fromNode === 'item-wl-mic-2' && c.toNode === 'item-wireless-rx' && c.toPort === 'in-2'
+    );
+    expect(rfLead).toBeDefined();
+    expect(rfBackup).toBeDefined();
+
+    // Check dual console outputs into SQ Local In 4 & 5
+    const outChA = state.physical.cables.find(
+      (c) => c.fromNode === 'item-wireless-rx' && c.fromPort === 'out-1' && c.toPort === 'sq-in-4'
+    );
+    const outChB = state.physical.cables.find(
+      (c) => c.fromNode === 'item-wireless-rx' && c.fromPort === 'out-2' && c.toPort === 'sq-in-5'
+    );
+    expect(outChA).toBeDefined();
+    expect(outChB).toBeDefined();
+
+    const presence = computeSignalPresence(state);
+    expect(presence.cableHasSignal[rfLead!.id]).toBe(true);
+    expect(presence.cableHasSignal[rfBackup!.id]).toBe(true);
+    expect(presence.cableHasSignal[outChA!.id]).toBe(true);
+    expect(presence.cableHasSignal[outChB!.id]).toBe(true);
+  });
+
+  it('Feature: Daisy-chained speakers (Front Fills & Subs) propagate signal via THRU ports', () => {
+    const state = createInitialState('church');
+    
+    // Front Fill 1 fed from AR2412 Out 9, Front Fill 2 daisy-chained via THRU
+    const fillFeed = state.physical.cables.find((c) => c.id === 'cable-out-9')!;
+    const fillDaisy = state.physical.cables.find((c) => c.id === 'cable-fill-daisy')!;
+    expect(fillFeed).toBeDefined();
+    expect(fillDaisy).toBeDefined();
+    expect(fillDaisy.fromPort).toBe('thru-1');
+    expect(fillDaisy.toNode).toBe('item-front-fill-2');
+
+    // Subwoofer 1 fed from AR2412 Out 10, Subwoofer 2 daisy-chained via THRU
+    const subFeed = state.physical.cables.find((c) => c.id === 'cable-out-10')!;
+    const subDaisy = state.physical.cables.find((c) => c.id === 'cable-sub-daisy')!;
+    expect(subFeed).toBeDefined();
+    expect(subDaisy).toBeDefined();
+    expect(subDaisy.fromPort).toBe('thru-1');
+    expect(subDaisy.toNode).toBe('item-sub-2');
+
+    let presence = computeSignalPresence(state);
+    expect(presence.cableHasSignal[fillFeed.id]).toBe(true);
+    expect(presence.cableHasSignal[fillDaisy.id]).toBe(true);
+    expect(presence.cableHasSignal[subFeed.id]).toBe(true);
+    expect(presence.cableHasSignal[subDaisy.id]).toBe(true);
+
+    // Unplugging the main feed to Sub 1 cuts signal to Sub 2
+    state.physical.cables = state.physical.cables.filter((c) => c.id !== 'cable-out-10');
+    presence = computeSignalPresence(state);
+    expect(presence.cableHasSignal[subDaisy.id]).toBe(false);
+  });
 });
+
