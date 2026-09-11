@@ -1,0 +1,119 @@
+import React from 'react';
+import { useSimulationStore } from '../../store/simulationStore';
+
+export const MasterStrip: React.FC = () => {
+  const {
+    sim,
+    signalPresence,
+    setMainLRFader,
+    toggleMainLRMute,
+    setMixFader,
+    toggleMixMute
+  } = useSimulationStore();
+
+  const isSendsOnFaders = sim.digital.session.selectedMixId !== 'main-lr';
+  const activeMixId = sim.digital.session.selectedMixId;
+  const activeMix = sim.digital.mixes.find((m) => m.id === activeMixId);
+
+  const title = isSendsOnFaders ? activeMix?.name || 'MIX' : 'MAIN LR';
+  const faderVal = isSendsOnFaders ? (activeMix?.faderLevel ?? 0) : sim.digital.mainLR.faderLevel;
+  const isMuted = isSendsOnFaders ? (activeMix?.mute ?? false) : sim.digital.mainLR.mute;
+  const hasSignal = isSendsOnFaders
+    ? signalPresence.mixesWithSignal[activeMixId]
+    : signalPresence.mainLRHasSignal;
+
+  const handleFaderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    if (isSendsOnFaders) {
+      setMixFader(activeMixId, val);
+    } else {
+      setMainLRFader(val);
+    }
+  };
+
+  const handleToggleMute = () => {
+    if (isSendsOnFaders) {
+      toggleMixMute(activeMixId);
+    } else {
+      toggleMainLRMute();
+    }
+  };
+
+  return (
+    <div className="w-24 bg-slate-950 border-l-2 border-slate-800 flex flex-col justify-between p-1.5 shrink-0 select-none">
+      {/* Top: SEL */}
+      <div className="space-y-1">
+        <div className="w-full py-1 text-center text-[10px] font-bold font-mono text-slate-400 bg-slate-900 rounded border border-slate-800">
+          MASTER
+        </div>
+        <button className="w-full py-1 text-[10px] font-bold font-mono rounded bg-amber-500 text-slate-950 shadow-[0_0_8px_#f59e0b]">
+          SEL
+        </button>
+      </div>
+
+      {/* Center Master Fader Track & Dual LED Meter */}
+      <div className="flex-1 flex justify-center items-center py-2 space-x-2">
+        {/* Dual Meter Bar */}
+        <div className="w-4 h-48 bg-slate-950 rounded-sm p-0.5 flex space-x-0.5 justify-between border border-slate-800">
+          {/* Left Meter */}
+          <div className="w-1.5 h-full flex flex-col justify-between">
+            <div className={`w-full h-1.5 rounded-xs ${hasSignal && faderVal > 0 ? 'bg-rose-500' : 'bg-rose-950 opacity-40'}`} />
+            <div className={`w-full h-1.5 rounded-xs ${hasSignal && faderVal >= -6 ? 'bg-amber-400' : 'bg-amber-950 opacity-40'}`} />
+            <div className={`w-full h-1.5 rounded-xs ${hasSignal && faderVal >= -18 ? 'bg-emerald-400' : 'bg-emerald-950 opacity-40'}`} />
+            <div className={`w-full h-1.5 rounded-xs ${hasSignal && faderVal >= -30 ? 'bg-emerald-400' : 'bg-emerald-950 opacity-40'}`} />
+            <div className={`w-full h-1.5 rounded-xs ${hasSignal ? 'bg-emerald-500' : 'bg-emerald-950 opacity-40'}`} />
+          </div>
+          {/* Right Meter */}
+          <div className="w-1.5 h-full flex flex-col justify-between">
+            <div className={`w-full h-1.5 rounded-xs ${hasSignal && faderVal > 0 ? 'bg-rose-500' : 'bg-rose-950 opacity-40'}`} />
+            <div className={`w-full h-1.5 rounded-xs ${hasSignal && faderVal >= -6 ? 'bg-amber-400' : 'bg-amber-950 opacity-40'}`} />
+            <div className={`w-full h-1.5 rounded-xs ${hasSignal && faderVal >= -18 ? 'bg-emerald-400' : 'bg-emerald-950 opacity-40'}`} />
+            <div className={`w-full h-1.5 rounded-xs ${hasSignal && faderVal >= -30 ? 'bg-emerald-400' : 'bg-emerald-950 opacity-40'}`} />
+            <div className={`w-full h-1.5 rounded-xs ${hasSignal ? 'bg-emerald-500' : 'bg-emerald-950 opacity-40'}`} />
+          </div>
+        </div>
+
+        {/* Master Fader */}
+        <div className="h-48 flex items-center justify-center relative">
+          <input
+            type="range"
+            min="-90"
+            max="10"
+            step="0.5"
+            value={faderVal}
+            onChange={handleFaderChange}
+            aria-label={`${title} Master Fader`}
+            className="fader-slider fader-vertical cursor-pointer"
+          />
+        </div>
+      </div>
+
+      {/* dB readout */}
+      <div className="text-center font-mono text-[10px] text-amber-400 py-0.5 bg-slate-900 rounded border border-slate-800 my-1 font-bold">
+        {faderVal <= -85 ? '-∞' : `${faderVal > 0 ? '+' : ''}${faderVal.toFixed(1)} dB`}
+      </div>
+
+      {/* Mute Button */}
+      <div className="space-y-1">
+        <button
+          onClick={handleToggleMute}
+          className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-all ${
+            isMuted
+              ? 'bg-rose-600 text-white shadow-[0_0_8px_#e11d48]'
+              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+          }`}
+        >
+          MUTE
+        </button>
+
+        {/* Scribble Strip */}
+        <div className="p-1 rounded bg-slate-900 border border-amber-600/80 text-center">
+          <div className="text-[9px] font-mono text-slate-400">BUS MASTER</div>
+          <div className="text-[11px] font-black text-amber-300 truncate font-mono">
+            {title}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
