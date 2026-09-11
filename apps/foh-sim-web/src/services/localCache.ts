@@ -213,5 +213,40 @@ export const localCache = {
     const updated = list.filter((s) => s.id !== sceneId);
     this.saveUserScenes(updated);
     return updated;
+  },
+
+  getOfficialScenes(): MemberScene[] {
+    try {
+      const data = localStorage.getItem('foh_sim_cached_official_scenes');
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to read cached official scenes', e);
+    }
+    return DEFAULT_OFFICIAL_SCENES;
+  },
+
+  saveOfficialScenes(scenes: MemberScene[]) {
+    try {
+      localStorage.setItem('foh_sim_cached_official_scenes', JSON.stringify(scenes));
+    } catch (e) {
+      console.warn('Failed to save official scenes to cache', e);
+    }
+  },
+
+  saveOfficialScene(scene: MemberScene) {
+    const list = this.getOfficialScenes();
+    const updated = [scene, ...list.filter((s) => s.id !== scene.id)];
+    this.saveOfficialScenes(updated);
+    return updated;
+  },
+
+  removeOfficialScene(sceneId: string) {
+    const list = this.getOfficialScenes();
+    const updated = list.filter((s) => s.id !== sceneId);
+    this.saveOfficialScenes(updated);
+    return updated;
   }
 };

@@ -1,19 +1,16 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { localCache, MemberScene, DEFAULT_OFFICIAL_SCENES } from './localCache';
+import { localCache, MemberScene } from './localCache';
 
 export const sceneService = {
   async fetchScenes(): Promise<{ officialScenes: MemberScene[]; userScenes: MemberScene[] }> {
     if (!isSupabaseConfigured() || !supabase || !navigator.onLine) {
       return {
-        officialScenes: DEFAULT_OFFICIAL_SCENES,
+        officialScenes: localCache.getOfficialScenes(),
         userScenes: localCache.getUserScenes()
       };
     }
 
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const currentUserId = userData?.user?.id;
-
       const { data, error } = await supabase
         .from('member_scenes')
         .select('*')
@@ -22,7 +19,7 @@ export const sceneService = {
       if (error) {
         console.warn('Supabase fetch scenes error, using local cache:', error.message);
         return {
-          officialScenes: DEFAULT_OFFICIAL_SCENES,
+          officialScenes: localCache.getOfficialScenes(),
           userScenes: localCache.getUserScenes()
         };
       }
@@ -51,10 +48,14 @@ export const sceneService = {
           }
         }
 
-        // Cache them locally
+        // Cache them locally for offline resilience
+        if (officialScenes.length > 0) {
+          localCache.saveOfficialScenes(officialScenes);
+        }
         localCache.saveUserScenes(userScenes);
+
         return {
-          officialScenes: officialScenes.length > 0 ? officialScenes : DEFAULT_OFFICIAL_SCENES,
+          officialScenes: officialScenes.length > 0 ? officialScenes : localCache.getOfficialScenes(),
           userScenes
         };
       }
@@ -63,7 +64,7 @@ export const sceneService = {
     }
 
     return {
-      officialScenes: DEFAULT_OFFICIAL_SCENES,
+      officialScenes: localCache.getOfficialScenes(),
       userScenes: localCache.getUserScenes()
     };
   },
@@ -75,6 +76,7 @@ export const sceneService = {
     sceneData: any;
     sceneNumber?: number;
     existingId?: string;
+    authorName?: string;
   }): Promise<{ scene: MemberScene; savedToCloud: boolean }> {
     const isOfficial = Boolean(payload.isOfficial);
     const sceneNumber = payload.sceneNumber || Date.now() % 10000;
@@ -85,7 +87,7 @@ export const sceneService = {
       name: payload.name,
       description: payload.description || '',
       is_official: isOfficial,
-      author_name: isOfficial ? 'Church Audio Director' : 'You',
+      author_name: payload.authorName || (isOfficial ? 'Church Audio Director' : 'You'),
       scene_data: payload.sceneData,
       created_at: new Date().toISOString()
     };
@@ -101,10 +103,11 @@ export const sceneService = {
           name: payload.name,
           description: payload.description || '',
           is_official: isOfficial,
-          author_name: isOfficial ? 'Church Audio Director' : (userData?.user?.email?.split('@')[0] || 'Member'),
+          author_name: payload.authorName || (isOfficial ? 'Church Audio Director' : (userData?.user?.email?.split('@')[0] || 'Member')),
           scene_data: payload.sceneData,
           scene_number: sceneNumber,
-          user_id: isOfficial ? null : (userId || null)
+          user_id: isOfficial ? null : (userId || null),
+          updated_at: new Date().toISOString()
         };
 
         if (payload.existingId && !payload.existingId.startsWith('local-')) {
@@ -129,12 +132,21 @@ export const sceneService = {
       }
     }
 
-    localCache.saveUserScene(newScene);
+    if (isOfficial) {
+      localCache.saveOfficialScene(newScene);
+    } else {
+      localCache.saveUserScene(newScene);
+    }
+
     return { scene: newScene, savedToCloud };
   },
 
-  async deleteScene(sceneId: string): Promise<boolean> {
-    localCache.removeUserScene(sceneId);
+  async deleteScene(sceneId: string, isOfficial?: boolean): Promise<boolean> {
+    if (isOfficial) {
+      localCache.removeOfficialScene(sceneId);
+    } else {
+      localCache.removeUserScene(sceneId);
+    }
 
     if (isSupabaseConfigured() && supabase && navigator.onLine && !sceneId.startsWith('local-')) {
       try {

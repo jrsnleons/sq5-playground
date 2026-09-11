@@ -197,8 +197,15 @@ interface SimulationStoreState {
   scenesLoading: boolean;
   fetchScenes: () => Promise<void>;
   recallMemberScene: (scene: MemberScene) => void;
-  saveUserScene: (name: string, description?: string, isOfficial?: boolean) => Promise<{ success: boolean; savedToCloud: boolean }>;
-  deleteUserScene: (sceneId: string) => Promise<boolean>;
+  saveUserScene: (
+    name: string,
+    description?: string,
+    isOfficial?: boolean,
+    existingId?: string,
+    sceneNumber?: number,
+    sceneDataOverride?: any
+  ) => Promise<{ success: boolean; savedToCloud: boolean }>;
+  deleteUserScene: (sceneId: string, isOfficial?: boolean) => Promise<boolean>;
 }
 
 const defaultInventory: Record<string, { totalStock: number; notes?: string }> = {
@@ -1235,9 +1242,16 @@ export const useSimulationStore = create<SimulationStoreState>()(
         }
       }),
 
-    saveUserScene: async (name: string, description?: string, isOfficial?: boolean) => {
+    saveUserScene: async (
+      name: string,
+      description?: string,
+      isOfficial?: boolean,
+      existingId?: string,
+      sceneNumber?: number,
+      sceneDataOverride?: any
+    ) => {
       const currentState = get().sim;
-      const sceneData = {
+      const sceneData = sceneDataOverride || {
         digital: {
           channels: JSON.parse(JSON.stringify(currentState.digital.channels)),
           mixes: JSON.parse(JSON.stringify(currentState.digital.mixes)),
@@ -1253,14 +1267,16 @@ export const useSimulationStore = create<SimulationStoreState>()(
         name,
         description,
         isOfficial,
+        existingId,
+        sceneNumber,
         sceneData
       });
       await get().fetchScenes();
       return { success: true, savedToCloud: res.savedToCloud };
     },
 
-    deleteUserScene: async (sceneId: string) => {
-      const res = await sceneService.deleteScene(sceneId);
+    deleteUserScene: async (sceneId: string, isOfficial?: boolean) => {
+      const res = await sceneService.deleteScene(sceneId, isOfficial);
       await get().fetchScenes();
       return res;
     }

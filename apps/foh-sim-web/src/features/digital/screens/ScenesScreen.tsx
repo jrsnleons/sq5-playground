@@ -14,7 +14,7 @@ import {
   RefreshCw,
   Sparkles,
   CheckCircle2,
-  Info
+  Pencil
 } from 'lucide-react';
 
 export const ScenesScreen: React.FC = () => {
@@ -32,11 +32,21 @@ export const ScenesScreen: React.FC = () => {
   } = useSimulationStore();
 
   const [activeTab, setActiveTab] = useState<'all' | 'official' | 'custom'>('all');
+  
+  // Store Current Console Modal
   const [storeModalOpen, setStoreModalOpen] = useState(false);
   const [sceneTitle, setSceneTitle] = useState('');
   const [sceneDescription, setSceneDescription] = useState('');
   const [isOfficialFlag, setIsOfficialFlag] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Edit Scene Details Modal
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingScene, setEditingScene] = useState<MemberScene | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editSlotNumber, setEditSlotNumber] = useState(1);
+  const [editIsOfficial, setEditIsOfficial] = useState(false);
 
   useEffect(() => {
     fetchScenes();
@@ -75,6 +85,77 @@ export const ScenesScreen: React.FC = () => {
     }
   };
 
+  const handleOverwriteWithConsole = async (scene: MemberScene) => {
+    const isOfficial = scene.is_official;
+    const promptMsg = isOfficial
+      ? `ADMIN ACTION: Overwrite Official Church Truth Slot ${scene.scene_number} ("${scene.name}") with the current live console settings?`
+      : `Update scene Slot ${scene.scene_number} ("${scene.name}") with current console settings?`;
+
+    if (!confirm(promptMsg)) return;
+
+    try {
+      const res = await saveUserScene(
+        scene.name,
+        scene.description,
+        isOfficial,
+        scene.id,
+        scene.scene_number
+      );
+      setToastNotice({
+        message: res.savedToCloud
+          ? `Updated Slot ${scene.scene_number} and synced to Cloud!`
+          : `Updated Slot ${scene.scene_number} locally!`,
+        type: 'info'
+      });
+    } catch (e) {
+      setToastNotice({
+        message: 'Failed to update scene settings',
+        type: 'error'
+      });
+    }
+  };
+
+  const openEditModal = (scene: MemberScene) => {
+    setEditingScene(scene);
+    setEditTitle(scene.name);
+    setEditDescription(scene.description || '');
+    setEditSlotNumber(scene.scene_number);
+    setEditIsOfficial(scene.is_official);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEditedDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingScene || !editTitle.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await saveUserScene(
+        editTitle.trim(),
+        editDescription.trim(),
+        userRole === 'admin' ? editIsOfficial : editingScene.is_official,
+        editingScene.id,
+        editSlotNumber,
+        editingScene.scene_data
+      );
+      setToastNotice({
+        message: res.savedToCloud
+          ? `Updated "${editTitle.trim()}" in Supabase Cloud!`
+          : `Updated "${editTitle.trim()}" locally!`,
+        type: 'info'
+      });
+      setEditModalOpen(false);
+      setEditingScene(null);
+    } catch (e) {
+      setToastNotice({
+        message: 'Failed to save scene details',
+        type: 'error'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleDuplicateToMyScenes = async (scene: MemberScene) => {
     try {
       await saveUserScene(
@@ -96,8 +177,13 @@ export const ScenesScreen: React.FC = () => {
   };
 
   const handleDelete = async (scene: MemberScene) => {
-    if (confirm(`Are you sure you want to delete scene "${scene.name}"?`)) {
-      await deleteUserScene(scene.id);
+    const isOfficial = scene.is_official;
+    const confirmMsg = isOfficial
+      ? `ADMIN WARNING: Are you sure you want to delete Official Church Reference Scene "${scene.name}"?`
+      : `Are you sure you want to delete scene "${scene.name}"?`;
+
+    if (confirm(confirmMsg)) {
+      await deleteUserScene(scene.id, isOfficial);
       setToastNotice({
         message: `Deleted "${scene.name}"`,
         type: 'info'
@@ -121,6 +207,11 @@ export const ScenesScreen: React.FC = () => {
             <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
               300 SLOTS
             </span>
+            {userRole === 'admin' && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                ADMIN EDITING ENABLED
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-400 mt-1">
             Access official church reference scenes (&ldquo;solid truths&rdquo;) or build and sync your own custom mixes.
@@ -241,10 +332,12 @@ export const ScenesScreen: React.FC = () => {
                   <div className="pt-3 border-t border-slate-800/80">
                     <div className="text-[10px] text-slate-400 mb-2 font-mono flex items-center justify-between">
                       <span>Auth: {scene.author_name || 'Church Audio Director'}</span>
-                      <span className="text-amber-400/80">Locked Baseline</span>
+                      <span className="text-amber-400/80">
+                        {userRole === 'admin' ? 'Editable by Admin' : 'Locked Baseline'}
+                      </span>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1.5">
                       <button
                         onClick={() => recallMemberScene(scene)}
                         className="flex-1 flex items-center justify-center space-x-1.5 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-mono font-bold transition-colors shadow-sm"
@@ -260,6 +353,33 @@ export const ScenesScreen: React.FC = () => {
                       >
                         <Copy className="w-3.5 h-3.5" />
                       </button>
+
+                      {/* Admin-only controls for official truths */}
+                      {userRole === 'admin' && (
+                        <>
+                          <button
+                            onClick={() => handleOverwriteWithConsole(scene)}
+                            title="Admin: Overwrite this official truth with current live console state"
+                            className="p-1.5 rounded bg-slate-800 hover:bg-amber-600 text-amber-300 hover:text-white transition-colors"
+                          >
+                            <Save className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => openEditModal(scene)}
+                            title="Admin: Edit official scene details (Title, Notes, Slot)"
+                            className="p-1.5 rounded bg-slate-800 hover:bg-sky-600 text-slate-300 hover:text-white transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(scene)}
+                            title="Admin: Delete official reference scene"
+                            className="p-1.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -353,13 +473,27 @@ export const ScenesScreen: React.FC = () => {
                         <span>{scene.created_at ? new Date(scene.created_at).toLocaleDateString() : 'Just now'}</span>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1.5">
                         <button
                           onClick={() => recallMemberScene(scene)}
                           className="flex-1 flex items-center justify-center space-x-1 py-1.5 rounded bg-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white text-xs font-mono font-bold transition-colors"
                         >
                           <Play className="w-3 h-3" />
                           <span>RECALL</span>
+                        </button>
+                        <button
+                          onClick={() => handleOverwriteWithConsole(scene)}
+                          title="Update slot with current console mix"
+                          className="p-1.5 rounded bg-slate-800 hover:bg-sky-600 text-slate-400 hover:text-white transition-colors"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => openEditModal(scene)}
+                          title="Edit scene details"
+                          className="p-1.5 rounded bg-slate-800 hover:bg-sky-600 text-slate-400 hover:text-white transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(scene)}
@@ -459,6 +593,107 @@ export const ScenesScreen: React.FC = () => {
                   className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-mono font-bold shadow-md disabled:opacity-50"
                 >
                   {isSubmitting ? 'Storing...' : 'Store Scene'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Scene Details */}
+      {editModalOpen && editingScene && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <div className="flex items-center space-x-2">
+                <Pencil className="w-5 h-5 text-amber-400" />
+                <h3 className="text-sm font-bold text-white font-mono uppercase">
+                  Edit Scene Details (Slot {editingScene.scene_number})
+                </h3>
+              </div>
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="text-slate-400 hover:text-white text-xs font-mono"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditedDetails} className="space-y-4">
+              <div className="grid grid-cols-4 gap-2">
+                <div className="col-span-1">
+                  <label className="block text-xs font-mono text-slate-300 mb-1">
+                    Slot #
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={300}
+                    value={editSlotNumber}
+                    onChange={(e) => setEditSlotNumber(parseInt(e.target.value) || 1)}
+                    className="w-full px-2.5 py-2 text-xs bg-slate-950 border border-slate-700 rounded text-white focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
+                <div className="col-span-3">
+                  <label className="block text-xs font-mono text-slate-300 mb-1">
+                    Scene Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1">
+                  Description / Church Notes
+                </label>
+                <textarea
+                  rows={3}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              {userRole === 'admin' && (
+                <div className="p-3 rounded bg-amber-950/40 border border-amber-800/60 flex items-start space-x-2.5">
+                  <input
+                    type="checkbox"
+                    id="editOfficialToggle"
+                    checked={editIsOfficial}
+                    onChange={(e) => setEditIsOfficial(e.target.checked)}
+                    className="mt-0.5 rounded text-amber-500 focus:ring-amber-400"
+                  />
+                  <label htmlFor="editOfficialToggle" className="text-xs cursor-pointer">
+                    <span className="font-bold text-amber-300 block">
+                      Official Church Reference Scene (&ldquo;Solid Truth&rdquo;)
+                    </span>
+                    <span className="text-slate-400 text-[11px] block mt-0.5">
+                      Toggle whether this scene is marked as an official verified team baseline.
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end space-x-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditModalOpen(false)}
+                  className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !editTitle.trim()}
+                  className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-mono font-bold shadow-md disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
