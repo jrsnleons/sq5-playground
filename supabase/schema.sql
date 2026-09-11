@@ -111,12 +111,15 @@ create policy "Admins can delete simulations"
   );
 
 -- 4. Member Presets (Personal Saved Rigs)
+-- 4. Member & Official Presets (Factory Rigs and Personal Saves)
 create table if not exists public.member_presets (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete cascade,
   simulation_id uuid references public.simulations(id) on delete set null,
   name text not null,
   description text,
+  is_official boolean not null default false,
+  author_name text,
   physical_data jsonb not null,
   digital_data jsonb not null,
   created_at timestamptz not null default now(),
@@ -125,17 +128,31 @@ create table if not exists public.member_presets (
 
 alter table public.member_presets enable row level security;
 
-create policy "Users manage their own presets"
-  on public.member_presets for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+create policy "Public can view official presets and users view their own"
+  on public.member_presets for select
+  using (is_official = true or auth.uid() = user_id);
 
--- 5. Member Console Scenes
+create policy "Users can insert presets"
+  on public.member_presets for insert
+  with check (auth.uid() = user_id or (is_official = true and exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')));
+
+create policy "Users can update presets"
+  on public.member_presets for update
+  using (auth.uid() = user_id or (is_official = true and exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')));
+
+create policy "Users can delete presets"
+  on public.member_presets for delete
+  using (auth.uid() = user_id or (is_official = true and exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')));
+
+-- 5. Official Church Reference Scenes ("Solid Truths") & User Scenes
 create table if not exists public.member_scenes (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete cascade,
   scene_number int not null,
   name text not null,
+  description text,
+  is_official boolean not null default false,
+  author_name text,
   scene_data jsonb not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -143,10 +160,21 @@ create table if not exists public.member_scenes (
 
 alter table public.member_scenes enable row level security;
 
-create policy "Users manage their own scenes"
-  on public.member_scenes for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+create policy "Public can view official scenes and users can view their own"
+  on public.member_scenes for select
+  using (is_official = true or auth.uid() = user_id);
+
+create policy "Users can insert scenes"
+  on public.member_scenes for insert
+  with check (auth.uid() = user_id or (is_official = true and exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')));
+
+create policy "Users can update scenes"
+  on public.member_scenes for update
+  using (auth.uid() = user_id or (is_official = true and exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')));
+
+create policy "Users can delete scenes"
+  on public.member_scenes for delete
+  using (auth.uid() = user_id or (is_official = true and exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')));
 
 -- 6. Supabase Storage Bucket for Equipment Photos
 -- Create bucket 'equipment-photos' if storage schema is available

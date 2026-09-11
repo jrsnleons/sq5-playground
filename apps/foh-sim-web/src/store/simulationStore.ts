@@ -16,8 +16,9 @@ import {
   validateCableConnection
 } from '@foh-sim/simulation-core';
 import stageItemsCatalog from '@foh-sim/hardware-profiles/stage-items.json';
-import { localCache } from '../services/localCache';
+import { localCache, MemberScene, DEFAULT_OFFICIAL_SCENES } from '../services/localCache';
 import { simulationService } from '../services/simulationService';
+import { sceneService } from '../services/sceneService';
 import {
   UserProfile,
   UserRole,
@@ -191,6 +192,13 @@ interface SimulationStoreState {
   // Scenes
   saveScene: (sceneId: number, name?: string) => void;
   recallScene: (sceneId: number) => void;
+  officialScenes: MemberScene[];
+  userScenes: MemberScene[];
+  scenesLoading: boolean;
+  fetchScenes: () => Promise<void>;
+  recallMemberScene: (scene: MemberScene) => void;
+  saveUserScene: (name: string, description?: string, isOfficial?: boolean) => Promise<{ success: boolean; savedToCloud: boolean }>;
+  deleteUserScene: (sceneId: string) => Promise<boolean>;
 }
 
 const defaultInventory: Record<string, { totalStock: number; notes?: string }> = {
@@ -239,6 +247,9 @@ export const useSimulationStore = create<SimulationStoreState>()(
     noticesModalOpen: false,
     activeTrace: null,
     toastNotice: null,
+    officialScenes: DEFAULT_OFFICIAL_SCENES,
+    userScenes: localCache.getUserScenes(),
+    scenesLoading: false,
 
     setToastNotice: (notice) =>
       set((state) => {
@@ -1181,6 +1192,77 @@ export const useSimulationStore = create<SimulationStoreState>()(
           }
         }
         state.sim.digital.activeSceneId = sceneId;
-      })
+      }),
+
+    fetchScenes: async () => {
+      set((state) => {
+        state.scenesLoading = true;
+      });
+      try {
+        const { officialScenes, userScenes } = await sceneService.fetchScenes();
+        set((state) => {
+          state.officialScenes = officialScenes;
+          state.userScenes = userScenes;
+          state.scenesLoading = false;
+        });
+      } catch (e) {
+        console.warn('fetchScenes error:', e);
+        set((state) => {
+          state.scenesLoading = false;
+        });
+      }
+    },
+
+    recallMemberScene: (scene: MemberScene) =>
+      set((state) => {
+        if (scene.scene_data?.digital) {
+          const d = scene.scene_data.digital;
+          if (d.channels) state.sim.digital.channels = JSON.parse(JSON.stringify(d.channels));
+          if (d.mixes) state.sim.digital.mixes = JSON.parse(JSON.stringify(d.mixes));
+          if (d.ioPatch) state.sim.digital.ioPatch = JSON.parse(JSON.stringify(d.ioPatch));
+          if (d.dcas) state.sim.digital.dcas = JSON.parse(JSON.stringify(d.dcas));
+          if (d.matrices) state.sim.digital.matrices = JSON.parse(JSON.stringify(d.matrices));
+          if (d.mainLR) state.sim.digital.mainLR = JSON.parse(JSON.stringify(d.mainLR));
+          if (d.muteGroups) state.sim.digital.muteGroups = JSON.parse(JSON.stringify(d.muteGroups));
+          state.sim.digital.activeSceneId = scene.scene_number;
+          state.signalPresence = computeSignalPresence(state.sim);
+          state.validationNotices = validateSystemState(state.sim);
+          state.toastNotice = {
+            id: String(Date.now()),
+            message: `Recalled Scene: ${scene.name}`,
+            type: 'info'
+          };
+        }
+      }),
+
+    saveUserScene: async (name: string, description?: string, isOfficial?: boolean) => {
+      const currentState = get().sim;
+      const sceneData = {
+        digital: {
+          channels: JSON.parse(JSON.stringify(currentState.digital.channels)),
+          mixes: JSON.parse(JSON.stringify(currentState.digital.mixes)),
+          ioPatch: JSON.parse(JSON.stringify(currentState.digital.ioPatch)),
+          dcas: JSON.parse(JSON.stringify(currentState.digital.dcas)),
+          matrices: JSON.parse(JSON.stringify(currentState.digital.matrices)),
+          mainLR: JSON.parse(JSON.stringify(currentState.digital.mainLR)),
+          muteGroups: JSON.parse(JSON.stringify(currentState.digital.muteGroups))
+        },
+        description
+      };
+      const res = await sceneService.saveScene({
+        name,
+        description,
+        isOfficial,
+        sceneData
+      });
+      await get().fetchScenes();
+      return { success: true, savedToCloud: res.savedToCloud };
+    },
+
+    deleteUserScene: async (sceneId: string) => {
+      const res = await sceneService.deleteScene(sceneId);
+      await get().fetchScenes();
+      return res;
+    }
   }))
 );

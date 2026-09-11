@@ -55,6 +55,57 @@ export const DEFAULT_STOCK_SIMULATIONS: PracticeSimulation[] = [
   }
 ];
 
+export interface MemberScene {
+  id: string;
+  scene_number: number;
+  name: string;
+  description?: string;
+  is_official: boolean;
+  author_name?: string;
+  scene_data: any;
+  created_at?: string;
+  user_id?: string | null;
+}
+
+export const DEFAULT_OFFICIAL_SCENES: MemberScene[] = [
+  {
+    id: '30000000-0000-0000-0000-000000000001',
+    scene_number: 1,
+    name: 'Sunday Morning Worship (Church Master Truth)',
+    description: 'Official Baseline Truth: Full 24-ch stage patching to AR2412 via dSNAKE, 7 IEM aux mixes pre-faded, ProPresenter & wireless mics, Drum DCA 1, Main LR to line arrays & subs.',
+    is_official: true,
+    author_name: 'Church Audio Director',
+    scene_data: null
+  },
+  {
+    id: '30000000-0000-0000-0000-000000000002',
+    scene_number: 2,
+    name: 'Midweek Acoustic & Prayer (Official Reference)',
+    description: 'Acoustic worship setup: Acoustic Guitar (CH 15), Keys (CH 13), Lead Vocal (CH 2), and Pastor Lapel (CH 9). Drums and electrics muted to maintain a reverent atmosphere.',
+    is_official: true,
+    author_name: 'Church Audio Director',
+    scene_data: null
+  },
+  {
+    id: '30000000-0000-0000-0000-000000000003',
+    scene_number: 3,
+    name: 'Youth Service / High-Energy Band (Official Reference)',
+    description: 'High-energy youth worship: Punchy drum gates & compressors, dual electric guitars, aggressive vocal presence boost (+3dB at 3kHz), and hot IEM monitor feeds.',
+    is_official: true,
+    author_name: 'Church Audio Director',
+    scene_data: null
+  },
+  {
+    id: '30000000-0000-0000-0000-000000000004',
+    scene_number: 4,
+    name: 'Zeroed Board / Clean Slate (Console Reset Reference)',
+    description: 'Completely zeroed console: All faders at -inf dB, preamps at 0 dB, EQ flat, no sends assigned. Perfect for trainees to build a mix from scratch.',
+    is_official: true,
+    author_name: 'Church Audio Director',
+    scene_data: null
+  }
+];
+
 export const localCache = {
   getUserProfile(): UserProfile | null {
     try {
@@ -126,6 +177,41 @@ export const localCache = {
     const list = this.getSimulations();
     const updated = [sim, ...list.filter((s) => s.id !== sim.id)];
     this.saveSimulations(updated);
+    return updated;
+  },
+
+  getUserScenes(): MemberScene[] {
+    try {
+      const data = localStorage.getItem('foh_sim_cached_user_scenes');
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to read cached user scenes', e);
+    }
+    return [];
+  },
+
+  saveUserScenes(scenes: MemberScene[]) {
+    try {
+      localStorage.setItem('foh_sim_cached_user_scenes', JSON.stringify(scenes));
+    } catch (e) {
+      console.warn('Failed to save user scenes', e);
+    }
+  },
+
+  saveUserScene(scene: MemberScene) {
+    const list = this.getUserScenes();
+    const updated = [scene, ...list.filter((s) => s.id !== scene.id)];
+    this.saveUserScenes(updated);
+    return updated;
+  },
+
+  removeUserScene(sceneId: string) {
+    const list = this.getUserScenes();
+    const updated = list.filter((s) => s.id !== sceneId);
+    this.saveUserScenes(updated);
     return updated;
   }
 };
