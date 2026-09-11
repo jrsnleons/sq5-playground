@@ -1,0 +1,11 @@
+node_modules
+*/node_modules
+*/*/node_modules
+.git
+.gitignore
+dist
+apps/foh-sim-web/dist
+scratch
+.tempmediaStorage
+.DS_Store
+*.log
