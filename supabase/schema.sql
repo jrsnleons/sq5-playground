@@ -189,3 +189,59 @@ create policy "Public equipment photo access"
 create policy "Authenticated users can upload equipment photos"
   on storage.objects for insert
   with check (bucket_id = 'equipment-photos' and auth.role() = 'authenticated');
+
+-- 7. Equipment Inventory & Gear Locker Table
+-- Fully relational database storage for physical audio gear, microphones, DI boxes, and consoles.
+-- Admin can edit all fields (description, category, connectors, stock limits).
+-- Members and public have read-only access.
+create table if not exists public.equipment_inventory (
+  id text primary key,
+  name text not null,
+  category text not null,
+  model text,
+  description text,
+  total_stock integer not null default 1 check (total_stock >= 0),
+  connectors text[] not null default '{}',
+  notes text,
+  is_custom boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_equipment_inventory_category on public.equipment_inventory(category);
+
+alter table public.equipment_inventory enable row level security;
+
+-- Policies: Viewable by everyone (public, members, admins)
+create policy "Public can view equipment inventory"
+  on public.equipment_inventory for select
+  using (true);
+
+-- Mutations restricted to Admins only
+create policy "Admins can insert equipment inventory"
+  on public.equipment_inventory for insert
+  with check (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+create policy "Admins can update equipment inventory"
+  on public.equipment_inventory for update
+  using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete equipment inventory"
+  on public.equipment_inventory for delete
+  using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+

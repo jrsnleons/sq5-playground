@@ -22,7 +22,8 @@ import {
   HelpCircle,
   Volume2,
   RotateCcw,
-  Layers
+  Layers,
+  Lock
 } from 'lucide-react';
 
 const ISO_FREQUENCIES = [
@@ -33,6 +34,8 @@ const ISO_FREQUENCIES = [
 export const DigitalConsoleView: React.FC = () => {
   const {
     sim,
+    userRole,
+    setAuthModalOpen,
     setActiveScreen,
     setSelectedMix,
     setLayer,
@@ -49,17 +52,15 @@ export const DigitalConsoleView: React.FC = () => {
   const activeMixId = sim.digital.session.selectedMixId;
   const isSendsOnFader = activeMixId !== 'main-lr';
 
-  // SQ-MixPad Complete Primary Navigation Tabs
+  // SQ-MixPad Primary Navigation Tabs (processing and helpguide hidden for now as requested)
   const screenKeys = [
     { id: 'faders', label: 'Faders', icon: Sliders },
-    { id: 'processing', label: 'Processing', icon: Activity },
     { id: 'meters', label: 'Meters', icon: BarChart2 },
     { id: 'routing', label: 'Routing', icon: Share2 },
     { id: 'io', label: 'I/O Patch', icon: Network },
     { id: 'fx', label: 'FX Racks', icon: Sparkles },
     { id: 'scenes', label: 'Scenes', icon: Bookmark },
-    { id: 'setup', label: 'Mixer Config', icon: Settings },
-    { id: 'utility', label: 'Help / Guide', icon: HelpCircle }
+    { id: 'setup', label: 'Mixer Config', icon: Settings }
   ] as const;
 
   const selectedMixObj = sim.digital.mixes.find((m) => m.id === activeMixId);
@@ -118,6 +119,25 @@ export const DigitalConsoleView: React.FC = () => {
           </span>
         </div>
       </nav>
+
+      {/* Guest Read-Only Mode Banner */}
+      {userRole === 'guest' && (
+        <div className="bg-amber-950/50 border-b border-amber-600/40 px-4 py-2 flex items-center justify-between text-xs font-mono shrink-0">
+          <div className="flex items-center space-x-2 text-amber-300">
+            <Lock className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-bold">READ-ONLY MODE:</span>
+            <span className="text-slate-300 font-sans hidden sm:inline">
+              You are exploring the console in preview mode. Faders and mutes are locked.
+            </span>
+          </div>
+          <button
+            onClick={() => setAuthModalOpen(true)}
+            className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-colors shadow"
+          >
+            Sign In to Mix
+          </button>
+        </div>
+      )}
 
       {/* Main Viewport */}
       <div className="flex-1 overflow-hidden relative">

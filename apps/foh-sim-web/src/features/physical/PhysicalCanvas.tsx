@@ -24,8 +24,13 @@ import { StageItemPalette } from './StageItemPalette';
 import { NodeDetailModal } from './NodeDetailModal';
 import { CableTraceBadge } from './components/CableTraceBadge';
 import { SignalType } from '@foh-sim/simulation-core';
+import { Lock } from 'lucide-react';
 
 const PhysicalCanvasContent: React.FC = () => {
+  const userRole = useSimulationStore((s) => s.userRole);
+  const setAuthModalOpen = useSimulationStore((s) => s.setAuthModalOpen);
+  const isGuest = userRole === 'guest';
+
   const stageItems = useSimulationStore((s) => s.sim.physical.stageItems);
   const cables = useSimulationStore((s) => s.sim.physical.cables);
   const stageBoxPosition = useSimulationStore((s) => s.sim.physical.stageBox.position);
@@ -258,16 +263,37 @@ const PhysicalCanvasContent: React.FC = () => {
         </div>
       </div>
 
+      {/* Guest Read-Only Mode Banner */}
+      {isGuest && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center space-x-3 bg-slate-900/95 border border-amber-500/40 px-4 py-2 rounded-lg shadow-xl backdrop-blur-sm">
+          <div className="flex items-center space-x-1.5 text-xs font-mono text-amber-300">
+            <Lock className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-bold">READ-ONLY PREVIEW:</span>
+          </div>
+          <span className="text-slate-300 text-xs font-sans hidden sm:inline">
+            Sign in as Member or Admin to position equipment and patch cables on stage.
+          </span>
+          <button
+            onClick={() => setAuthModalOpen(true)}
+            className="px-2.5 py-1 text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded transition-colors shadow"
+          >
+            Sign In
+          </button>
+        </div>
+      )}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeDragStop={handleNodeDragStop}
+        nodesDraggable={!isGuest}
+        nodesConnectable={!isGuest}
+        onNodesChange={!isGuest ? onNodesChange : undefined}
+        onEdgesChange={!isGuest ? onEdgesChange : undefined}
+        onNodeDragStop={!isGuest ? handleNodeDragStop : undefined}
         onEdgeClick={handleEdgeClick}
-        onConnect={handleConnect}
+        onConnect={!isGuest ? handleConnect : undefined}
         onPaneClick={() => {
           setSelectedNodeId(null);
           clearTrace();
@@ -279,19 +305,27 @@ const PhysicalCanvasContent: React.FC = () => {
         onlyRenderVisibleElements={true}
         elementsSelectable={true}
         selectionMode={SelectionMode.Partial}
-        selectionKeyCode="Shift"
-        multiSelectionKeyCode="Shift"
-        deleteKeyCode={['Backspace', 'Delete']}
-        onNodesDelete={(nodesToDelete) => {
-          nodesToDelete.forEach((node) => {
-            if (node.id !== 'stagebox-ar2412' && node.id !== 'console-sq5') {
-              removeStageItem(node.id);
-            }
-          });
-        }}
-        onEdgesDelete={(edgesToDelete) => {
-          edgesToDelete.forEach((edge) => removeCable(edge.id));
-        }}
+        selectionKeyCode={!isGuest ? 'Shift' : undefined}
+        multiSelectionKeyCode={!isGuest ? 'Shift' : undefined}
+        deleteKeyCode={!isGuest ? ['Backspace', 'Delete'] : []}
+        onNodesDelete={
+          !isGuest
+            ? (nodesToDelete) => {
+                nodesToDelete.forEach((node) => {
+                  if (node.id !== 'stagebox-ar2412' && node.id !== 'console-sq5') {
+                    removeStageItem(node.id);
+                  }
+                });
+              }
+            : undefined
+        }
+        onEdgesDelete={
+          !isGuest
+            ? (edgesToDelete) => {
+                edgesToDelete.forEach((edge) => removeCable(edge.id));
+              }
+            : undefined
+        }
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#1e293b" />
         <Controls className="!bg-slate-900 !border-slate-700 !fill-slate-300" />

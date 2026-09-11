@@ -16,9 +16,10 @@ import {
   validateCableConnection
 } from '@foh-sim/simulation-core';
 import stageItemsCatalog from '@foh-sim/hardware-profiles/stage-items.json';
-import { localCache, MemberScene, DEFAULT_OFFICIAL_SCENES } from '../services/localCache';
+import { localCache, MemberScene, DEFAULT_OFFICIAL_SCENES, EquipmentInventoryItem } from '../services/localCache';
 import { simulationService } from '../services/simulationService';
 import { sceneService } from '../services/sceneService';
+import { inventoryService } from '../services/inventoryService';
 import {
   UserProfile,
   UserRole,
@@ -54,7 +55,14 @@ interface SimulationStoreState {
 
   // Inventory Tracking
   inventory: Record<string, { totalStock: number; notes?: string }>;
+  inventoryItems: EquipmentInventoryItem[];
+  inventoryLoading: boolean;
+  fetchInventory: () => Promise<void>;
   updateInventoryStock: (typeId: string, totalStock: number) => void;
+  saveInventoryItem: (
+    item: Partial<EquipmentInventoryItem> & { id: string; name: string; category: string }
+  ) => Promise<{ success: boolean; savedToCloud: boolean }>;
+  deleteInventoryItem: (itemId: string) => Promise<boolean>;
 
   // Admin & Custom Nodes
   adminMode: boolean;
@@ -290,14 +298,63 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     // Inventory
     inventory: defaultInventory,
-    updateInventoryStock: (typeId, totalStock) =>
+    inventoryItems: localCache.getInventoryItems(),
+    inventoryLoading: false,
+
+    fetchInventory: async () => {
+      set((state) => {
+        state.inventoryLoading = true;
+      });
+      try {
+        const items = await inventoryService.fetchInventory();
+        set((state) => {
+          state.inventoryItems = items;
+          state.inventoryLoading = false;
+          items.forEach((item) => {
+            if (!state.inventory[item.id]) {
+              state.inventory[item.id] = { totalStock: item.total_stock, notes: item.notes };
+            } else {
+              state.inventory[item.id].totalStock = item.total_stock;
+            }
+          });
+        });
+      } catch (e) {
+        console.warn('fetchInventory error:', e);
+        set((state) => {
+          state.inventoryLoading = false;
+        });
+      }
+    },
+
+    updateInventoryStock: (typeId, totalStock) => {
       set((state) => {
         if (!state.inventory[typeId]) {
           state.inventory[typeId] = { totalStock };
         } else {
           state.inventory[typeId].totalStock = totalStock;
         }
-      }),
+        const item = state.inventoryItems.find((i) => i.id === typeId);
+        if (item) {
+          item.total_stock = totalStock;
+        }
+      });
+      const found = get().inventoryItems.find((i) => i.id === typeId);
+      if (found) {
+        inventoryService.saveInventoryItem({ ...found, total_stock: totalStock }).catch(console.warn);
+      }
+    },
+
+    saveInventoryItem: async (itemPayload) => {
+      const res = await inventoryService.saveInventoryItem(itemPayload);
+      await get().fetchInventory();
+      return { success: true, savedToCloud: res.savedToCloud };
+    },
+
+    deleteInventoryItem: async (itemId) => {
+      const res = await inventoryService.deleteInventoryItem(itemId);
+      await get().fetchInventory();
+      return res;
+    },
 
     // Admin & Custom Nodes
     adminMode: false,
@@ -1282,3 +1339,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
     }
   }))
 );
+
+if (typeof window !== 'undefined') {
+  (window as any).__SIM_STORE__ = useSimulationStore;
+}

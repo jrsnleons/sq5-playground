@@ -248,5 +248,287 @@ export const localCache = {
     const updated = list.filter((s) => s.id !== sceneId);
     this.saveOfficialScenes(updated);
     return updated;
+  },
+
+  getInventoryItems(): EquipmentInventoryItem[] {
+    try {
+      const data = localStorage.getItem('foh_sim_cached_inventory');
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to read cached inventory', e);
+    }
+    return DEFAULT_INVENTORY_ITEMS;
+  },
+
+  saveInventoryItems(items: EquipmentInventoryItem[]) {
+    try {
+      localStorage.setItem('foh_sim_cached_inventory', JSON.stringify(items));
+    } catch (e) {
+      console.warn('Failed to save inventory to cache', e);
+    }
+  },
+
+  saveInventoryItem(item: EquipmentInventoryItem) {
+    const list = this.getInventoryItems();
+    const updated = [item, ...list.filter((i) => i.id !== item.id)];
+    this.saveInventoryItems(updated);
+    return updated;
+  },
+
+  removeInventoryItem(itemId: string) {
+    const list = this.getInventoryItems();
+    const updated = list.filter((i) => i.id !== itemId);
+    this.saveInventoryItems(updated);
+    return updated;
   }
 };
+
+export interface EquipmentInventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  model: string;
+  description: string;
+  total_stock: number;
+  connectors: string[];
+  notes?: string;
+  is_custom?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const DEFAULT_INVENTORY_ITEMS: EquipmentInventoryItem[] = [
+  {
+    id: 'mic-dynamic',
+    name: 'Dynamic Vocal Mic',
+    category: 'mic',
+    model: 'Shure SM58',
+    description: 'Industry-standard dynamic cardioid vocal microphone for lead singers and worship leaders.',
+    total_stock: 8,
+    connectors: ['XLR-out'],
+    notes: 'Durable steel mesh grille with integrated pop filter. Requires no phantom power.'
+  },
+  {
+    id: 'mic-condenser',
+    name: 'Small Diaphragm Condenser',
+    category: 'mic',
+    model: 'Rode NT5 / AKG P170',
+    description: 'Sensitive pencil condenser microphone for acoustic guitars, hi-hats, and drum overheads.',
+    total_stock: 4,
+    connectors: ['XLR-out'],
+    notes: 'Cardioid polar pattern. Requires +48V phantom power from AR2412 or SQ-5 preamp.'
+  },
+  {
+    id: 'mic-lapel',
+    name: 'Wireless Lavalier / Lapel Mic',
+    category: 'mic',
+    model: 'Shure BLX1 Bodypack + WL185',
+    description: 'Discreet cardioid lapel microphone designed for pastor sermon speaking and service hosts.',
+    total_stock: 2,
+    connectors: ['XLR-out'],
+    notes: 'Requires bodypack receiver plugged into stagebox. Position 6-8 inches below mouth.'
+  },
+  {
+    id: 'mic-wireless-hh-1',
+    name: 'Wireless Handheld 1 (Lead Vocal)',
+    category: 'mic',
+    model: 'Shure PG28 / Beta 58A',
+    description: 'Primary wireless handheld channel dedicated to the lead worship vocalist.',
+    total_stock: 1,
+    connectors: ['RF-out'],
+    notes: 'Ch A on dual wireless receiver unit.'
+  },
+  {
+    id: 'mic-wireless-hh-2',
+    name: 'Wireless Handheld 2 (Backup Vocal)',
+    category: 'mic',
+    model: 'Shure PG28 / Beta 58A',
+    description: 'Secondary wireless handheld channel dedicated to backing vocalist or guest speaker.',
+    total_stock: 1,
+    connectors: ['RF-out'],
+    notes: 'Ch B on dual wireless receiver unit.'
+  },
+  {
+    id: 'rx-wireless-dual',
+    name: 'Dual Wireless Receiver Base',
+    category: 'mic',
+    model: 'Shure SVX288',
+    description: 'Dual channel wireless microphone receiver base unit located on the stage rack.',
+    total_stock: 1,
+    connectors: ['RF-in', 'RF-in', 'XLR-out', 'XLR-out'],
+    notes: 'Provides two balanced XLR line/mic outputs to the AR2412 stagebox.'
+  },
+  {
+    id: 'inst-electric-guitar',
+    name: 'Electric Guitar',
+    category: 'instrument',
+    model: 'Fender Stratocaster / Line 6 Helix',
+    description: 'High-impedance instrument source requiring passive or active DI box matching.',
+    total_stock: 2,
+    connectors: ['1/4" TS-out'],
+    notes: 'Connect via 1/4" TS cable to DI box input before feeding stagebox.'
+  },
+  {
+    id: 'inst-acoustic-guitar',
+    name: 'Acoustic Guitar',
+    category: 'instrument',
+    model: 'Taylor / Martin (Piezo Onboard)',
+    description: 'Acoustic guitar with active piezo pickup and onboard battery preamp.',
+    total_stock: 2,
+    connectors: ['1/4" TS-out'],
+    notes: 'Pairs best with Passive DI box or Active DI with ground lift engaged.'
+  },
+  {
+    id: 'inst-bass-guitar',
+    name: 'Bass Guitar',
+    category: 'instrument',
+    model: 'Fender Jazz Bass / Active Pre',
+    description: 'Deep low-end electric bass guitar requiring clean DI isolation and punchy low-mid focus.',
+    total_stock: 1,
+    connectors: ['1/4" TS-out'],
+    notes: 'Connects directly to Active/Passive DI box with thru to bassist stage amp.'
+  },
+  {
+    id: 'inst-keys',
+    name: 'Stage Piano / Keyboard (Stereo)',
+    category: 'instrument',
+    model: 'Nord Stage 3 / Roland RD-88',
+    description: 'Stereo stage keyboard producing rich grand piano, Rhodes, and synthesizer pads.',
+    total_stock: 1,
+    connectors: ['1/4" TS-L', '1/4" TS-R'],
+    notes: 'Feeds Stereo DI Box (L/R) into adjacent channels on AR2412.'
+  },
+  {
+    id: 'drum-kick',
+    name: 'Kick Drum Microphone',
+    category: 'instrument',
+    model: 'Shure Beta 52A',
+    description: 'High-output dynamic microphone optimized for low-frequency punch and acoustic bass drums.',
+    total_stock: 1,
+    connectors: ['XLR-out'],
+    notes: 'Handles up to 174 dB SPL. Internal shockmount reduces mechanical stage vibrations.'
+  },
+  {
+    id: 'drum-snare-top',
+    name: 'Snare Top Microphone',
+    category: 'instrument',
+    model: 'Shure SM57',
+    description: 'Industry-standard dynamic microphone for snare top crack and articulate transient response.',
+    total_stock: 2,
+    connectors: ['XLR-out'],
+    notes: 'Aimed at snare center from 1-2 inches above rim at 45 degree angle.'
+  },
+  {
+    id: 'drum-tom',
+    name: 'Tom Drum Microphones',
+    category: 'instrument',
+    model: 'Sennheiser e604',
+    description: 'Compact clip-on dynamic microphones for rack toms and floor tom.',
+    total_stock: 3,
+    connectors: ['XLR-out'],
+    notes: 'Integrated rim clip eliminates stand clutter around the drum kit.'
+  },
+  {
+    id: 'di-mono-passive',
+    name: 'Mono Passive DI Box',
+    category: 'di-box',
+    model: 'Radial ProDI',
+    description: 'High-quality passive direct box with MuMETAL shielding for acoustic instruments and active bass.',
+    total_stock: 6,
+    connectors: ['1/4" TS-in', '1/4" TS-thru', 'XLR-out'],
+    notes: '15 dB pad switch and ground lift. Requires zero battery or phantom power.'
+  },
+  {
+    id: 'di-stereo-passive',
+    name: 'Stereo Passive DI Box',
+    category: 'di-box',
+    model: 'Radial ProD2',
+    description: 'Dual-channel passive DI for stereo keyboards, drum machines, and media playback devices.',
+    total_stock: 2,
+    connectors: ['1/4" TS-in L', '1/4" TS-in R', 'XLR-out L', 'XLR-out R'],
+    notes: 'Independent ground lift per channel prevents ground hum on complex stereo rigs.'
+  },
+  {
+    id: 'di-mono-active',
+    name: 'Mono Active DI Box',
+    category: 'di-box',
+    model: 'Radial Pro48',
+    description: 'Active direct box providing high input impedance for low-output passive pickups.',
+    total_stock: 2,
+    connectors: ['1/4" TS-in', '1/4" TS-thru', 'XLR-out'],
+    notes: 'Powered via +48V phantom power from console channel preamp.'
+  },
+  {
+    id: 'iem-transmitter',
+    name: 'Wireless IEM Transmitter System',
+    category: 'iem',
+    model: 'Sennheiser ew G4 / Shure PSM300',
+    description: 'Stereo/mono in-ear monitor transmitter feeding stage wireless beltpacks.',
+    total_stock: 4,
+    connectors: ['XLR-in L', 'XLR-in R', 'RF-out'],
+    notes: 'Receives pre-fader aux mix from AR2412 XLR outputs 1-8.'
+  },
+  {
+    id: 'speaker-wedge',
+    name: 'Active Stage Floor Wedge',
+    category: 'speaker',
+    model: 'QSC K10.2 / Yamaha DXR10',
+    description: 'Powered 2-way floor wedge monitor for worship leaders, choir, and guest speakers.',
+    total_stock: 4,
+    connectors: ['XLR-in', 'XLR-thru', 'IEC Power'],
+    notes: 'Class-D 2000W onboard amplification. Fed by console Aux Mix.'
+  },
+  {
+    id: 'speaker-main-pa',
+    name: 'Main PA Left / Right Line Array',
+    category: 'speaker',
+    model: 'Electro-Voice EVA / d&b Audiotechnik',
+    description: 'Main Front of House speaker array delivering coverage to the sanctuary congregation.',
+    total_stock: 2,
+    connectors: ['XLR-in', 'NL4 Speakon'],
+    notes: 'Receives Main LR Master bus post-fader from SQ-5 or AR2412 outputs.'
+  },
+  {
+    id: 'speaker-sub',
+    name: 'Subwoofer PA System',
+    category: 'speaker',
+    model: '18" Powered Subwoofer',
+    description: 'Dedicated low-frequency reinforcement (30 Hz - 100 Hz) for kick drum and bass guitar.',
+    total_stock: 2,
+    connectors: ['XLR-in', 'XLR-thru'],
+    notes: 'Driven from Matrix 3 or dedicated Sub Aux send with low-pass filter.'
+  },
+  {
+    id: 'console-sq5',
+    name: 'Allen & Heath SQ-5 Digital Console',
+    category: 'console',
+    model: 'SQ-5 48-Channel FPGA Console',
+    description: 'Core Front of House mixing console with 96kHz XCVI processing core, 16 preamps, 12 XLR outs.',
+    total_stock: 1,
+    connectors: ['16x XLR-in', '12x XLR-out', 'SLink EtherCon', 'USB-B', 'Network'],
+    notes: 'Primary console located at church FOH sound booth.'
+  },
+  {
+    id: 'stagebox-ar2412',
+    name: 'Allen & Heath AR2412 Stage Box',
+    category: 'stagebox',
+    model: 'AR2412 24 In / 12 Out Remote AudioRack',
+    description: 'Stage rack expander providing 24 remote preamps and 12 XLR aux/line outputs via dSNAKE.',
+    total_stock: 1,
+    connectors: ['24x XLR-in', '12x XLR-out', 'dSNAKE EtherCon', 'EXPANDER EtherCon'],
+    notes: 'Positioned upstage left. Connected to SQ-5 via Cat5e/Cat6 STP snake.'
+  },
+  {
+    id: 'playback-laptop',
+    name: 'ProPresenter / Media Playback Computer',
+    category: 'playback',
+    model: 'Mac Studio / PC Playback',
+    description: 'Dedicated presentation computer for worship tracks, sermon videos, and walk-in music.',
+    total_stock: 1,
+    connectors: ['3.5mm TRS / USB audio'],
+    notes: 'Converted to dual balanced XLR lines via Stereo DI or USB interface.'
+  }
+];

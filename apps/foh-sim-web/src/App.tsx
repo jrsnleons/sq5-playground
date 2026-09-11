@@ -49,16 +49,29 @@ const ViewLoadingFallback = () => (
 export const App: React.FC = () => {
   const {
     activeTab,
+    setActiveTab,
+    userRole,
     toastNotice,
     setToastNotice,
     setSyncStatus,
     setUserProfile,
-    refreshSimulations
+    fetchInventory,
+    fetchScenes
   } = useSimulationStore();
 
   useEffect(() => {
-    // Initial fetch of practice simulations
-    refreshSimulations().catch(console.warn);
+    // Initial fetch of equipment inventory and official scenes
+    fetchInventory().catch(console.warn);
+    fetchScenes().catch(console.warn);
+
+    // Guard tab access based on active role
+    if (userRole === 'guest' && activeTab !== 'stage' && activeTab !== 'console') {
+      setActiveTab('stage');
+    } else if (userRole === 'member' && (activeTab === 'setup' || (activeTab as string) === 'help')) {
+      setActiveTab('stage');
+    } else if ((activeTab as string) === 'help') {
+      setActiveTab('stage');
+    }
 
     // Online / Offline Detection
     const handleOnline = () => {
@@ -103,7 +116,7 @@ export const App: React.FC = () => {
       window.removeEventListener('offline', handleOffline);
       if (authSubscription) authSubscription.unsubscribe();
     };
-  }, [setSyncStatus, setUserProfile, refreshSimulations]);
+  }, [setSyncStatus, setUserProfile, fetchInventory, fetchScenes, userRole, activeTab, setActiveTab]);
 
   useEffect(() => {
     if (toastNotice) {
@@ -127,8 +140,7 @@ export const App: React.FC = () => {
         <LeftRail />
 
         <main className="flex-1 h-full overflow-hidden relative bg-slate-950">
-          {/* Active Simulation Task Briefing Floating Card */}
-          <SimulationBriefingBanner />
+          {/* SimulationBriefingBanner hidden for now as challenges are hidden */}
 
           <Suspense fallback={<ViewLoadingFallback />}>
             {activeTab === 'stage' && <PhysicalCanvas />}

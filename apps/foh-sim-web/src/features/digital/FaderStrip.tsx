@@ -10,6 +10,7 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
   const {
     sim,
     signalPresence,
+    userRole,
     setSelectedChannel,
     setActiveScreen,
     setChannelFader,
@@ -19,6 +20,7 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
     toggleSendPreFade
   } = useSimulationStore();
 
+  const isGuest = userRole === 'guest';
   const isSelected = sim.digital.session.selectedChannelId === channel.id;
   const activeMixId = sim.digital.session.selectedMixId;
   const isSendsOnFaders = activeMixId !== 'main-lr';
@@ -83,6 +85,7 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
   );
 
   const handleFaderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isGuest) return;
     const val = parseFloat(e.target.value);
     if (isSendsOnFaders) {
       setChannelSend(channel.id, activeMixId, val, true);
@@ -92,6 +95,7 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
   };
 
   const handleMuteOrAssignClick = () => {
+    if (isGuest) return;
     if (isSendsOnFaders) {
       // Toggle assignment in this mix
       setChannelSend(channel.id, activeMixId, currentSend.levelDb, !currentSend.assigned);
@@ -176,6 +180,7 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
             min="-90"
             max="10"
             step="0.5"
+            disabled={isGuest}
             value={faderVal}
             onChange={handleFaderChange}
             role="slider"
@@ -184,7 +189,9 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
             aria-valuemax={10}
             aria-valuenow={faderVal}
             aria-valuetext={faderVal <= -85 ? 'Minus Infinity dB' : `${faderVal.toFixed(1)} dB`}
-            className="fader-slider fader-vertical cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none"
+            className={`fader-slider fader-vertical focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none ${
+              isGuest ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
+            }`}
           />
         </div>
       </div>
@@ -198,8 +205,11 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
       <div className="space-y-1">
         <button
           onClick={handleMuteOrAssignClick}
+          disabled={isGuest}
           aria-label={isSendsOnFaders ? `Toggle Mix Assignment for ${channel.name}` : `Mute ${channel.name}`}
           className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-all focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none ${
+            isGuest ? 'cursor-not-allowed opacity-60' : ''
+          } ${
             isSendsOnFaders
               ? currentSend.assigned
                 ? 'bg-teal-600 text-white shadow-[0_0_6px_#14b8a6]'

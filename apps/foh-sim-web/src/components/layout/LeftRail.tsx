@@ -10,26 +10,30 @@ import {
 } from 'lucide-react';
 
 export const LeftRail: React.FC = () => {
-  const { activeTab, setActiveTab } = useSimulationStore();
+  const { activeTab, setActiveTab, userRole } = useSimulationStore();
 
-  const navItems = [
-    { id: 'stage', label: 'Stage', icon: Cable },
-    { id: 'console', label: 'Console', icon: Sliders },
-    { id: 'inventory', label: 'Inventory', icon: Package },
-    { id: 'scenes', label: 'Scenes', icon: Bookmark },
-    { id: 'setup', label: 'Setup', icon: Settings },
-    { id: 'help', label: 'Help', icon: HelpCircle }
+  const allNavItems = [
+    { id: 'stage', label: 'Stage', icon: Cable, roles: ['guest', 'member', 'admin'] },
+    { id: 'console', label: 'Console', icon: Sliders, roles: ['guest', 'member', 'admin'] },
+    { id: 'inventory', label: 'Inventory', icon: Package, roles: ['member', 'admin'] },
+    { id: 'scenes', label: 'Scenes', icon: Bookmark, roles: ['member', 'admin'] },
+    { id: 'setup', label: 'Setup', icon: Settings, roles: ['admin'] }
+    // help tab hidden for now as requested
   ] as const;
+
+  const visibleNavItems = allNavItems.filter((item) =>
+    (item.roles as readonly string[]).includes(userRole)
+  );
 
   return (
     <aside className="w-16 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-2 space-y-1.5 shrink-0 z-20 select-none">
-      {navItems.map((item) => {
+      {visibleNavItems.map((item) => {
         const Icon = item.icon;
         const isActive = activeTab === item.id;
         return (
           <button
             key={item.id}
-            onClick={() => setActiveTab(item.id)}
+            onClick={() => setActiveTab(item.id as any)}
             className={`w-13 h-13 flex flex-col items-center justify-center rounded-lg text-[10px] font-medium transition-all ${
               isActive
                 ? 'bg-sky-600 text-white shadow-lg shadow-sky-950/50'

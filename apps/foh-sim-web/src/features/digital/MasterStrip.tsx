@@ -5,6 +5,7 @@ export const MasterStrip: React.FC = () => {
   const {
     sim,
     signalPresence,
+    userRole,
     setSelectedMix,
     setMainLRFader,
     toggleMainLRMute,
@@ -12,6 +13,7 @@ export const MasterStrip: React.FC = () => {
     toggleMixMute
   } = useSimulationStore();
 
+  const isGuest = userRole === 'guest';
   const isSendsOnFaders = sim.digital.session.selectedMixId !== 'main-lr';
   const activeMixId = sim.digital.session.selectedMixId;
   const activeMix = sim.digital.mixes.find((m) => m.id === activeMixId);
@@ -24,6 +26,7 @@ export const MasterStrip: React.FC = () => {
     : signalPresence.mainLRHasSignal;
 
   const handleFaderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isGuest) return;
     const val = parseFloat(e.target.value);
     if (isSendsOnFaders) {
       setMixFader(activeMixId, val);
@@ -33,6 +36,7 @@ export const MasterStrip: React.FC = () => {
   };
 
   const handleToggleMute = () => {
+    if (isGuest) return;
     if (isSendsOnFaders) {
       toggleMixMute(activeMixId);
     } else {
@@ -91,6 +95,7 @@ export const MasterStrip: React.FC = () => {
             min="-90"
             max="10"
             step="0.5"
+            disabled={isGuest}
             value={faderVal}
             onChange={handleFaderChange}
             role="slider"
@@ -99,7 +104,9 @@ export const MasterStrip: React.FC = () => {
             aria-valuemax={10}
             aria-valuenow={faderVal}
             aria-valuetext={faderVal <= -85 ? 'Minus Infinity dB' : `${faderVal.toFixed(1)} dB`}
-            className="fader-slider fader-vertical cursor-pointer focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+            className={`fader-slider fader-vertical focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none ${
+              isGuest ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
+            }`}
           />
         </div>
       </div>
@@ -113,8 +120,11 @@ export const MasterStrip: React.FC = () => {
       <div className="space-y-1">
         <button
           onClick={handleToggleMute}
+          disabled={isGuest}
           aria-label={`Mute ${title}`}
           className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-all focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none ${
+            isGuest ? 'cursor-not-allowed opacity-60' : ''
+          } ${
             isMuted
               ? 'bg-rose-600 text-white shadow-[0_0_8px_#e11d48]'
               : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'

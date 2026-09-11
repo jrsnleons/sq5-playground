@@ -25,6 +25,8 @@ export const StageItemPalette: React.FC = () => {
 
   const {
     sim,
+    userRole,
+    setAuthModalOpen,
     inventory,
     customCatalog,
     adminMode,
@@ -67,6 +69,10 @@ export const StageItemPalette: React.FC = () => {
     : allItems.filter((item) => item.category === activeCategory);
 
   const handleAddItem = (typeId: string, available: number) => {
+    if (userRole === 'guest') {
+      setAuthModalOpen(true);
+      return;
+    }
     if (available <= 0) return;
     const randomOffset = Math.floor(Math.random() * 80);
     addStageItem(typeId, { x: 160 + randomOffset, y: 180 + randomOffset });

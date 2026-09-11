@@ -98,25 +98,7 @@ export const TopBar: React.FC = () => {
           </button>
         )}
 
-        {/* Practice Challenges Button */}
-        <button
-          onClick={() => setSimulationsModalOpen(true)}
-          className="flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded bg-sky-950/80 text-sky-200 hover:bg-sky-900 border border-sky-800 transition-colors font-medium"
-        >
-          <Award className="w-3.5 h-3.5 text-sky-400" />
-          <span className="hidden sm:inline">Challenges</span>
-        </button>
-
-        {/* Admin Create Challenge Button (visible when role is admin) */}
-        {userRole === 'admin' && (
-          <button
-            onClick={() => setAdminCreateModalOpen(true)}
-            className="hidden xl:flex items-center space-x-1 px-2.5 py-1 text-xs rounded bg-amber-950/80 text-amber-200 hover:bg-amber-900 border border-amber-700 transition-colors font-medium"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-            <span>Create Sim</span>
-          </button>
-        )}
+        {/* Challenges and Create Sim buttons hidden for now as requested */}
 
         {/* Cloud Sync & Role Badge */}
         <CloudSyncBadge />
