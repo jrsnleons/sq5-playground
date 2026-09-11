@@ -20,6 +20,7 @@ import { localCache, MemberScene, DEFAULT_OFFICIAL_SCENES, EquipmentInventoryIte
 import { simulationService } from '../services/simulationService';
 import { sceneService } from '../services/sceneService';
 import { inventoryService } from '../services/inventoryService';
+import { userService, CreateUserInput } from '../services/userService';
 import {
   UserProfile,
   UserRole,
@@ -91,6 +92,15 @@ interface SimulationStoreState {
   setAuthModalOpen: (open: boolean) => void;
   setUserProfile: (profile: UserProfile | null) => void;
   signOut: () => void;
+
+  // Team Users & Password Management
+  teamProfiles: UserProfile[];
+  teamProfilesLoading: boolean;
+  fetchTeamProfiles: () => Promise<void>;
+  adminCreateUser: (input: CreateUserInput) => Promise<{ user: UserProfile; success: boolean }>;
+  adminUpdateUserRole: (userId: string, newRole: 'admin' | 'member') => Promise<void>;
+  adminDeleteUser: (userId: string) => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
 
   // Practice Simulations & Training Challenges
   simulationsList: PracticeSimulation[];
@@ -435,6 +445,56 @@ export const useSimulationStore = create<SimulationStoreState>()(
           supabase.auth.signOut().catch(console.warn);
         }
       }),
+
+    // Team Users & Password Management
+    teamProfiles: userService.getCachedTeamProfiles(),
+    teamProfilesLoading: false,
+    fetchTeamProfiles: async () => {
+      set((state) => {
+        state.teamProfilesLoading = true;
+      });
+      try {
+        const profiles = await userService.fetchTeamProfiles();
+        set((state) => {
+          state.teamProfiles = profiles;
+        });
+      } finally {
+        set((state) => {
+          state.teamProfilesLoading = false;
+        });
+      }
+    },
+    adminCreateUser: async (input) => {
+      const res = await userService.adminCreateUser(input);
+      set((state) => {
+        state.teamProfiles = [
+          res.user,
+          ...state.teamProfiles.filter((u) => u.id !== res.user.id)
+        ];
+      });
+      return res;
+    },
+    adminUpdateUserRole: async (userId, newRole) => {
+      await userService.adminUpdateUserRole(userId, newRole);
+      set((state) => {
+        state.teamProfiles = state.teamProfiles.map((u) =>
+          u.id === userId ? { ...u, role: newRole } : u
+        );
+        if (state.currentUser?.id === userId) {
+          state.currentUser = { ...state.currentUser, role: newRole };
+          state.userRole = newRole;
+        }
+      });
+    },
+    adminDeleteUser: async (userId) => {
+      await userService.adminDeleteUser(userId);
+      set((state) => {
+        state.teamProfiles = state.teamProfiles.filter((u) => u.id !== userId);
+      });
+    },
+    changePassword: async (newPassword) => {
+      await userService.changePassword(newPassword);
+    },
 
     // Practice Simulations
     simulationsList: localCache.getSimulations(),

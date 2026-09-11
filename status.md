@@ -1,7 +1,7 @@
 # Project — Build Status & Handoff
 
 ### Current Phase: Full System Implementation & Comprehensive Quality Verification Complete
-## Current Step: All 18 Improvement Items Implemented, Verified via CDP & Vitest Suite (26/26 Passing)
+## Current Step: Admin User Provisioning Dashboard & Member Password Management Implemented (Vitest: 28/28 Passing, Clean Build)
 
 ## ✅ Completed Improvements & Enhancements
 - [x] **P0 (Critical Audio Fidelity):** Dual signal presence in `signal-flow.ts` and `types.ts` (`rawInputsWithSignal`). Pre-fade IEM sends (`send.preFade === true`) tap raw unmuted input signal, ensuring musician IEM mixes never drop out when FOH mutes a channel.
@@ -21,6 +21,7 @@
 - [x] **P3 (Scratch Defaults):** Created generic default Mixes 1–12 and DCAs 1–8 for scratch mode in `factory.ts`.
 - [x] **P3 (DX & Typing):** Added `"typecheck": "tsc --noEmit"` across all packages, verified zero TS errors, and code-split routes via `React.lazy()` to eliminate bundle warnings.
 - [x] **P1 (Security & Auth):** Removed account simulator, demo role switchers, and mock auth fallbacks. Implemented authentic Supabase Authentication backed by PostgreSQL `public.profiles`, with automatic Admin assignment for the initial registrant and strict Guest lockouts for unauthenticated visitors.
+- [x] **P1 (User Management & Provisioning):** Added Admin Dashboard & Users tab in Settings (`SetupScreen.tsx`) to provision team accounts (Email + Initial Password + Display Name + Role) using ephemeral Supabase client (`persistSession: false`) to safeguard active admin session. Added PostgreSQL RPC function `admin_delete_user` and RLS policies on `profiles`. Added "Account & Password" tab in Settings for members to self-service change their password via `supabase.auth.updateUser({ password })`.
 
 
 ## 🗂️ File Tree

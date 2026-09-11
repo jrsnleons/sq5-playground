@@ -67,8 +67,6 @@ export const App: React.FC = () => {
     // Guard tab access based on active role
     if (userRole === 'guest' && activeTab !== 'stage' && activeTab !== 'console') {
       setActiveTab('stage');
-    } else if (userRole === 'member' && (activeTab === 'setup' || (activeTab as string) === 'help')) {
-      setActiveTab('stage');
     } else if ((activeTab as string) === 'help') {
       setActiveTab('stage');
     }

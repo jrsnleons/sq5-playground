@@ -13,7 +13,8 @@ import {
   Loader2,
   Lock,
   Mail,
-  UserCheck
+  UserCheck,
+  KeyRound
 } from 'lucide-react';
 import { isSupabaseConfigured, supabase } from '../../services/supabase';
 
@@ -26,7 +27,9 @@ export const AuthModal: React.FC = () => {
     setUserProfile,
     signOut,
     syncStatus,
-    setSyncStatus
+    setSyncStatus,
+    changePassword,
+    setActiveTab
   } = useSimulationStore();
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -36,6 +39,12 @@ export const AuthModal: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // In-modal password change
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [modalNewPassword, setModalNewPassword] = useState('');
+  const [modalConfirmPassword, setModalConfirmPassword] = useState('');
+  const [passwordUpdating, setPasswordUpdating] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,13 +56,17 @@ export const AuthModal: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [authModalOpen, setAuthModalOpen]);
 
-  // Reset form messages when mode or modal opens
+  // Reset form messages and inputs when modal opens
   useEffect(() => {
     if (authModalOpen) {
       setErrorMessage(null);
       setSuccessMessage(null);
+      setMode('signin');
+      setEmail('');
+      setPassword('');
+      setDisplayName('');
     }
-  }, [authModalOpen, mode]);
+  }, [authModalOpen]);
 
   if (!authModalOpen) return null;
 
@@ -169,6 +182,38 @@ export const AuthModal: React.FC = () => {
       setErrorMessage(err.message || 'Authentication failed. Please check your credentials.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleModalPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!modalNewPassword || !modalConfirmPassword) {
+      setErrorMessage('Please fill in both password fields.');
+      return;
+    }
+    if (modalNewPassword.length < 6) {
+      setErrorMessage('New password must be at least 6 characters.');
+      return;
+    }
+    if (modalNewPassword !== modalConfirmPassword) {
+      setErrorMessage('Passwords do not match.');
+      return;
+    }
+
+    setPasswordUpdating(true);
+    try {
+      await changePassword(modalNewPassword);
+      setSuccessMessage('Password updated successfully!');
+      setModalNewPassword('');
+      setModalConfirmPassword('');
+      setShowPasswordChange(false);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to update password.');
+    } finally {
+      setPasswordUpdating(false);
     }
   };
 
@@ -314,6 +359,78 @@ export const AuthModal: React.FC = () => {
                       <span>Equipment inventory is in read-only view mode</span>
                     </li>
                   </ul>
+                )}
+              </div>
+
+              {/* Change Password Collapsible Section */}
+              <div className="pt-2 border-t border-slate-800">
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordChange(!showPasswordChange)}
+                    className="text-xs text-sky-400 hover:text-sky-300 font-mono flex items-center space-x-1.5 transition-colors"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>{showPasswordChange ? 'Hide Password Form' : 'Change Password...'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthModalOpen(false);
+                      setActiveTab('setup');
+                    }}
+                    className="text-[11px] text-slate-400 hover:text-slate-200 font-mono underline transition-colors"
+                  >
+                    Open Settings →
+                  </button>
+                </div>
+
+                {showPasswordChange && (
+                  <form onSubmit={handleModalPasswordChange} className="mt-3 p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-2.5 animate-in fade-in duration-150">
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                        New Password (min 6 chars)
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        value={modalNewPassword}
+                        onChange={(e) => setModalNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:border-sky-500 focus:outline-none placeholder:text-slate-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono text-slate-400 mb-1">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        value={modalConfirmPassword}
+                        onChange={(e) => setModalConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white focus:border-sky-500 focus:outline-none placeholder:text-slate-600"
+                      />
+                    </div>
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="submit"
+                        disabled={passwordUpdating}
+                        className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-mono font-bold transition-all disabled:opacity-50 flex items-center space-x-1.5 shadow cursor-pointer"
+                      >
+                        {passwordUpdating ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <KeyRound className="w-3 h-3" />
+                        )}
+                        <span>Update Password</span>
+                      </button>
+                    </div>
+                  </form>
                 )}
               </div>
 

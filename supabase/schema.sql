@@ -24,8 +24,26 @@ create policy "Users can update their own profile"
   on public.profiles for update 
   using (auth.uid() = id);
 
+create policy "Admins can update any profile"
+  on public.profiles for update
+  using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete any profile"
+  on public.profiles for delete
+  using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
 -- 2. Trigger to Automatically Create Profile on Signup
--- The first user to ever sign up is automatically granted 'admin' role.
+-- The first user to ever sign up is automatically granted 'admin' role. Subsequent users default to 'member' or requested role.
 create or replace function public.handle_new_user()
 returns trigger as $$
 declare
@@ -36,7 +54,10 @@ begin
   if user_count = 0 then
     initial_role := 'admin';
   else
-    initial_role := 'member';
+    initial_role := coalesce(new.raw_user_meta_data->>'role', 'member');
+    if initial_role not in ('admin', 'member') then
+      initial_role := 'member';
+    end if;
   end if;
 
   insert into public.profiles (id, email, display_name, role)
@@ -45,7 +66,14 @@ begin
     new.email, 
     coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)),
     initial_role
-  );
+  )
+  on conflict (id) do update
+  set 
+    email = excluded.email,
+    display_name = coalesce(excluded.display_name, profiles.display_name),
+    role = coalesce(excluded.role, profiles.role),
+    updated_at = now();
+
   return new;
 end;
 $$ language plpgsql security definer;
@@ -55,6 +83,27 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Helper function for Admins to delete user accounts
+create or replace function public.admin_delete_user(target_user_id uuid)
+returns void as $$
+begin
+  if not exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ) then
+    raise exception 'Unauthorized: Only administrators can delete users';
+  end if;
+
+  if auth.uid() = target_user_id then
+    raise exception 'Cannot delete your own administrator account';
+  end if;
+
+  delete from auth.users where id = target_user_id;
+end;
+$$ language plpgsql security definer;
+
+grant execute on function public.admin_delete_user(uuid) to authenticated;
 
 -- 3. Practice Simulations & Training Challenges Table
 -- Created and published by Admins for members and trainees to practice on.
