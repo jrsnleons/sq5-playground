@@ -5,24 +5,12 @@
 
 ## ✅ Completed Steps
 - [x] Monorepo npm workspaces configured (`@foh-sim/hardware-profiles`, `@foh-sim/simulation-core`, `@foh-sim/web`)
-- [x] Full AC-1 through AC-16 automated unit test suite implemented in `@foh-sim/simulation-core`:
-  - AC-1: Physical patch -> digital visibility
-  - AC-2: DI-required source blocking and DI insertion
-  - AC-3: Two-remote SLink limit
-  - AC-4: Channel processing order and bounds
-  - AC-5: IEM routing (Keys to IEM KEYS, Click to IEM KEYS)
-  - AC-6: Click/comms FOH warning
-  - AC-7: GEQ Fader Flip (28 bands, cycling, band modification, reset)
-  - AC-8: FX Send-Return architecture & return PEQ
-  - AC-9: Matrix fed from Main LR post-fade for PA arrays
-  - AC-10: Scene recall with Recall Filter (blockPEQ preserves PEQ)
-  - AC-11: Invalid / disconnected patch updates state to unavailable
-  - AC-12: Node photo system catalog & user override
-  - AC-13: Start from scratch initializes blank stage with hardware only
-  - AC-14: Preset management JSON export & import
-  - AC-15: Editability — deleting instrument cleans up connected cables
-  - AC-16: DCA / Mute Group with IEM cuts presence across Main LR and IEM mixes
-  - **16/16 Vitest unit tests passing**
+- [x] Full AC-1 through AC-16 automated unit test suite + feature tests (18/18 Vitest unit tests passing)
+- [x] Canvas Performance: 60fps local dragging using `useNodesState`/`useEdgesState` and memoized components with fine-grained Zustand selectors
+- [x] Daisy-Chained Speakers: Front Fills and Subwoofers split into individual units with `IN` and `THRU` handles and signal propagation
+- [x] Shure SVX Dual Wireless: SVX288 receiver modeled with dual RF inputs and dual console XLR outputs
+- [x] Cable Disconnection: 1-click Unplug buttons in Node Inspector, wide hit-target on cables with floating disconnect badge, and Backspace/Delete keyboard removal
+- [x] SQ-MixPad I/O Patch Matrix: Rebuilt into authentic Allen & Heath 2D crosspoint matrix with source banks (SLink/Local/USB), channel banks (1-16/17-32/33-48), live socket signal LEDs, 1:1 auto-patching, and Safe I/O Lockout toggle
 - [x] Antislop Code (`/antislop-code`):
   - Removed all obvious narration comments, decorative separators, and empty labels
   - Preserved authentic domain models and architectural rationale
