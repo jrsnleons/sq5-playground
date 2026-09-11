@@ -1,35 +1,26 @@
 # Project — Build Status & Handoff
 
-## Current Phase: Verification, Antislop & Modern Web Audit Complete
-## Current Step: Dev Server Running at http://localhost:5173 (ACTIVE)
+### Current Phase: Full System Implementation & Comprehensive Quality Verification Complete
+## Current Step: All 18 Improvement Items Implemented, Verified via CDP & Vitest Suite (26/26 Passing)
 
-## ✅ Completed Steps
-- [x] Monorepo npm workspaces configured (`@foh-sim/hardware-profiles`, `@foh-sim/simulation-core`, `@foh-sim/web`)
-- [x] Full AC-1 through AC-16 automated unit test suite + feature tests (18/18 Vitest unit tests passing)
-- [x] Canvas Performance: 60fps local dragging using `useNodesState`/`useEdgesState` and memoized components with fine-grained Zustand selectors
-- [x] Daisy-Chained Speakers: Front Fills and Subwoofers split into individual units with `IN` and `THRU` handles and signal propagation
-- [x] Shure SVX Dual Wireless: SVX288 receiver modeled with dual RF inputs and dual console XLR outputs
-- [x] Cable Disconnection: 1-click Unplug buttons in Node Inspector, wide hit-target on cables with floating disconnect badge, and Backspace/Delete keyboard removal
-- [x] SQ-MixPad I/O Patch Matrix: Rebuilt into authentic Allen & Heath 2D crosspoint matrix with source banks (SLink/Local/USB), channel banks (1-16/17-32/33-48), live socket signal LEDs, 1:1 auto-patching, and Safe I/O Lockout toggle
-- [x] Antislop Code (`/antislop-code`):
-  - Removed all obvious narration comments, decorative separators, and empty labels
-  - Preserved authentic domain models and architectural rationale
-- [x] Antislop Copywriting (`/antislop-copywriting`):
-  - Zero generic AI buzzwords (*seamless, elevate, unlock, robust, game-changer, etc.*)
-  - Authentic Allen & Heath audio terminology (*Sel, PAFL, Mute, Assign, Pre Fade, dSNAKE, SLink, EtherCon, PEQ, GEQ, DCA*)
-- [x] Antislop UI & Human Accessibility (`/antislop-ui`, `/antislop-human`):
-  - WCAG AA contrast compliance across all text labels (`text-slate-400` / `text-slate-300` on dark background)
-  - Full keyboard accessibility: `:focus-visible` ring outlines on buttons and inputs
-  - Modal dialogs support light dismiss (backdrop click) and platform `Escape` key listeners
-  - Sliders implemented with full ARIA attributes (`role="slider"`, `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, `aria-valuetext`)
-  - No random AI purple/blue gradients: authentic pro-audio console color system (Chassis Slate 900/950, Mic Blue, Inst Orange, dSNAKE Green, IEM Teal, Click/Comms Yellow)
-- [x] Modern Web Guidance (`/modern-web-guidance`):
-  - Dialog semantics with `role="dialog"`, `aria-modal="true"`, `aria-labelledby`
-  - High-performance Vite 6 bundling (builds in ~1.23s)
+## ✅ Completed Improvements & Enhancements
+- [x] **P0 (Critical Audio Fidelity):** Dual signal presence in `signal-flow.ts` and `types.ts` (`rawInputsWithSignal`). Pre-fade IEM sends (`send.preFade === true`) tap raw unmuted input signal, ensuring musician IEM mixes never drop out when FOH mutes a channel.
+- [x] **P0 (Audio Fidelity):** Input metering in `FaderStrip.tsx` bound to `rawInputsWithSignal` so channel LED meter ladder displays live physical input signal even when channel is muted.
+- [x] **P1 (Console Surface):** Implemented functional 28-band GEQ motorized fader flip on `DigitalConsoleView.tsx` with Page 1 (31.5Hz–630Hz), Page 2 (800Hz–16kHz), ±12 dB faders, and Flat All utility.
+- [x] **P1 (Console Navigation):** Restored `ProcessingScreen` and `MetersScreen` in Digital Console navigation sub-bar, and wired channel strip `SEL` double-click directly to Processing.
+- [x] **P1 (Surface Ergonomics):** Added Layers [A] through [F] and bank quick-jumps ([1–16], [17–32], [33–48]) to continuous faders surface.
+- [x] **P1 (Master Strip):** Wired Master Strip `SEL` button to select Main LR / Mix Master for processing.
+- [x] **P1 (Scene Management):** Expanded `recallSceneWithFilter` snapshot restore scope to include DCAs, Main LR level/mute, Matrices, and Mute Groups.
+- [x] **P2 (Physical Stage):** Prevented Stage Item Palette from concealing stage items by offsetting default node positions and setting `fitViewOptions={{ padding: 0.25 }}`.
+- [x] **P2 (Physical Rules):** Added validation preventing plugging multiple cables into a single physical XLR socket (`PORT_ALREADY_CONNECTED`), and port direction rules rejecting out-to-out and in-to-in (`INVALID_DIRECTION`).
+- [x] **P2 (Responsive UI):** Fixed text wrapping, clipping, and overflow in top nav and bottom status strip on tablet portrait (768px).
+- [x] **P2 (UX Feedback):** Replaced native blocking `window.confirm()` with accessible custom `ConfirmDialogModal.tsx` and added floating toast notifications for invalid cable connections.
+- [x] **P2 (Gear Inspection):** Wired gear photo upload (max 2MB base64), preview, and reset-to-stock system into `NodeDetailModal.tsx` and `simulationStore.ts`.
+- [x] **P3 (FX Simulation):** Added interactive parameter sliders (decay/time, pre-delay/feedback, wet mix) and active bypass toggles for all 8 RackExtra FX engines in `FXScreen.tsx`.
+- [x] **P3 (Matrix Feeds):** Added interactive source selection ('main-lr' | 'mix'), stereo toggle, fader, and mute controls to Matrix cards in `RoutingScreen.tsx`.
+- [x] **P3 (Scratch Defaults):** Created generic default Mixes 1–12 and DCAs 1–8 for scratch mode in `factory.ts`.
+- [x] **P3 (DX & Typing):** Added `"typecheck": "tsc --noEmit"` across all packages, verified zero TS errors, and code-split routes via `React.lazy()` to eliminate bundle warnings.
 
-## 🔲 Remaining Steps
-- [ ] Connect remote Supabase project credentials in `.env.local` if remote cloud sync is needed
-- [ ] Add Playwright browser test spec if automated headless browser testing is desired
 
 ## 🗂️ File Tree
 ```

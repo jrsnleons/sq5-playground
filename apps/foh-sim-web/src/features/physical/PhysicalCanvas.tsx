@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useEffect } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
   MiniMap,
@@ -9,7 +10,8 @@ import {
   Connection,
   useNodesState,
   useEdgesState,
-  BackgroundVariant
+  BackgroundVariant,
+  SelectionMode
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -20,14 +22,20 @@ import { StageItemNode } from './nodes/StageItemNode';
 import { BezierCableEdge } from './edges/BezierCableEdge';
 import { StageItemPalette } from './StageItemPalette';
 import { NodeDetailModal } from './NodeDetailModal';
+import { CableTraceBadge } from './components/CableTraceBadge';
 import { SignalType } from '@foh-sim/simulation-core';
 
-export const PhysicalCanvas: React.FC = () => {
-  const sim = useSimulationStore((s) => s.sim);
+const PhysicalCanvasContent: React.FC = () => {
+  const stageItems = useSimulationStore((s) => s.sim.physical.stageItems);
+  const cables = useSimulationStore((s) => s.sim.physical.cables);
+  const stageBoxPosition = useSimulationStore((s) => s.sim.physical.stageBox.position);
+  const consolePosition = useSimulationStore((s) => s.sim.physical.console.position);
   const updateStageItemPosition = useSimulationStore((s) => s.updateStageItemPosition);
+  const removeStageItem = useSimulationStore((s) => s.removeStageItem);
   const connectCable = useSimulationStore((s) => s.connectCable);
   const removeCable = useSimulationStore((s) => s.removeCable);
   const setSelectedNodeId = useSimulationStore((s) => s.setSelectedNodeId);
+  const clearTrace = useSimulationStore((s) => s.clearTrace);
 
   const nodeTypes = useMemo(
     () => ({
@@ -50,18 +58,18 @@ export const PhysicalCanvas: React.FC = () => {
       {
         id: 'stagebox-ar2412',
         type: 'ar2412',
-        position: sim.physical.stageBox.position,
+        position: stageBoxPosition,
         data: { label: 'AR2412 Stage Box' }
       },
       {
         id: 'console-sq5',
         type: 'sq5rear',
-        position: sim.physical.console.position,
+        position: consolePosition,
         data: { label: 'SQ-5 Console' }
       }
     ];
 
-    for (const item of sim.physical.stageItems) {
+    for (const item of stageItems) {
       list.push({
         id: item.id,
         type: 'stageItem',
@@ -71,10 +79,10 @@ export const PhysicalCanvas: React.FC = () => {
     }
 
     return list;
-  }, [sim.physical.stageBox.position, sim.physical.console.position, sim.physical.stageItems]);
+  }, [stageBoxPosition, consolePosition, stageItems]);
 
   const initialEdges: Edge[] = useMemo(() => {
-    return sim.physical.cables.map((cable) => ({
+    return cables.map((cable) => ({
       id: cable.id,
       source: cable.fromNode,
       target: cable.toNode,
@@ -83,12 +91,12 @@ export const PhysicalCanvas: React.FC = () => {
       type: 'bezierCable',
       data: { signalType: cable.signalType }
     }));
-  }, [sim.physical.cables]);
+  }, [cables]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Synchronize state when store items or cables change
+  // Synchronize state when physical stage items or cables change
   useEffect(() => {
     setNodes((prevNodes) => {
       const prevMap = new Map(prevNodes.map((n) => [n.id, n]));
@@ -96,18 +104,18 @@ export const PhysicalCanvas: React.FC = () => {
         {
           id: 'stagebox-ar2412',
           type: 'ar2412',
-          position: sim.physical.stageBox.position,
+          position: stageBoxPosition,
           data: { label: 'AR2412 Stage Box' }
         },
         {
           id: 'console-sq5',
           type: 'sq5rear',
-          position: sim.physical.console.position,
+          position: consolePosition,
           data: { label: 'SQ-5 Console' }
         }
       ];
 
-      for (const item of sim.physical.stageItems) {
+      for (const item of stageItems) {
         const existing = prevMap.get(item.id);
         nextList.push({
           id: item.id,
@@ -118,11 +126,11 @@ export const PhysicalCanvas: React.FC = () => {
       }
       return nextList;
     });
-  }, [sim.physical.stageItems, sim.physical.stageBox.position, sim.physical.console.position, setNodes]);
+  }, [stageItems, stageBoxPosition, consolePosition, setNodes]);
 
   useEffect(() => {
     setEdges(
-      sim.physical.cables.map((cable) => ({
+      cables.map((cable) => ({
         id: cable.id,
         source: cable.fromNode,
         target: cable.toNode,
@@ -132,11 +140,20 @@ export const PhysicalCanvas: React.FC = () => {
         data: { signalType: cable.signalType }
       }))
     );
-  }, [sim.physical.cables, setEdges]);
+  }, [cables, setEdges]);
 
   const handleNodeDragStop = useCallback(
-    (_event: MouseEvent | TouchEvent, node: Node) => {
-      updateStageItemPosition(node.id, node.position);
+    (_event: MouseEvent | TouchEvent, node: Node, allNodes: Node[]) => {
+      const selectedNodes = allNodes?.filter((n) => n.selected) || [];
+      if (selectedNodes.length > 1) {
+        selectedNodes.forEach((n) => {
+          if (n.id !== 'stagebox-ar2412' && n.id !== 'console-sq5') {
+            updateStageItemPosition(n.id, n.position);
+          }
+        });
+      } else {
+        updateStageItemPosition(node.id, node.position);
+      }
     },
     [updateStageItemPosition]
   );
@@ -167,6 +184,15 @@ export const PhysicalCanvas: React.FC = () => {
       let signalType: SignalType = 'mic';
       if (connection.sourceHandle.includes('dsnake') || connection.targetHandle.includes('slink')) {
         signalType = 'dsnake';
+      } else if (connection.sourceHandle.includes('usb') || connection.targetHandle.includes('usb')) {
+        signalType = 'usb';
+      } else if (
+        connection.sourceHandle.includes('hdmi') ||
+        connection.targetHandle.includes('hdmi') ||
+        connection.sourceHandle.includes('pgm') ||
+        connection.targetHandle.includes('pgm')
+      ) {
+        signalType = 'video';
       } else if (connection.sourceHandle.includes('thru-1') && (connection.source.includes('speaker') || connection.source.includes('fill') || connection.source.includes('sub'))) {
         signalType = 'speaker';
       } else if (connection.sourceHandle.includes('thru') || connection.sourceHandle.includes('in-1')) {
@@ -191,6 +217,17 @@ export const PhysicalCanvas: React.FC = () => {
     },
     [connectCable]
   );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearTrace();
+        setSelectedNodeId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [clearTrace, setSelectedNodeId]);
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-slate-950 select-none">
@@ -231,12 +268,27 @@ export const PhysicalCanvas: React.FC = () => {
         onNodeDragStop={handleNodeDragStop}
         onEdgeClick={handleEdgeClick}
         onConnect={handleConnect}
-        onPaneClick={() => setSelectedNodeId(null)}
+        onPaneClick={() => {
+          setSelectedNodeId(null);
+          clearTrace();
+        }}
         fitView
-        fitViewOptions={{ padding: 0.15 }}
+        fitViewOptions={{ padding: 0.25 }}
         minZoom={0.2}
         maxZoom={2.5}
+        onlyRenderVisibleElements={true}
+        elementsSelectable={true}
+        selectionMode={SelectionMode.Partial}
+        selectionKeyCode="Shift"
+        multiSelectionKeyCode="Shift"
         deleteKeyCode={['Backspace', 'Delete']}
+        onNodesDelete={(nodesToDelete) => {
+          nodesToDelete.forEach((node) => {
+            if (node.id !== 'stagebox-ar2412' && node.id !== 'console-sq5') {
+              removeStageItem(node.id);
+            }
+          });
+        }}
         onEdgesDelete={(edgesToDelete) => {
           edgesToDelete.forEach((edge) => removeCable(edge.id));
         }}
@@ -254,11 +306,22 @@ export const PhysicalCanvas: React.FC = () => {
         />
       </ReactFlow>
 
+      {/* Floating Cable Trace HUD Badge */}
+      <CableTraceBadge />
+
       {/* Stage Item Draggable Palette */}
       <StageItemPalette />
 
       {/* Node Details Inspector Modal */}
       <NodeDetailModal />
     </div>
+  );
+};
+
+export const PhysicalCanvas: React.FC = () => {
+  return (
+    <ReactFlowProvider>
+      <PhysicalCanvasContent />
+    </ReactFlowProvider>
   );
 };

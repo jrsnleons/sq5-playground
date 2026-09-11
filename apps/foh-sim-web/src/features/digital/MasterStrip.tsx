@@ -5,6 +5,7 @@ export const MasterStrip: React.FC = () => {
   const {
     sim,
     signalPresence,
+    setSelectedMix,
     setMainLRFader,
     toggleMainLRMute,
     setMixFader,
@@ -46,7 +47,17 @@ export const MasterStrip: React.FC = () => {
         <div className="w-full py-1 text-center text-[10px] font-bold font-mono text-slate-400 bg-slate-900 rounded border border-slate-800">
           MASTER
         </div>
-        <button className="w-full py-1 text-[10px] font-bold font-mono rounded bg-amber-500 text-slate-950 shadow-[0_0_8px_#f59e0b]">
+        <button
+          onClick={() => {
+            if (isSendsOnFaders) {
+              setSelectedMix(activeMixId);
+            } else {
+              setSelectedMix('main-lr');
+            }
+          }}
+          title={isSendsOnFaders ? `Selected: ${activeMix?.name || 'Mix'} Master` : 'Selected: Main LR Master'}
+          className="w-full py-1 text-[10px] font-bold font-mono rounded bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-[0_0_8px_#f59e0b] transition-colors focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:outline-none"
+        >
           SEL
         </button>
       </div>
@@ -54,7 +65,7 @@ export const MasterStrip: React.FC = () => {
       {/* Center Master Fader Track & Dual LED Meter */}
       <div className="flex-1 flex justify-center items-center py-2 space-x-2">
         {/* Dual Meter Bar */}
-        <div className="w-4 h-48 bg-slate-950 rounded-sm p-0.5 flex space-x-0.5 justify-between border border-slate-800">
+        <div className="w-4 h-72 bg-slate-950 rounded-sm p-0.5 flex space-x-0.5 justify-between border border-slate-800">
           {/* Left Meter */}
           <div className="w-1.5 h-full flex flex-col justify-between">
             <div className={`w-full h-1.5 rounded-xs ${hasSignal && faderVal > 0 ? 'bg-rose-500' : 'bg-rose-950 opacity-40'}`} />
@@ -74,7 +85,7 @@ export const MasterStrip: React.FC = () => {
         </div>
 
         {/* Master Fader */}
-        <div className="h-48 flex items-center justify-center relative">
+        <div className="h-72 flex items-center justify-center relative">
           <input
             type="range"
             min="-90"

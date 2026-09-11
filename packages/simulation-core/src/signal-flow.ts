@@ -2,6 +2,7 @@ import { SignalPresenceMap, SimulationState } from './types';
 
 export function computeSignalPresence(state: SimulationState): SignalPresenceMap {
   const channelsWithSignal: Record<string, boolean> = {};
+  const rawInputsWithSignal: Record<string, boolean> = {};
   const iemOnlyChannels: Record<string, boolean> = {};
   const mixesWithSignal: Record<string, boolean> = {};
   const matricesWithSignal: Record<string, boolean> = {};
@@ -131,7 +132,10 @@ export function computeSignalPresence(state: SimulationState): SignalPresenceMap
       }
     }
 
-    // Signal present if physical input exists and channel is not muted
+    // Raw physical input presence (independent of channel fader or channel mute)
+    rawInputsWithSignal[channel.id] = hasPhysicalInput;
+
+    // Post-mute / active signal presence for FOH and post-fade sends
     channelsWithSignal[channel.id] = hasPhysicalInput && !isMuted;
 
     // Flag IEM-only channels
@@ -141,14 +145,19 @@ export function computeSignalPresence(state: SimulationState): SignalPresenceMap
     iemOnlyChannels[channel.id] = isClickOrComms;
   }
 
-  // 4. Compute Mix presence (Auxes)
+  // 4. Compute Mix presence (Auxes & Subgroups)
   for (const mix of state.digital.mixes) {
     let mixHasSignal = false;
     if (!mix.mute) {
       for (const channel of state.digital.channels) {
-        if (channelsWithSignal[channel.id]) {
-          const send = channel.sends[mix.id];
-          if (send && send.assigned && send.levelDb > -80) {
+        const send = channel.sends[mix.id];
+        if (send && send.assigned && send.levelDb > -80) {
+          // Pre-fade sends tap before channel mute/fader; post-fade sends tap after channel mute/fader
+          const sendSourceHasSignal = send.preFade
+            ? rawInputsWithSignal[channel.id]
+            : channelsWithSignal[channel.id];
+
+          if (sendSourceHasSignal) {
             mixHasSignal = true;
             break;
           }
@@ -158,15 +167,22 @@ export function computeSignalPresence(state: SimulationState): SignalPresenceMap
     mixesWithSignal[mix.id] = mixHasSignal;
   }
 
-  // 5. Compute Main LR presence
+  // 5. Compute Main LR presence (Channels assigned to Main LR + Subgroups assigned to Main LR)
   let mainLRHasSignal = false;
   if (!state.digital.mainLR.mute) {
     for (const channel of state.digital.channels) {
-      // IEM-only channels should not count towards Main LR signal if proper warning is active,
-      // but if routed anyway, they will physically pass unless muted.
       if (channelsWithSignal[channel.id] && channel.mainLRAssigned && channel.faderLevel > -80) {
         mainLRHasSignal = true;
         break;
+      }
+    }
+    // Also check Subgroups routed into Main LR
+    if (!mainLRHasSignal) {
+      for (const mix of state.digital.mixes) {
+        if (mix.mode === 'group' && mix.mainLRAssigned && !mix.mute && mixesWithSignal[mix.id] && mix.faderLevel > -80) {
+          mainLRHasSignal = true;
+          break;
+        }
       }
     }
   }
@@ -192,36 +208,75 @@ export function computeSignalPresence(state: SimulationState): SignalPresenceMap
       const portMatch = cable.fromPort.match(/^ar-out-(\d+)$/);
       if (portMatch) {
         const portNum = parseInt(portMatch[1], 10);
-        if (portNum >= 1 && portNum <= 8) {
-          // IEM Mixes 1–8
+        // Look up custom digital patch first if available
+        const patch = state.digital.ioPatch?.outputs?.[cable.fromPort];
+        if (patch) {
+          if (patch.destType === 'mix') {
+            const baseId = patch.busId.replace(/-[lr]$/, '');
+            cableHasSignal[cable.id] = !!mixesWithSignal[baseId];
+          } else if (patch.destType === 'matrix') {
+            const baseId = patch.busId.replace(/-[lr]$/, '');
+            cableHasSignal[cable.id] = !!matricesWithSignal[baseId];
+          } else if (patch.destType === 'main-lr') {
+            cableHasSignal[cable.id] = mainLRHasSignal;
+          }
+        } else if (portNum >= 1 && portNum <= 8) {
+          // IEM Mixes 2–6 (or general mix-N)
           cableHasSignal[cable.id] = !!mixesWithSignal[`mix-${portNum}`];
         } else if (portNum === 9) {
           // Front Fills (Matrix 1 or Main LR)
           cableHasSignal[cable.id] = !!matricesWithSignal['matrix-1'] || mainLRHasSignal;
         } else if (portNum === 10) {
-          // Subwoofers (Matrix 2 or Main LR)
+          // Subwoofers (Mix 9 Aux or Matrix 2)
+          cableHasSignal[cable.id] = !!mixesWithSignal['mix-9'] || !!matricesWithSignal['matrix-2'] || mainLRHasSignal;
+        } else if (portNum === 11) {
+          // Left Array (Matrix 1-L or Main LR)
+          cableHasSignal[cable.id] = !!matricesWithSignal['matrix-1'] || mainLRHasSignal;
+        } else if (portNum === 12) {
+          // Right Array (Matrix 2-R or Main LR)
           cableHasSignal[cable.id] = !!matricesWithSignal['matrix-2'] || mainLRHasSignal;
-        } else if (portNum === 11 || portNum === 12) {
-          // Main PA Left / Right (Main LR)
-          cableHasSignal[cable.id] = mainLRHasSignal;
         }
       }
     } else if (cable.fromNode === 'console-sq5') {
-      const portMatch = cable.fromPort.match(/^sq-out-(\d+)$/);
-      if (portMatch) {
-        const portNum = parseInt(portMatch[1], 10);
-        if (portNum >= 1 && portNum <= 8) {
-          cableHasSignal[cable.id] = !!mixesWithSignal[`mix-${portNum}`];
-        } else if (portNum === 9 || portNum === 10) {
-          cableHasSignal[cable.id] = !!matricesWithSignal['matrix-1'] || mainLRHasSignal;
-        } else if (portNum === 11 || portNum === 12) {
-          cableHasSignal[cable.id] = mainLRHasSignal;
+      if (cable.fromPort === 'sq-usb-b') {
+        // 32x32 USB Audio host link
+        cableHasSignal[cable.id] = true;
+      } else {
+        const portMatch = cable.fromPort.match(/^sq-out-(\d+)$/);
+        if (portMatch) {
+          const portNum = parseInt(portMatch[1], 10);
+          const patch = state.digital.ioPatch?.outputs?.[cable.fromPort];
+          if (patch) {
+            if (patch.destType === 'mix') {
+              const baseId = patch.busId.replace(/-[lr]$/, '');
+              cableHasSignal[cable.id] = !!mixesWithSignal[baseId];
+            } else if (patch.destType === 'matrix') {
+              const baseId = patch.busId.replace(/-[lr]$/, '');
+              cableHasSignal[cable.id] = !!matricesWithSignal[baseId];
+            } else if (patch.destType === 'main-lr') {
+              cableHasSignal[cable.id] = mainLRHasSignal;
+            }
+          } else if (portNum >= 1 && portNum <= 6) {
+            cableHasSignal[cable.id] = !!mixesWithSignal[`mix-${portNum}`];
+          } else if (portNum >= 7 && portNum <= 12) {
+            // Local Outs 7–12 triple-patched to Stream Aux 1 (or Mix 10–12 fallback)
+            cableHasSignal[cable.id] = !!mixesWithSignal['mix-1'] || !!mixesWithSignal['mix-10'] || mainLRHasSignal;
+          }
         }
       }
+    } else if (cable.fromNode === 'item-behringer-interface' || cable.fromNode.includes('behringer')) {
+      // Behringer USB Audio Interface passes signal to USB if inputs have signal
+      const incomingAudio = state.physical.cables.find(
+        (c) => c.toNode === cable.fromNode && cableHasSignal[c.id]
+      );
+      cableHasSignal[cable.id] = !!incomingAudio;
+    } else if (cable.fromNode === 'item-osee-switcher' || cable.fromNode.includes('switcher')) {
+      // Osee Switcher outputs active video stream (USB UVC & HDMI PGM)
+      cableHasSignal[cable.id] = true;
     }
   }
 
-  // 8. Propagate signal through daisy-chained speakers (e.g. Front Fill 1 -> Front Fill 2, Sub 1 -> Sub 2)
+  // 8. Propagate signal through daisy-chained speakers and downstream monitors
   for (let pass = 0; pass < 3; pass++) {
     for (const cable of state.physical.cables) {
       if (cable.fromPort === 'thru-1' || cable.fromPort.includes('thru') || cable.fromPort.includes('link')) {
@@ -236,6 +291,7 @@ export function computeSignalPresence(state: SimulationState): SignalPresenceMap
 
   return {
     channelsWithSignal,
+    rawInputsWithSignal,
     iemOnlyChannels,
     mixesWithSignal,
     mainLRHasSignal,

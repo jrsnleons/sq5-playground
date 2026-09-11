@@ -72,10 +72,27 @@
       { "id": "item-sub-1", "typeId": "speaker-subwoofer", "name": "Subwoofer 1", "category": "speaker", "position": { "x": 1080, "y": 740 } },
       { "id": "item-sub-2", "typeId": "speaker-subwoofer", "name": "Subwoofer 2", "category": "speaker", "position": { "x": 1260, "y": 740 } },
       { "id": "item-array-r", "typeId": "speaker-array-r", "name": "Line Array Right", "category": "speaker", "position": { "x": 1080, "y": 860 } },
-      { "id": "item-array-l", "typeId": "speaker-array-l", "name": "Line Array Left", "category": "speaker", "position": { "x": 1080, "y": 950 } }
+      { "id": "item-array-l", "typeId": "speaker-array-l", "name": "Line Array Left", "category": "speaker", "position": { "x": 1080, "y": 950 } },
+
+      { "id": "item-waves-pc", "typeId": "waves-superrack-pc", "name": "Waves SuperRack PC", "category": "processing", "position": { "x": 1400, "y": 550 } },
+      { "id": "item-behringer-interface", "typeId": "interface-behringer-umc", "name": "Behringer UMC Interface", "category": "stream", "position": { "x": 1650, "y": 550 } },
+      { "id": "item-stream-pc", "typeId": "stream-pc", "name": "Stream Computer", "category": "stream", "position": { "x": 1880, "y": 550 } },
+      { "id": "item-osee-switcher", "typeId": "switcher-osee-basic", "name": "Osee Switcher Basic", "category": "stream", "position": { "x": 1650, "y": 690 } },
+      { "id": "item-stream-monitor", "typeId": "monitor-stream-display", "name": "Stream Output Monitor", "category": "stream", "position": { "x": 1880, "y": 690 } }
     ],
     "cables": [
       { "id": "cable-dsnake", "fromNode": "stagebox-ar2412", "fromPort": "ar-dsnake", "toNode": "console-sq5", "toPort": "sq-slink", "signalType": "dsnake" },
+      { "id": "cable-sq-usb-waves", "fromNode": "console-sq5", "fromPort": "sq-usb-b", "toNode": "item-waves-pc", "toPort": "usb-1", "signalType": "usb" },
+
+      { "id": "cable-sq-out-7", "fromNode": "console-sq5", "fromPort": "sq-out-7", "toNode": "item-osee-switcher", "toPort": "in-1", "signalType": "mic" },
+      { "id": "cable-sq-out-8", "fromNode": "console-sq5", "fromPort": "sq-out-8", "toNode": "item-osee-switcher", "toPort": "in-2", "signalType": "mic" },
+      { "id": "cable-sq-out-9", "fromNode": "console-sq5", "fromPort": "sq-out-9", "toNode": "item-stream-monitor", "toPort": "in-1", "signalType": "mic" },
+      { "id": "cable-sq-out-10", "fromNode": "console-sq5", "fromPort": "sq-out-10", "toNode": "item-stream-monitor", "toPort": "in-2", "signalType": "mic" },
+
+      { "id": "cable-stream-l", "fromNode": "console-sq5", "fromPort": "sq-out-11", "toNode": "item-behringer-interface", "toPort": "in-1", "signalType": "mic" },
+      { "id": "cable-stream-r", "fromNode": "console-sq5", "fromPort": "sq-out-12", "toNode": "item-behringer-interface", "toPort": "in-2", "signalType": "mic" },
+      { "id": "cable-behringer-usb", "fromNode": "item-behringer-interface", "fromPort": "usb-out", "toNode": "item-stream-pc", "toPort": "usb-in", "signalType": "usb" },
+      { "id": "cable-osee-usb", "fromNode": "item-osee-switcher", "fromPort": "usb-out", "toNode": "item-stream-pc", "toPort": "usb-cam", "signalType": "usb" },
 
       { "id": "cable-in-1", "fromNode": "item-aud-r", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-1", "signalType": "mic" },
       { "id": "cable-in-2", "fromNode": "item-mic-1", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-2", "signalType": "mic" },
@@ -169,41 +186,42 @@
         "ch-28": { "sourceType": "local", "socketId": "sq-in-5", "label": "WIRELESS 2" }
       },
       "outputs": {
-        "ar-out-1": { "destType": "mix", "busId": "mix-3", "label": "IEM AG" },
-        "ar-out-2": { "destType": "mix", "busId": "mix-1", "label": "IEM WL" },
-        "ar-out-3": { "destType": "mix", "busId": "mix-2", "label": "IEM BACKUP" },
-        "ar-out-5": { "destType": "mix", "busId": "mix-4", "label": "IEM KEYS" },
-        "ar-out-6": { "destType": "mix", "busId": "mix-5", "label": "IEM EG" },
-        "ar-out-7": { "destType": "mix", "busId": "mix-6", "label": "IEM BASS" },
-        "ar-out-8": { "destType": "mix", "busId": "mix-7", "label": "IEM DRUMS" },
-        "ar-out-9": { "destType": "mix", "busId": "mix-9", "label": "Front Fills" },
-        "ar-out-10": { "destType": "mix", "busId": "mix-8", "label": "Subs" },
-        "ar-out-11": { "destType": "matrix", "busId": "matrix-1-r", "label": "Array R" },
-        "ar-out-12": { "destType": "matrix", "busId": "matrix-1-l", "label": "Array L" },
-        "sq-out-7": { "destType": "mix", "busId": "mix-12-l", "label": "Record L" },
-        "sq-out-8": { "destType": "mix", "busId": "mix-12-r", "label": "Record R" },
-        "sq-out-9": { "destType": "mix", "busId": "mix-11-l", "label": "Monitor L" },
-        "sq-out-10": { "destType": "mix", "busId": "mix-11-r", "label": "Monitor R" },
-        "sq-out-11": { "destType": "mix", "busId": "mix-10-l", "label": "Stream L" },
-        "sq-out-12": { "destType": "mix", "busId": "mix-10-r", "label": "Stream R" }
+        "ar-out-1": { "destType": "mix", "busId": "mix-2", "label": "IEM AG" },
+        "ar-out-2": { "destType": "mix", "busId": "mix-3", "label": "IEM WL" },
+        "ar-out-3": { "destType": "mix", "busId": "mix-4", "label": "IEM BACKUP" },
+        "ar-out-5": { "destType": "mix", "busId": "mix-5", "label": "IEM KEYS" },
+        "ar-out-6": { "destType": "mix", "busId": "mix-6", "label": "IEM EG" },
+        "ar-out-7": { "destType": "mix", "busId": "mix-7", "label": "IEM BASS" },
+        "ar-out-8": { "destType": "mix", "busId": "mix-8", "label": "IEM DRUMS" },
+        "ar-out-9": { "destType": "main-lr", "busId": "main-lr-l", "label": "Front Fills" },
+        "ar-out-10": { "destType": "mix", "busId": "mix-9", "label": "Subs" },
+        "ar-out-11": { "destType": "matrix", "busId": "matrix-1-l", "label": "Array L" },
+        "ar-out-12": { "destType": "matrix", "busId": "matrix-2-r", "label": "Array R" },
+        "sq-out-7": { "destType": "mix", "busId": "mix-1-l", "label": "Record L" },
+        "sq-out-8": { "destType": "mix", "busId": "mix-1-r", "label": "Record R" },
+        "sq-out-9": { "destType": "mix", "busId": "mix-1-l", "label": "Monitor L" },
+        "sq-out-10": { "destType": "mix", "busId": "mix-1-r", "label": "Monitor R" },
+        "sq-out-11": { "destType": "mix", "busId": "mix-1-l", "label": "Stream L" },
+        "sq-out-12": { "destType": "mix", "busId": "mix-1-r", "label": "Stream R" }
       }
     },
     "mixes": [
-      { "id": "mix-1", "name": "IEM WL", "mode": "aux", "stereo": false, "faderLevel": 0 },
-      { "id": "mix-2", "name": "IEM BACKUP", "mode": "aux", "stereo": false, "faderLevel": 0 },
-      { "id": "mix-3", "name": "IEM AG", "mode": "aux", "stereo": false, "faderLevel": 0 },
-      { "id": "mix-4", "name": "IEM KEYS", "mode": "aux", "stereo": false, "faderLevel": 0 },
-      { "id": "mix-5", "name": "IEM EG", "mode": "aux", "stereo": false, "faderLevel": 0 },
-      { "id": "mix-6", "name": "IEM BASS", "mode": "aux", "stereo": false, "faderLevel": 0 },
-      { "id": "mix-7", "name": "IEM DRUMS", "mode": "aux", "stereo": false, "faderLevel": 0 },
-      { "id": "mix-8", "name": "Subs", "mode": "aux", "stereo": false, "faderLevel": 0 },
-      { "id": "mix-9", "name": "Front Fills", "mode": "aux", "stereo": false, "faderLevel": 0 },
-      { "id": "mix-10", "name": "Stream", "mode": "aux", "stereo": true, "faderLevel": 0 },
-      { "id": "mix-11", "name": "Monitor", "mode": "aux", "stereo": true, "faderLevel": 0 },
-      { "id": "mix-12", "name": "Record", "mode": "aux", "stereo": true, "faderLevel": 0 }
+      { "id": "mix-1", "name": "Stream", "mode": "aux", "stereo": true, "faderLevel": 0 },
+      { "id": "mix-2", "name": "IEM AG", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-3", "name": "IEM WL", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-4", "name": "IEM BACKUP", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-5", "name": "IEM KEYS", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-6", "name": "IEM EG", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-7", "name": "IEM BASS", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-8", "name": "IEM DRUMS", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-9", "name": "Subwoofer", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-10", "name": "GRP Vocals", "mode": "group", "stereo": true, "faderLevel": 0, "mainLRAssigned": true },
+      { "id": "mix-11", "name": "GRP Instruments", "mode": "group", "stereo": true, "faderLevel": 0, "mainLRAssigned": true },
+      { "id": "mix-12", "name": "GRP Drums", "mode": "group", "stereo": true, "faderLevel": 0, "mainLRAssigned": true }
     ],
     "matrices": [
-      { "id": "matrix-1", "name": "PA Arrays", "stereo": true, "source": "main-lr", "faderLevel": 0 }
+      { "id": "matrix-1", "name": "Left Array Matrix", "stereo": true, "source": "main-lr", "faderLevel": 0 },
+      { "id": "matrix-2", "name": "Right Array Matrix", "stereo": true, "source": "main-lr", "faderLevel": 0 }
     ]
   }
 }

@@ -13,12 +13,12 @@
     "cables": [],
     "stageBox": {
       "model": "AR2412",
-      "position": { "x": 100, "y": 280 }
+      "position": { "x": 580, "y": 260 }
     },
     "console": {
       "model": "SQ-5",
       "slinkMode": "dSnake",
-      "position": { "x": 1050, "y": 240 }
+      "position": { "x": 1280, "y": 220 }
     }
   },
   "digital": {

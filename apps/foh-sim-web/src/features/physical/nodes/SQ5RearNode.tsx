@@ -2,15 +2,37 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { useSimulationStore } from '../../../store/simulationStore';
 import { Radio, Usb } from 'lucide-react';
+import { PhysicalPlugGraphic } from '../components/PhysicalPlugGraphic';
 
 export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
   const isSlinkConnected = useSimulationStore((s) => s.signalPresence.slinkHasSignal);
   const cables = useSimulationStore((s) => s.sim.physical.cables);
+  const activeTrace = useSimulationStore((s) => s.activeTrace);
+  const setLockedTrace = useSimulationStore((s) => s.setLockedTrace);
+
+  const hasDsnakeCable = cables.some(
+    (c) =>
+      (c.fromPort === 'ar-dsnake' && c.toPort === 'sq-slink') ||
+      (c.toPort === 'ar-dsnake' && c.fromPort === 'sq-slink')
+  );
+  const hasUsbCable = cables.some((c) => c.fromPort === 'sq-usb-b' || c.toPort === 'sq-usb-b');
+
+  const isNodeTraced =
+    activeTrace?.nodeId === 'console-sq5' ||
+    cables.some(
+      (c) =>
+        c.id === activeTrace?.cableId &&
+        (c.fromNode === 'console-sq5' || c.toNode === 'console-sq5')
+    );
 
   return (
     <div
       className={`w-[680px] bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 rounded-xl shadow-2xl p-3 text-slate-100 font-sans transition-all ${
-        selected ? 'border-sky-500 shadow-sky-500/20' : 'border-slate-700'
+        isNodeTraced
+          ? 'border-sky-400 shadow-[0_0_24px_rgba(56,189,248,0.35)] ring-2 ring-sky-400/40'
+          : selected
+          ? 'border-sky-500 shadow-sky-500/20'
+          : 'border-slate-700'
       }`}
     >
       {/* SQ-5 Header */}
@@ -24,16 +46,28 @@ export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
             SQ-5
           </span>
           <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
-            REAR I/O PANEL (48-CH FPGA CORE)
+            REAR I/O PANEL (48-CH CORE)
           </span>
         </div>
 
-        {/* SLink Mode Badge */}
-        <div className="flex items-center space-x-2 text-[10px] font-mono">
-          <span className="text-slate-400">SLINK PROTOCOL:</span>
-          <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">
-            dSnake (48kHz)
-          </span>
+        {/* Status Indicators */}
+        <div className="flex items-center space-x-3 text-[10px] font-mono">
+          <div className="flex items-center space-x-1">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isSlinkConnected ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-slate-600'
+              }`}
+            />
+            <span className="text-slate-400">SLINK</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                hasUsbCable ? 'bg-amber-400 shadow-[0_0_6px_#fbbf24]' : 'bg-slate-600'
+              }`}
+            />
+            <span className="text-slate-400">USB-B</span>
+          </div>
         </div>
       </div>
 
@@ -43,31 +77,65 @@ export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
           {/* 16 Local Inputs */}
           <div>
             <div className="text-[10px] uppercase font-mono text-slate-400 mb-1 flex items-center justify-between">
-              <span>Local Inputs 1–16 (Mic/Line XLR)</span>
+              <span>Local Inputs 1–16 (XLR Female Mic/Line)</span>
               <span className="text-sky-400">Digitally Controlled Preamp</span>
             </div>
             <div className="grid grid-cols-8 gap-1.5 p-2 bg-slate-950/80 rounded-lg border border-slate-800">
               {Array.from({ length: 16 }, (_, i) => {
                 const portNum = i + 1;
                 const socketId = `sq-in-${portNum}`;
-                const hasConnectedCable = cables.some(
+                const connectedCable = cables.find(
                   (c) => c.toPort === socketId || c.fromPort === socketId
                 );
+                const isSocketTraced =
+                  activeTrace?.socketId === socketId ||
+                  (activeTrace?.cableId && connectedCable?.id === activeTrace.cableId);
 
                 return (
-                  <div key={socketId} className="flex flex-col items-center group relative">
+                  <div
+                    key={socketId}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (connectedCable) setLockedTrace(socketId, 'console-sq5');
+                    }}
+                    className={`flex flex-col items-center group relative ${
+                      connectedCable ? 'cursor-pointer' : ''
+                    }`}
+                  >
+                    {/* Minimalist Plug Indicator only appears when active trace */}
+                    {connectedCable && isSocketTraced && (
+                      <PhysicalPlugGraphic
+                        signalType={connectedCable.signalType}
+                        connectorType="xlr"
+                        direction="up"
+                        isTraced={true}
+                      />
+                    )}
+
                     <Handle
                       type="target"
                       position={Position.Top}
                       id={socketId}
                       className={`!w-3.5 !h-3.5 !rounded-full !border-2 transition-all ${
-                        hasConnectedCable
-                          ? '!bg-sky-400 !border-slate-950 shadow-[0_0_8px_#38bdf8]'
-                          : '!bg-slate-800 !border-slate-600 hover:!bg-sky-400'
+                        isSocketTraced
+                          ? '!bg-white !border-sky-400 shadow-[0_0_12px_#38bdf8] z-30'
+                          : connectedCable
+                          ? '!bg-sky-400 !border-slate-950 shadow-[0_0_6px_#38bdf8]'
+                          : '!bg-slate-800 !border-slate-600 hover:!border-slate-400'
                       }`}
                     />
-                    <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mt-1 shadow-inner group-hover:border-sky-400">
-                      <span className="text-[9px] font-mono font-bold text-slate-300">
+                    <div
+                      className={`w-6 h-6 rounded-full border flex items-center justify-center mt-1 shadow-inner transition-colors ${
+                        isSocketTraced
+                          ? 'bg-sky-950 border-sky-400 shadow-[0_0_8px_#38bdf8]'
+                          : 'bg-slate-800 border-slate-700 group-hover:border-slate-500'
+                      }`}
+                    >
+                      <span
+                        className={`text-[9px] font-mono font-bold ${
+                          isSocketTraced ? 'text-white font-black' : 'text-slate-300'
+                        }`}
+                      >
                         {portNum}
                       </span>
                     </div>
@@ -81,33 +149,84 @@ export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
           <div>
             <div className="text-[10px] uppercase font-mono text-slate-400 mb-1 flex items-center justify-between">
               <span>Local Outputs 1–12 (Line XLR)</span>
-              <span className="text-teal-400">Livestream &amp; Record Feeds</span>
+              <span className="text-teal-400">7-8 Rec | 9-10 Mon | 11-12 Stream</span>
             </div>
             <div className="grid grid-cols-12 gap-1.5 p-2 bg-slate-950/80 rounded-lg border border-slate-800">
               {Array.from({ length: 12 }, (_, i) => {
                 const portNum = i + 1;
                 const socketId = `sq-out-${portNum}`;
-                const hasConnectedCable = cables.some(
+                const connectedCable = cables.find(
                   (c) => c.fromPort === socketId || c.toPort === socketId
                 );
+                const isSocketTraced =
+                  activeTrace?.socketId === socketId ||
+                  (activeTrace?.cableId && connectedCable?.id === activeTrace.cableId);
+
+                const role =
+                  portNum === 7 ? 'REC L' :
+                  portNum === 8 ? 'REC R' :
+                  portNum === 9 ? 'MON L' :
+                  portNum === 10 ? 'MON R' :
+                  portNum === 11 ? 'STR L' :
+                  portNum === 12 ? 'STR R' : null;
 
                 return (
-                  <div key={socketId} className="flex flex-col items-center group relative">
-                    <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mb-1 shadow-inner group-hover:border-teal-400">
-                      <span className="text-[9px] font-mono font-bold text-slate-300">
+                  <div
+                    key={socketId}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (connectedCable) setLockedTrace(socketId, 'console-sq5');
+                    }}
+                    className={`flex flex-col items-center group relative ${
+                      connectedCable ? 'cursor-pointer' : ''
+                    }`}
+                  >
+                    <div
+                      className={`w-6 h-6 rounded-full border flex flex-col items-center justify-center mb-1 shadow-inner transition-colors ${
+                        isSocketTraced
+                          ? 'bg-teal-950 border-teal-400 shadow-[0_0_8px_#14b8a6]'
+                          : 'bg-slate-800 border-slate-700 group-hover:border-slate-500'
+                      }`}
+                    >
+                      <span
+                        className={`text-[9px] font-mono font-bold leading-none ${
+                          isSocketTraced ? 'text-white font-black' : 'text-slate-300'
+                        }`}
+                      >
                         {portNum}
                       </span>
+                      {role && (
+                        <span
+                          className={`text-[6px] font-mono uppercase tracking-tighter ${
+                            isSocketTraced ? 'text-teal-300 font-bold' : 'text-teal-400/80'
+                          }`}
+                        >
+                          {role}
+                        </span>
+                      )}
                     </div>
                     <Handle
                       type="source"
                       position={Position.Bottom}
                       id={socketId}
                       className={`!w-3.5 !h-3.5 !rounded-full !border-2 transition-all ${
-                        hasConnectedCable
-                          ? '!bg-teal-400 !border-slate-950 shadow-[0_0_8px_#2dd4bf]'
-                          : '!bg-slate-800 !border-slate-600 hover:!bg-teal-400'
+                        isSocketTraced
+                          ? '!bg-white !border-teal-400 shadow-[0_0_12px_#2dd4bf] z-30'
+                          : connectedCable
+                          ? '!bg-teal-400 !border-slate-950 shadow-[0_0_6px_#2dd4bf]'
+                          : '!bg-slate-800 !border-slate-600 hover:!border-slate-400'
                       }`}
                     />
+
+                    {/* Minimalist Plug Indicator only appears when active trace */}
+                    {connectedCable && isSocketTraced && (
+                      <PhysicalPlugGraphic
+                        signalType={connectedCable.signalType}
+                        connectorType="xlr"
+                        direction="down"
+                        isTraced={true}
+                      />
+                    )}
                   </div>
                 );
               })}
@@ -118,15 +237,33 @@ export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
         {/* Right Section: Digital & Special I/O (SLink, USB, ST, AES) */}
         <div className="col-span-4 flex flex-col justify-between border-l border-slate-800 pl-3 space-y-2">
           {/* SLink Port (EtherCon) */}
-          <div className="bg-slate-950/90 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              if (hasDsnakeCable) setLockedTrace('sq-slink', 'console-sq5');
+            }}
+            className={`bg-slate-950/90 p-2 rounded-lg border transition-all ${
+              activeTrace?.socketId === 'sq-slink'
+                ? 'border-emerald-400 shadow-[0_0_12px_#10b981]'
+                : 'border-slate-800'
+            } ${hasDsnakeCable ? 'cursor-pointer' : ''} flex items-center justify-between`}
+          >
             <div>
               <span className="text-xs font-mono font-bold text-emerald-400 block">SLink</span>
               <span className="text-[9px] text-slate-500">From AR2412</span>
             </div>
             <div className="relative">
+              {hasDsnakeCable && activeTrace?.socketId === 'sq-slink' && (
+                <PhysicalPlugGraphic
+                  signalType="dsnake"
+                  connectorType="ethercon"
+                  direction="up"
+                  isTraced={true}
+                />
+              )}
               <div
                 className={`w-8 h-8 rounded bg-slate-800 border-2 flex items-center justify-center shadow-inner ${
-                  isSlinkConnected ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'
+                  hasDsnakeCable && isSlinkConnected ? 'border-emerald-500 text-emerald-400' : 'border-slate-700 text-slate-500'
                 }`}
               >
                 <Radio className="w-4 h-4" />
@@ -135,19 +272,57 @@ export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
                 type="target"
                 position={Position.Left}
                 id="sq-slink"
-                className="!w-4 !h-4 !rounded-sm !bg-emerald-500 !border-2 !border-slate-950 hover:scale-125"
+                className={`!w-4 !h-4 !rounded-sm !border-2 transition-all ${
+                  hasDsnakeCable && isSlinkConnected
+                    ? '!bg-emerald-500 !border-slate-950 shadow-[0_0_8px_#10b981]'
+                    : '!bg-slate-800 !border-slate-600'
+                }`}
               />
             </div>
           </div>
 
           {/* USB-B Port */}
-          <div className="bg-slate-950/90 p-2 rounded-lg border border-slate-800 flex items-center justify-between">
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              if (hasUsbCable) setLockedTrace('sq-usb-b', 'console-sq5');
+            }}
+            className={`bg-slate-950/90 p-2 rounded-lg border transition-all ${
+              activeTrace?.socketId === 'sq-usb-b'
+                ? 'border-amber-400 shadow-[0_0_12px_#fbbf24]'
+                : 'border-slate-800'
+            } ${hasUsbCable ? 'cursor-pointer' : ''} flex items-center justify-between`}
+          >
             <div>
               <span className="text-xs font-mono font-bold text-amber-400 block">USB-B Audio</span>
-              <span className="text-[9px] text-slate-500">32x32 @ 48kHz</span>
+              <span className="text-[9px] text-slate-500">32x32 Host Interface</span>
             </div>
-            <div className="w-8 h-8 rounded bg-slate-800 border border-slate-700 flex items-center justify-center text-amber-400 shadow-inner">
-              <Usb className="w-4 h-4" />
+            <div className="relative">
+              {hasUsbCable && activeTrace?.socketId === 'sq-usb-b' && (
+                <PhysicalPlugGraphic
+                  signalType="usb"
+                  connectorType="usb"
+                  direction="up"
+                  isTraced={true}
+                />
+              )}
+              <div
+                className={`w-8 h-8 rounded bg-slate-800 border-2 flex items-center justify-center shadow-inner ${
+                  hasUsbCable ? 'border-amber-500 text-amber-400' : 'border-slate-700 text-slate-500'
+                }`}
+              >
+                <Usb className="w-4 h-4" />
+              </div>
+              <Handle
+                type="source"
+                position={Position.Right}
+                id="sq-usb-b"
+                className={`!w-3.5 !h-3.5 !rounded-sm !border-2 transition-all ${
+                  hasUsbCable
+                    ? '!bg-amber-400 !border-slate-950 shadow-[0_0_8px_#fbbf24]'
+                    : '!bg-slate-800 !border-slate-600 hover:!border-slate-400'
+                }`}
+              />
             </div>
           </div>
 

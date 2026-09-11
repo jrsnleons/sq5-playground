@@ -6,10 +6,10 @@ import {
   Zap,
   Trash2,
   AlertTriangle,
-  Layers,
   ArrowRightLeft,
   CheckCircle2,
-  Plug
+  Edit2,
+  Check
 } from 'lucide-react';
 
 export const IOPatchScreen: React.FC = () => {
@@ -19,20 +19,24 @@ export const IOPatchScreen: React.FC = () => {
     patchInputSocket,
     unpatchInputSocket,
     patchOutputSocket,
-    unpatchOutputSocket
+    unpatchOutputSocket,
+    updateChannelName
   } = useSimulationStore();
 
   const [activeCategory, setActiveCategory] = useState<'inputs' | 'outputs' | 'tielines'>('inputs');
   const [sourceBank, setSourceBank] = useState<'slink' | 'local' | 'usb'>('slink');
-  const [channelBank, setChannelBank] = useState<number>(0); // 0 = 1-16, 1 = 17-32, 2 = 33-48
-  const [outputDestBank, setOutputDestBank] = useState<'slink' | 'local'>('slink');
+  const [outputDestBank, setOutputDestBank] = useState<'slink' | 'local'>('local');
   const [safeIOLocked, setSafeIOLocked] = useState<boolean>(false);
   const [lockNotice, setLockNotice] = useState<string | null>(null);
 
-  const isDsnakeConnected = signalPresence.slinkHasSignal;
+  // Selected row for high-visibility full-width highlighting
+  const [selectedRowChId, setSelectedRowChId] = useState<string | null>('ch-2');
 
-  // Channels for the current active bank (16 channels per bank)
-  const bankChannels = sim.digital.channels.slice(channelBank * 16, (channelBank + 1) * 16);
+  // Inline channel renaming
+  const [editingChId, setEditingChId] = useState<string | null>(null);
+  const [editingChName, setEditingChName] = useState<string>('');
+
+  const isDsnakeConnected = signalPresence.slinkHasSignal;
 
   // Sockets for the current source bank
   const getSockets = () => {
@@ -76,6 +80,7 @@ export const IOPatchScreen: React.FC = () => {
   };
 
   const handleCellClick = (chId: string, socket: { id: string; type: 'slink' | 'local' | 'usb'; label: string }, chName: string) => {
+    setSelectedRowChId(chId);
     if (safeIOLocked) {
       setLockNotice('Safe I/O Lock is active. Unlock in the top toolbar to modify patch.');
       setTimeout(() => setLockNotice(null), 3000);
@@ -90,7 +95,7 @@ export const IOPatchScreen: React.FC = () => {
     }
   };
 
-  // 1:1 Auto-Patch for visible bank
+  // 1:1 Auto-Patch for visible sockets across channels
   const handleAutoPatch1to1 = () => {
     if (safeIOLocked) {
       setLockNotice('Safe I/O Lock is active. Unlock in the top toolbar to modify patch.');
@@ -98,7 +103,7 @@ export const IOPatchScreen: React.FC = () => {
       return;
     }
 
-    bankChannels.forEach((ch, idx) => {
+    sim.digital.channels.forEach((ch, idx) => {
       if (idx < activeSockets.length) {
         const sock = activeSockets[idx];
         patchInputSocket(ch.id, sock.type, sock.id, ch.name);
@@ -106,36 +111,87 @@ export const IOPatchScreen: React.FC = () => {
     });
   };
 
-  // Clear visible bank
-  const handleUnpatchBank = () => {
+  // Clear all input patches
+  const handleUnpatchAll = () => {
     if (safeIOLocked) {
       setLockNotice('Safe I/O Lock is active. Unlock in the top toolbar to modify patch.');
       setTimeout(() => setLockNotice(null), 3000);
       return;
     }
 
-    bankChannels.forEach((ch) => {
+    sim.digital.channels.forEach((ch) => {
       unpatchInputSocket(ch.id);
     });
   };
 
-  // Output Buses Available for Patching
-  const outputBuses: Array<{ id: string; name: string; type: 'main-lr' | 'mix' | 'matrix' }> = [
-    { id: 'main-lr', name: 'Main LR', type: 'main-lr' },
-    ...sim.digital.mixes.map((m) => ({ id: m.id, name: m.name, type: 'mix' as const })),
-    ...sim.digital.matrices.map((mx) => ({ id: mx.id, name: mx.name, type: 'matrix' as const }))
-  ];
+  const startEditingChannel = (chId: string, currentName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingChId(chId);
+    setEditingChName(currentName);
+  };
 
+  const saveChannelName = (chId: string) => {
+    if (editingChName.trim()) {
+      updateChannelName(chId, editingChName.trim());
+    }
+    setEditingChId(null);
+  };
+
+  // Output Buses Available for Patching (Separated L/R for stereo mixes)
+  const outputBuses: Array<{ id: string; name: string; type: 'main-lr' | 'mix' | 'matrix'; isSub?: boolean }> = [];
+  outputBuses.push({ id: 'main-lr-l', name: 'Main L', type: 'main-lr' });
+  outputBuses.push({ id: 'main-lr-r', name: 'Main R', type: 'main-lr' });
+
+  sim.digital.mixes.forEach((m) => {
+    if (m.stereo) {
+      outputBuses.push({ id: `${m.id}-l`, name: `${m.name} L (M${m.mixNumber})`, type: 'mix' });
+      outputBuses.push({ id: `${m.id}-r`, name: `${m.name} R (M${m.mixNumber})`, type: 'mix' });
+    } else {
+      outputBuses.push({ id: m.id, name: `${m.name} (M${m.mixNumber})`, type: 'mix' });
+    }
+  });
+
+  sim.digital.matrices.forEach((mx) => {
+    if (mx.stereo) {
+      outputBuses.push({ id: `${mx.id}-l`, name: `${mx.name} L`, type: 'matrix' });
+      outputBuses.push({ id: `${mx.id}-r`, name: `${mx.name} R`, type: 'matrix' });
+    } else {
+      outputBuses.push({ id: mx.id, name: mx.name, type: 'matrix' });
+    }
+  });
+
+  // Output Sockets list
   const outputSockets = outputDestBank === 'slink'
-    ? Array.from({ length: 12 }, (_, i) => ({ id: `ar-out-${i + 1}`, label: `AR Out ${i + 1}` }))
-    : Array.from({ length: 12 }, (_, i) => ({ id: `sq-out-${i + 1}`, label: `SQ Out ${i + 1}` }));
+    ? Array.from({ length: 12 }, (_, i) => ({
+        id: `ar-out-${i + 1}`,
+        num: i + 1,
+        label: `AR Out ${String(i + 1).padStart(2, '0')}`,
+        roleBadge: null
+      }))
+    : Array.from({ length: 12 }, (_, i) => {
+        const num = i + 1;
+        const roleBadge =
+          num === 7 ? 'Record L' :
+          num === 8 ? 'Record R' :
+          num === 9 ? 'Monitor L' :
+          num === 10 ? 'Monitor R' :
+          num === 11 ? 'Stream L' :
+          num === 12 ? 'Stream R' : null;
+
+        return {
+          id: `sq-out-${num}`,
+          num,
+          label: `Local Out ${String(num).padStart(2, '0')}`,
+          roleBadge
+        };
+      });
 
   return (
-    <div className="h-full bg-slate-950 flex flex-col overflow-hidden select-none font-sans text-slate-100">
+    <div className="w-full h-full bg-slate-950 flex flex-col overflow-hidden select-none font-sans text-slate-100">
       {/* Top Console Command Header */}
       <div className="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0">
         {/* Category Tabs: Inputs / Outputs / Tie Lines */}
-        <div className="flex items-center space-x-1.5">
+        <div className="flex items-center space-x-2">
           <span className="text-[10px] font-mono uppercase text-slate-400 font-bold mr-1">
             I/O MATRIX:
           </span>
@@ -147,7 +203,7 @@ export const IOPatchScreen: React.FC = () => {
                 : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
-            INPUTS
+            INPUTS (48-CH)
           </button>
           <button
             onClick={() => setActiveCategory('outputs')}
@@ -157,7 +213,7 @@ export const IOPatchScreen: React.FC = () => {
                 : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
-            OUTPUTS
+            OUTPUTS (12-BUS)
           </button>
           <button
             onClick={() => setActiveCategory('tielines')}
@@ -171,62 +227,86 @@ export const IOPatchScreen: React.FC = () => {
           </button>
         </div>
 
-        {/* Center: Source Bank Selectors */}
-        {activeCategory === 'inputs' && (
+        {/* Center: Source / Destination Sockets Selector */}
+        {activeCategory === 'inputs' ? (
           <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
             <span className="text-[9px] text-slate-400 font-mono uppercase px-1.5">SOURCE:</span>
             <button
               onClick={() => setSourceBank('slink')}
-              className={`px-2.5 py-1 text-xs font-mono font-bold rounded ${
+              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
                 sourceBank === 'slink'
                   ? 'bg-emerald-600 text-white shadow'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              SLink (AR2412)
+              SLink (AR2412 1–24)
             </button>
             <button
               onClick={() => setSourceBank('local')}
-              className={`px-2.5 py-1 text-xs font-mono font-bold rounded ${
+              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
                 sourceBank === 'local'
                   ? 'bg-sky-600 text-white shadow'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Local (SQ-5)
+              Local (SQ-5 1–16)
             </button>
             <button
               onClick={() => setSourceBank('usb')}
-              className={`px-2.5 py-1 text-xs font-mono font-bold rounded ${
+              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
                 sourceBank === 'usb'
                   ? 'bg-amber-600 text-white shadow'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              USB-B
+              USB-B (1–32)
             </button>
           </div>
-        )}
+        ) : activeCategory === 'outputs' ? (
+          <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <span className="text-[9px] text-slate-400 font-mono uppercase px-1.5">OUTPUT PORT:</span>
+            <button
+              onClick={() => setOutputDestBank('local')}
+              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
+                outputDestBank === 'local'
+                  ? 'bg-teal-600 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              SQ-5 Local Out (1–12)
+            </button>
+            <button
+              onClick={() => setOutputDestBank('slink')}
+              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
+                outputDestBank === 'slink'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              AR2412 SLink Out (1–12)
+            </button>
+          </div>
+        ) : null}
 
-        {/* Right Actions: Auto-Patch, Unpatch, Safe I/O */}
+        {/* Right Actions: Auto-Patch, Clear, Safe I/O */}
         <div className="flex items-center space-x-2">
           {activeCategory === 'inputs' && (
             <>
               <button
                 onClick={handleAutoPatch1to1}
-                title="Patch sockets 1-to-1 to current channel bank"
-                className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-mono font-bold border border-slate-700 transition-colors"
+                title="Patch sockets 1-to-1 to input channels"
+                className="flex items-center space-x-1 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-mono font-bold border border-slate-700 transition-colors"
               >
                 <Zap className="w-3.5 h-3.5" />
                 <span>1:1 Patch</span>
               </button>
               <button
-                onClick={handleUnpatchBank}
-                title="Clear all assignments in visible channel bank"
-                className="flex items-center space-x-1 px-2 py-1 rounded bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 text-xs font-mono border border-slate-700 transition-colors"
+                onClick={handleUnpatchAll}
+                title="Clear all input channel assignments"
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 text-xs font-mono border border-slate-700 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Clear Bank</span>
+                <span>Clear All</span>
               </button>
             </>
           )}
@@ -234,10 +314,10 @@ export const IOPatchScreen: React.FC = () => {
           {/* Safe I/O Toggle (Console Safety Lock) */}
           <button
             onClick={() => setSafeIOLocked(!safeIOLocked)}
-            title={safeIOLocked ? 'Safe I/O Lock is ON (Changes blocked)' : 'Safe I/O Lock is OFF (Editing enabled)'}
-            className={`flex items-center space-x-1 px-2.5 py-1 rounded text-xs font-mono font-bold transition-all border ${
+            title={safeIOLocked ? 'Safe I/O Lock is ON (Editing blocked)' : 'Safe I/O Lock is OFF (Editing enabled)'}
+            className={`flex items-center space-x-1 px-3 py-1.5 rounded text-xs font-mono font-bold transition-all border ${
               safeIOLocked
-                ? 'bg-rose-950 text-rose-300 border-rose-800'
+                ? 'bg-rose-950 text-rose-300 border-rose-800 shadow-[0_0_6px_#f43f5e]'
                 : 'bg-slate-800 text-emerald-400 border-slate-700 hover:border-emerald-500'
             }`}
           >
@@ -260,89 +340,28 @@ export const IOPatchScreen: React.FC = () => {
         <div className="bg-amber-950/80 border-b border-amber-800 px-4 py-2 text-xs text-amber-200 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>AR2412 dSNAKE connection is unlinked. SLink patches are offline.</span>
+            <span>AR2412 dSNAKE connection is unlinked. Remote SLink patches are offline.</span>
           </div>
-          <span className="font-mono text-[10px] text-amber-400">CONNECT CAT5E ON STAGE CANVAS TO RESTORE</span>
+          <span className="font-mono text-[10px] text-amber-400 font-bold">
+            CONNECT CAT5E CABLE ON STAGE CANVAS TO RESTORE
+          </span>
         </div>
       )}
 
-      {/* Secondary Sub-Bar: Channel Banks for Inputs */}
-      {activeCategory === 'inputs' && (
-        <div className="h-9 bg-slate-900/80 border-b border-slate-800 px-4 flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-2">
-            <span className="text-[10px] font-mono uppercase text-slate-400">DESTINATION BANK:</span>
-            {[
-              { id: 0, label: 'CH 01 – 16' },
-              { id: 1, label: 'CH 17 – 32' },
-              { id: 2, label: 'CH 33 – 48' }
-            ].map((bank) => (
-              <button
-                key={bank.id}
-                onClick={() => setChannelBank(bank.id)}
-                className={`px-3 py-0.5 text-xs font-mono font-bold rounded ${
-                  channelBank === bank.id
-                    ? 'bg-slate-800 text-sky-400 border border-sky-600/60'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {bank.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center space-x-3 text-[10px] font-mono text-slate-400">
-            <div className="flex items-center space-x-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-              <span>Signal Active</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <span className="w-2 h-2 rounded-full bg-slate-700" />
-              <span>Unplugged</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* OUTPUTS Secondary Bar */}
-      {activeCategory === 'outputs' && (
-        <div className="h-9 bg-slate-900/80 border-b border-slate-800 px-4 flex items-center space-x-2 shrink-0">
-          <span className="text-[10px] font-mono uppercase text-slate-400">DESTINATION SOCKETS:</span>
-          <button
-            onClick={() => setOutputDestBank('slink')}
-            className={`px-3 py-0.5 text-xs font-mono font-bold rounded ${
-              outputDestBank === 'slink'
-                ? 'bg-teal-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            AR2412 Out (1–12)
-          </button>
-          <button
-            onClick={() => setOutputDestBank('local')}
-            className={`px-3 py-0.5 text-xs font-mono font-bold rounded ${
-              outputDestBank === 'local'
-                ? 'bg-teal-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            SQ-5 Local Out (1–12)
-          </button>
-        </div>
-      )}
-
-      {/* Main 2D Crosspoint Matrix Grid */}
-      <div className="flex-1 overflow-auto p-4">
+      {/* Main Fullscreen Crosspoint Matrix Grid */}
+      <div className="flex-1 overflow-auto bg-slate-950 p-4">
         {activeCategory === 'inputs' ? (
+          /* Single Continuous 48-Channel Vertical Scroll Grid */
           <div className="inline-block border border-slate-800 rounded-xl overflow-hidden bg-slate-900/90 shadow-2xl">
-            {/* Header Row: Socket Columns */}
-            <div className="flex bg-slate-950 sticky top-0 z-20 border-b border-slate-800">
-              {/* Top-Left Corner Box */}
-              <div className="w-44 p-2.5 font-mono text-[10px] font-bold text-slate-400 border-r border-slate-800 shrink-0 bg-slate-950 flex items-center justify-between">
-                <span>DEST CHANNEL</span>
-                <span className="text-slate-600">▼</span>
+            {/* Header Row: Socket Columns (Sticky Top) */}
+            <div className="flex bg-slate-950 sticky top-0 z-30 border-b border-slate-800 shadow-md">
+              {/* Top-Left Header: Channels Column Info */}
+              <div className="w-56 p-2.5 font-mono text-[11px] font-bold text-slate-300 border-r border-slate-800 shrink-0 bg-slate-950 flex items-center justify-between sticky left-0 z-40">
+                <span>DEST CHANNEL (1–48)</span>
+                <span className="text-slate-500 text-[9px]">DOUBLE-CLICK TO RENAME</span>
               </div>
 
-              {/* Socket Column Headers with Live LEDs */}
+              {/* Socket Headers with Live Status LEDs */}
               <div className="flex">
                 {activeSockets.map((sock) => {
                   const cabled = isSocketCabled(sock.id);
@@ -351,7 +370,7 @@ export const IOPatchScreen: React.FC = () => {
                   return (
                     <div
                       key={sock.id}
-                      className="w-12 h-14 border-r border-slate-800 flex flex-col items-center justify-between py-1.5 shrink-0 bg-slate-950/90 group hover:bg-slate-900 transition-colors"
+                      className="w-12 h-14 border-r border-slate-800 flex flex-col items-center justify-between py-1.5 shrink-0 bg-slate-950/95 group hover:bg-slate-900 transition-colors"
                     >
                       {/* Live LED Status */}
                       <div
@@ -386,29 +405,88 @@ export const IOPatchScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Matrix Rows (Channels) */}
-            {bankChannels.map((ch) => {
+            {/* Continuous 48-Channel Rows */}
+            {sim.digital.channels.map((ch) => {
               const currentPatch = sim.digital.ioPatch.inputs[ch.id];
               const isChActive = signalPresence.channelsWithSignal[ch.id];
+              const isRowSelected = selectedRowChId === ch.id;
+              const isEditingThisCh = editingChId === ch.id;
 
               return (
                 <div
                   key={ch.id}
-                  className="flex border-b border-slate-800/80 hover:bg-slate-800/30 transition-colors"
+                  onClick={() => setSelectedRowChId(ch.id)}
+                  className={`flex border-b border-slate-800/80 transition-colors ${
+                    isRowSelected
+                      ? 'bg-sky-950/50 border-y border-sky-500/50 shadow-inner'
+                      : 'hover:bg-slate-800/30'
+                  }`}
                 >
-                  {/* Channel Row Header */}
-                  <div className="w-44 p-2 text-xs font-mono border-r border-slate-800 shrink-0 bg-slate-950/80 flex items-center justify-between sticky left-0 z-10">
-                    <div className="flex items-center space-x-2 truncate">
+                  {/* Sticky Channel Row Header with Inline Renaming */}
+                  <div
+                    className={`w-56 p-2 text-xs font-mono border-r border-slate-800 shrink-0 flex items-center justify-between sticky left-0 z-20 transition-colors ${
+                      isRowSelected ? 'bg-slate-900 text-sky-300' : 'bg-slate-950/90'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2 truncate flex-1 mr-1">
                       <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-sky-400 shrink-0">
                         {String(ch.channelNumber).padStart(2, '0')}
                       </span>
-                      <span className="font-semibold text-slate-200 truncate text-[11px]" title={ch.name}>
-                        {ch.name}
-                      </span>
+                      {ch.stereo && (
+                        <span
+                          className="px-1 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-800 text-[8px] font-bold shrink-0"
+                          title={ch.isStereoSlave ? 'Stereo Pair: Right Channel' : 'Stereo Pair: Left Channel'}
+                        >
+                          {ch.isStereoSlave ? 'ST-R' : 'ST-L'}
+                        </span>
+                      )}
+
+                      {isEditingThisCh ? (
+                        <div className="flex items-center space-x-1 flex-1">
+                          <input
+                            type="text"
+                            value={editingChName}
+                            onChange={(e) => setEditingChName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveChannelName(ch.id);
+                              if (e.key === 'Escape') setEditingChId(null);
+                            }}
+                            onBlur={() => saveChannelName(ch.id)}
+                            autoFocus
+                            className="w-full px-1.5 py-0.5 bg-slate-900 text-white rounded border border-sky-500 text-xs font-mono focus:outline-none"
+                          />
+                          <button
+                            onClick={() => saveChannelName(ch.id)}
+                            className="text-emerald-400 hover:text-white p-0.5"
+                          >
+                            <Check className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span
+                          onDoubleClick={(e) => startEditingChannel(ch.id, ch.name, e)}
+                          className="font-semibold text-slate-200 truncate text-[11px] cursor-pointer hover:text-sky-300"
+                          title="Double-click to rename"
+                        >
+                          {ch.name}
+                        </span>
+                      )}
                     </div>
-                    {isChActive && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_4px_#34d399]" />
-                    )}
+
+                    <div className="flex items-center space-x-1.5 shrink-0">
+                      {!isEditingThisCh && (
+                        <button
+                          onClick={(e) => startEditingChannel(ch.id, ch.name, e)}
+                          title="Rename channel"
+                          className="text-slate-600 hover:text-sky-400 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Edit2 className="w-2.5 h-2.5" />
+                        </button>
+                      )}
+                      {isChActive && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                      )}
+                    </div>
                   </div>
 
                   {/* Crosspoint Grid Cells */}
@@ -426,6 +504,8 @@ export const IOPatchScreen: React.FC = () => {
                               ? isSlinkBlocked
                                 ? 'bg-amber-950/70 border-amber-600 text-amber-300'
                                 : 'bg-sky-600 text-white shadow-inner font-bold'
+                              : isRowSelected
+                              ? 'hover:bg-sky-900/40'
                               : 'hover:bg-slate-800/60'
                           }`}
                           title={
@@ -456,11 +536,11 @@ export const IOPatchScreen: React.FC = () => {
             })}
           </div>
         ) : activeCategory === 'outputs' ? (
-          /* Outputs 2D Patch Matrix */
+          /* Output 2D Patch Matrix with Local Out 7–12 Stream/Monitor/Record Badges */
           <div className="inline-block border border-slate-800 rounded-xl overflow-hidden bg-slate-900/90 shadow-2xl">
-            {/* Output Header Row: Output Sockets */}
-            <div className="flex bg-slate-950 sticky top-0 z-20 border-b border-slate-800">
-              <div className="w-48 p-2.5 font-mono text-[10px] font-bold text-slate-400 border-r border-slate-800 shrink-0 bg-slate-950 flex items-center justify-between">
+            {/* Output Header Row: Sockets */}
+            <div className="flex bg-slate-950 sticky top-0 z-30 border-b border-slate-800">
+              <div className="w-60 p-2.5 font-mono text-[10px] font-bold text-slate-400 border-r border-slate-800 shrink-0 bg-slate-950 flex items-center justify-between sticky left-0 z-40">
                 <span>SOURCE BUS</span>
                 <span className="text-slate-600">▼</span>
               </div>
@@ -468,12 +548,17 @@ export const IOPatchScreen: React.FC = () => {
                 {outputSockets.map((sock) => (
                   <div
                     key={sock.id}
-                    className="w-16 h-12 border-r border-slate-800 flex flex-col items-center justify-center shrink-0 bg-slate-950 text-center"
+                    className="w-24 h-16 border-r border-slate-800 flex flex-col items-center justify-center p-1 shrink-0 bg-slate-950 text-center"
                   >
                     <span className="text-[11px] font-mono font-bold text-teal-400">
                       {sock.label}
                     </span>
-                    <span className="text-[8px] font-mono text-slate-500">XLR OUT</span>
+                    {sock.roleBadge && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-800 font-bold mt-0.5">
+                        {sock.roleBadge}
+                      </span>
+                    )}
+                    <span className="text-[8px] font-mono text-slate-500 mt-0.5">XLR OUT</span>
                   </div>
                 ))}
               </div>
@@ -485,7 +570,7 @@ export const IOPatchScreen: React.FC = () => {
                 key={bus.id}
                 className="flex border-b border-slate-800/80 hover:bg-slate-800/30 transition-colors"
               >
-                <div className="w-48 p-2 text-xs font-mono border-r border-slate-800 shrink-0 bg-slate-950/80 flex items-center justify-between sticky left-0 z-10">
+                <div className="w-60 p-2 text-xs font-mono border-r border-slate-800 shrink-0 bg-slate-950/90 flex items-center justify-between sticky left-0 z-20">
                   <span className="font-bold text-slate-200 truncate">{bus.name}</span>
                   <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
                     {bus.type}
@@ -495,7 +580,11 @@ export const IOPatchScreen: React.FC = () => {
                 <div className="flex">
                   {outputSockets.map((sock) => {
                     const currentPatch = sim.digital.ioPatch.outputs[sock.id];
-                    const isPatched = currentPatch?.busId === bus.id;
+                    // Match either direct busId or stereo prefix
+                    const isPatched =
+                      currentPatch?.busId === bus.id ||
+                      (bus.id === `${currentPatch?.busId}-l` && sock.num % 2 !== 0) ||
+                      (bus.id === `${currentPatch?.busId}-r` && sock.num % 2 === 0);
 
                     return (
                       <div
@@ -512,14 +601,17 @@ export const IOPatchScreen: React.FC = () => {
                             patchOutputSocket(sock.id, bus.type, bus.id, bus.name);
                           }
                         }}
-                        className={`w-16 h-9 border-r border-slate-800/60 flex items-center justify-center cursor-pointer transition-all ${
+                        className={`w-24 h-10 border-r border-slate-800/60 flex items-center justify-center cursor-pointer transition-all ${
                           isPatched
                             ? 'bg-teal-600 text-white font-bold shadow-inner'
                             : 'hover:bg-slate-800/60'
                         }`}
                       >
                         {isPatched && (
-                          <CheckCircle2 className="w-4 h-4 text-white" />
+                          <div className="flex items-center space-x-1">
+                            <CheckCircle2 className="w-4 h-4 text-white" />
+                            <span className="text-[10px] font-mono uppercase">PATCHED</span>
+                          </div>
                         )}
                       </div>
                     );
@@ -560,4 +652,3 @@ export const IOPatchScreen: React.FC = () => {
     </div>
   );
 };
-

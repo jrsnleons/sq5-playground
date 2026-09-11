@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSimulationStore } from '../../store/simulationStore';
 import { X, Church, Sparkles } from 'lucide-react';
+import { ConfirmDialogModal } from './ConfirmDialogModal';
 
 export const EntryModeModal: React.FC = () => {
   const {
@@ -9,22 +10,22 @@ export const EntryModeModal: React.FC = () => {
     loadPreset
   } = useSimulationStore();
 
+  const [pendingMode, setPendingMode] = useState<'church' | 'scratch' | null>(null);
+
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && showEntryModal) {
+      if (e.key === 'Escape' && showEntryModal && !pendingMode) {
         setShowEntryModal(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showEntryModal, setShowEntryModal]);
+  }, [showEntryModal, setShowEntryModal, pendingMode]);
 
   if (!showEntryModal) return null;
 
   const handleSelectMode = (mode: 'church' | 'scratch') => {
-    if (window.confirm('Loading a preset will replace current canvas connections and digital patches. Proceed?')) {
-      loadPreset(mode);
-    }
+    setPendingMode(mode);
   };
 
   return (
@@ -113,6 +114,19 @@ export const EntryModeModal: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <ConfirmDialogModal
+        isOpen={pendingMode !== null}
+        title="Load Rig Configuration"
+        message="Loading a preset will replace current canvas connections and digital console patches. Are you sure you want to proceed?"
+        confirmLabel="Load Configuration"
+        isDestructive={false}
+        onConfirm={() => {
+          if (pendingMode) loadPreset(pendingMode);
+          setPendingMode(null);
+        }}
+        onCancel={() => setPendingMode(null)}
+      />
     </div>
   );
 };

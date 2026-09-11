@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSimulationStore } from '../../store/simulationStore';
 import stageItemsCatalog from '@foh-sim/hardware-profiles/stage-items.json';
-import { X, Trash2, Edit3, Check, Plug, Unlink } from 'lucide-react';
+import { X, Trash2, Edit3, Check, Plug, Unlink, Camera, RotateCcw } from 'lucide-react';
+import { ConfirmDialogModal } from '../../components/modals/ConfirmDialogModal';
 
 export const NodeDetailModal: React.FC = () => {
   const {
@@ -10,13 +11,18 @@ export const NodeDetailModal: React.FC = () => {
     sim,
     updateStageItemDetails,
     removeStageItem,
-    removeCable
+    removeCable,
+    setNodePhoto,
+    removeNodePhoto
   } = useSimulationStore();
 
   const stageItem = sim.physical.stageItems.find((i) => i.id === selectedNodeId);
   const [nameInput, setNameInput] = useState('');
   const [notesInput, setNotesInput] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (stageItem) {
@@ -53,6 +59,25 @@ export const NodeDetailModal: React.FC = () => {
     setIsEditing(false);
   };
 
+  const customPhoto = stageItem.photoOverride || sim.nodePhotos?.[stageItem.id]?.userPhotoDataUrl;
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError('Photo size must be under 2MB.');
+      return;
+    }
+    setUploadError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setNodePhoto(stageItem.id, reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div
       role="dialog"
@@ -80,18 +105,66 @@ export const NodeDetailModal: React.FC = () => {
       </div>
 
       <div className="p-4 space-y-4 text-xs">
-        {/* Gear Photo Placeholder with stock representation */}
-        <div className="w-full h-32 bg-slate-950 rounded-lg border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden group">
-          <div className="w-14 h-14 rounded-full bg-slate-800/80 flex items-center justify-center border border-slate-700 text-sky-400">
-            <Plug className="w-7 h-7" />
+        {/* Gear Photo: Stock vs Custom Override */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handlePhotoUpload}
+        />
+
+        {customPhoto ? (
+          <div className="w-full h-32 bg-slate-950 rounded-lg border border-slate-800 relative overflow-hidden group">
+            <img
+              src={customPhoto}
+              alt={stageItem.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-slate-950/75 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded text-[10px] font-semibold flex items-center space-x-1 shadow"
+              >
+                <Camera className="w-3 h-3" />
+                <span>Change</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => removeNodePhoto(stageItem.id)}
+                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-semibold flex items-center space-x-1 border border-slate-700 shadow"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            </div>
           </div>
-          <span className="text-[10px] text-slate-400 font-mono mt-2">
-            {catalogDef?.defaultPhotoAlt || 'Equipment Stock Photo'}
-          </span>
-          <span className="text-[9px] text-slate-600 font-mono">
-            {catalogDef?.makeModel || 'Hardware Unit'}
-          </span>
-        </div>
+        ) : (
+          <div className="w-full h-32 bg-slate-950 rounded-lg border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden group p-2">
+            <div className="w-10 h-10 rounded-full bg-slate-800/80 flex items-center justify-center border border-slate-700 text-sky-400 mb-1">
+              <Plug className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono text-center truncate max-w-[90%]">
+              {catalogDef?.defaultPhotoAlt || 'Equipment Stock Photo'}
+            </span>
+            <span className="text-[9px] text-slate-600 font-mono mb-1">
+              {catalogDef?.makeModel || 'Hardware Unit'}
+            </span>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 rounded text-[10px] font-mono border border-slate-700 flex items-center space-x-1 transition-colors"
+            >
+              <Camera className="w-3 h-3" />
+              <span>Upload Photo</span>
+            </button>
+          </div>
+        )}
+
+        {uploadError && (
+          <p className="text-[10px] text-rose-400 font-mono">{uploadError}</p>
+        )}
 
         {/* Editable Name */}
         <div>
@@ -181,24 +254,35 @@ export const NodeDetailModal: React.FC = () => {
         {/* Actions */}
         <div className="pt-2 border-t border-slate-800 flex justify-between items-center">
           <button
-            onClick={() => {
-              if (window.confirm(`Delete ${stageItem.name} from stage?`)) {
-                removeStageItem(stageItem.id);
-              }
-            }}
-            className="flex items-center space-x-1.5 text-xs text-rose-400 hover:text-rose-300 p-1 rounded"
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center space-x-1.5 text-xs text-rose-400 hover:text-rose-300 p-1 rounded transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>Remove Gear</span>
           </button>
           <button
+            type="button"
             onClick={() => setSelectedNodeId(null)}
-            className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs"
+            className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs transition-colors"
           >
             Done
           </button>
         </div>
       </div>
+
+      <ConfirmDialogModal
+        isOpen={showDeleteConfirm}
+        title="Remove Equipment"
+        message={`Are you sure you want to remove "${stageItem.name}" and disconnect all of its attached cables from the stage?`}
+        confirmLabel="Remove Gear"
+        isDestructive={true}
+        onConfirm={() => {
+          removeStageItem(stageItem.id);
+          setSelectedNodeId(null);
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 };

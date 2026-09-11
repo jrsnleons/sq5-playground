@@ -9,6 +9,7 @@ import {
   MixChannel,
   SignalPresenceMap,
   ValidationNotice,
+  CustomPortDef,
   createInitialState,
   computeSignalPresence,
   validateSystemState,
@@ -16,17 +17,51 @@ import {
 } from '@foh-sim/simulation-core';
 import stageItemsCatalog from '@foh-sim/hardware-profiles/stage-items.json';
 
+export interface CustomEquipmentCatalogItem {
+  id: string;
+  name: string;
+  category: StageItem['category'];
+  connectorTypes: string[];
+  makeModel?: string;
+  notes?: string;
+  ports?: CustomPortDef[];
+}
+
 interface SimulationStoreState {
   sim: SimulationState;
   signalPresence: SignalPresenceMap;
   validationNotices: ValidationNotice[];
   selectedNodeId: string | null;
-  activeTab: 'stage' | 'console' | 'meters' | 'scenes' | 'setup' | 'help';
+  activeTab: 'stage' | 'console' | 'inventory' | 'scenes' | 'setup' | 'help';
   showEntryModal: boolean;
   noticesModalOpen: boolean;
+  toastNotice: { id: string; message: string; type: 'error' | 'warning' | 'info' } | null;
+  setToastNotice: (notice: { message: string; type?: 'error' | 'warning' | 'info' } | null) => void;
+
+  // Node Photo Customization
+  setNodePhoto: (nodeId: string, photoData: string) => void;
+  removeNodePhoto: (nodeId: string) => void;
+
+  // Inventory Tracking
+  inventory: Record<string, { totalStock: number; notes?: string }>;
+  updateInventoryStock: (typeId: string, totalStock: number) => void;
+
+  // Admin & Custom Nodes
+  adminMode: boolean;
+  toggleAdminMode: () => void;
+  customCatalog: CustomEquipmentCatalogItem[];
+  addCustomEquipmentType: (entry: {
+    id: string;
+    name: string;
+    category: StageItem['category'];
+    ports: CustomPortDef[];
+    makeModel?: string;
+    totalStock?: number;
+  }) => void;
+  saveStageAsDefaultPreset: () => void;
 
   // Actions
-  setActiveTab: (tab: 'stage' | 'console' | 'meters' | 'scenes' | 'setup' | 'help') => void;
+  setActiveTab: (tab: 'stage' | 'console' | 'inventory' | 'scenes' | 'setup' | 'help') => void;
   setSelectedNodeId: (id: string | null) => void;
   setNoticesModalOpen: (open: boolean) => void;
   setShowEntryModal: (show: boolean) => void;
@@ -42,6 +77,17 @@ interface SimulationStoreState {
   removeStageItem: (id: string) => void;
   connectCable: (fromNode: string, fromPort: string, toNode: string, toPort: string, signalType: SignalType) => boolean;
   removeCable: (cableId: string) => void;
+
+  // Wire Tracing & Physical Inspection
+  activeTrace: {
+    cableId: string | null;
+    socketId: string | null;
+    nodeId: string | null;
+    isLocked: boolean;
+  } | null;
+  setHoverTrace: (socketId: string | null, nodeId: string | null) => void;
+  setLockedTrace: (socketId: string | null, nodeId: string | null) => void;
+  clearTrace: () => void;
 
   // Digital Console actions
   setActiveScreen: (screen: SimulationState['digital']['session']['activeScreen']) => void;
@@ -72,8 +118,27 @@ interface SimulationStoreState {
   setDCALevel: (dcaId: number, levelDb: number) => void;
   toggleMuteGroup: (mgId: number) => void;
   cycleGeqFlip: () => void;
+  setGeqFlipPage: (page: 0 | 1 | 2) => void;
   setMixGeqBand: (mixId: string, bandIndex: number, gainDb: number) => void;
   resetMixGeqBand: (mixId: string, bandIndex: number) => void;
+  resetAllMixGeq: (mixId: string) => void;
+
+  // Bus Architecture & Stereo Linking (Setup > Mixer Config)
+  toggleInputChannelStereo: (channelNumber: number) => void;
+  toggleMixStereo: (mixId: string) => void;
+  toggleMixMode: (mixId: string) => void;
+  toggleMixMainLR: (mixId: string) => void;
+  setSendTapPoint: (channelId: string, mixId: string, tapPoint: InputChannel['sends'][string]['tapPoint']) => void;
+  toggleMatrixStereo: (matrixId: string) => void;
+  setMatrixFader: (matrixId: string, levelDb: number) => void;
+  setMatrixSource: (matrixId: string, source: 'main-lr' | 'mix') => void;
+  toggleMatrixMute: (matrixId: string) => void;
+  setGlobalAuxPreFade: (preFade: boolean) => void;
+
+  // DCA Group Management
+  setDcaMembership: (channelId: string, dcaId: number, isMember: boolean) => void;
+  setDcaAllMembers: (dcaId: number, channelIds: string[]) => void;
+  updateDcaName: (dcaId: number, name: string) => void;
 
   // I/O Patch Matrix
   patchInputSocket: (channelId: string, sourceType: 'local' | 'slink' | 'usb', socketId: string, label: string) => void;
@@ -85,6 +150,37 @@ interface SimulationStoreState {
   saveScene: (sceneId: number, name?: string) => void;
   recallScene: (sceneId: number) => void;
 }
+
+const defaultInventory: Record<string, { totalStock: number; notes?: string }> = {
+  'mic-dynamic': { totalStock: 8, notes: 'Shure SM58' },
+  'mic-condenser': { totalStock: 4, notes: 'Rode NT5 / AKG P170' },
+  'mic-lapel': { totalStock: 4, notes: 'Wireless Lavalier Bodypack' },
+  'mic-wireless-hh-1': { totalStock: 2, notes: 'Shure PG28 Handheld 1' },
+  'mic-wireless-hh-2': { totalStock: 2, notes: 'Shure PG28 Handheld 2' },
+  'mic-kick': { totalStock: 2, notes: 'Shure Beta 52A' },
+  'mic-snare': { totalStock: 4, notes: 'Shure SM57' },
+  'mic-tom': { totalStock: 4, notes: 'Sennheiser e604' },
+  'mic-fl-tom': { totalStock: 2, notes: 'Sennheiser e604' },
+  'mic-hihat': { totalStock: 2, notes: 'Shure SM81' },
+  'mic-oh': { totalStock: 2, notes: 'AKG C414 / Rode NT5' },
+  'di-passive-mono': { totalStock: 6, notes: 'Radial ProDI' },
+  'di-active-mono': { totalStock: 4, notes: 'Radial Pro48' },
+  'di-stereo-pc': { totalStock: 2, notes: 'Radial ProD2 Stereo' },
+  'rx-wireless-dual': { totalStock: 2, notes: 'Shure SVX288 Dual' },
+  'iem-receiver': { totalStock: 8, notes: 'Sennheiser G4 / PSM300' },
+  'speaker-front-fill': { totalStock: 4, notes: 'Turbosound Milan 10' },
+  'speaker-subwoofer': { totalStock: 4, notes: 'Turbosound Milan 18B' },
+  'speaker-array-l': { totalStock: 2, notes: 'Left Main Array' },
+  'speaker-array-r': { totalStock: 2, notes: 'Right Main Array' },
+  'playback-laptop': { totalStock: 2, notes: 'ProPresenter / DAW' },
+  'click-track': { totalStock: 2, notes: 'Ableton / Drummer Click' },
+  'comms-talkback': { totalStock: 4, notes: 'Worship / MD Comms' },
+  'stream-pc': { totalStock: 2, notes: 'OBS / vMix Streaming PC' },
+  'interface-behringer-umc': { totalStock: 2, notes: 'Behringer U-Phoria UMC202HD' },
+  'switcher-osee-basic': { totalStock: 1, notes: 'Osee Switcher Basic / GoStream' },
+  'monitor-stream-display': { totalStock: 2, notes: '24" Stream Output / Program Monitor' },
+  'waves-superrack-pc': { totalStock: 1, notes: 'Waves SuperRack Live PC (USB 32x32)' }
+};
 
 const initialSim = createInitialState('church');
 const initialPresence = computeSignalPresence(initialSim);
@@ -99,6 +195,86 @@ export const useSimulationStore = create<SimulationStoreState>()(
     activeTab: 'stage',
     showEntryModal: false,
     noticesModalOpen: false,
+    activeTrace: null,
+    toastNotice: null,
+
+    setToastNotice: (notice) =>
+      set((state) => {
+        state.toastNotice = notice ? { id: String(Date.now()), message: notice.message, type: notice.type || 'info' } : null;
+      }),
+
+    setNodePhoto: (nodeId, photoData) =>
+      set((state) => {
+        if (!state.sim.nodePhotos) state.sim.nodePhotos = {};
+        state.sim.nodePhotos[nodeId] = {
+          source: 'user',
+          userPhotoDataUrl: photoData,
+          lastModified: new Date().toISOString()
+        };
+        const item = state.sim.physical.stageItems.find((i) => i.id === nodeId);
+        if (item) {
+          item.photoOverride = photoData;
+        }
+      }),
+
+    removeNodePhoto: (nodeId) =>
+      set((state) => {
+        if (state.sim.nodePhotos) {
+          delete state.sim.nodePhotos[nodeId];
+        }
+        const item = state.sim.physical.stageItems.find((i) => i.id === nodeId);
+        if (item) {
+          delete item.photoOverride;
+        }
+      }),
+
+    // Inventory
+    inventory: defaultInventory,
+    updateInventoryStock: (typeId, totalStock) =>
+      set((state) => {
+        if (!state.inventory[typeId]) {
+          state.inventory[typeId] = { totalStock };
+        } else {
+          state.inventory[typeId].totalStock = totalStock;
+        }
+      }),
+
+    // Admin & Custom Nodes
+    adminMode: false,
+    toggleAdminMode: () =>
+      set((state) => {
+        state.adminMode = !state.adminMode;
+      }),
+
+    customCatalog: [],
+    addCustomEquipmentType: (entry) =>
+      set((state) => {
+        state.customCatalog.push({
+          id: entry.id,
+          name: entry.name,
+          category: entry.category,
+          connectorTypes: entry.ports.map((p) => `${p.connector}-${p.direction}`),
+          makeModel: entry.makeModel || 'Custom Gear',
+          ports: entry.ports
+        });
+        state.inventory[entry.id] = { totalStock: entry.totalStock ?? 5 };
+      }),
+
+    saveStageAsDefaultPreset: () =>
+      set((state) => {
+        const customPreset = {
+          stageItems: JSON.parse(JSON.stringify(state.sim.physical.stageItems)),
+          cables: JSON.parse(JSON.stringify(state.sim.physical.cables)),
+          ioPatch: JSON.parse(JSON.stringify(state.sim.digital.ioPatch)),
+          customCatalog: JSON.parse(JSON.stringify(state.customCatalog)),
+          inventory: JSON.parse(JSON.stringify(state.inventory))
+        };
+        try {
+          localStorage.setItem('foh_sim_custom_default_preset', JSON.stringify(customPreset));
+        } catch (e) {
+          console.warn('LocalStorage save failed', e);
+        }
+      }),
 
     setActiveTab: (tab) =>
       set((state) => {
@@ -133,22 +309,47 @@ export const useSimulationStore = create<SimulationStoreState>()(
       set((state) => {
         const mode = state.sim.entryMode === 'church-preset' ? 'church' : 'scratch';
         state.sim = createInitialState(mode);
+
+        if (mode === 'church') {
+          try {
+            const saved = localStorage.getItem('foh_sim_custom_default_preset');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (parsed.stageItems) state.sim.physical.stageItems = parsed.stageItems;
+              if (parsed.cables) state.sim.physical.cables = parsed.cables;
+              if (parsed.ioPatch) state.sim.digital.ioPatch = parsed.ioPatch;
+              if (parsed.customCatalog) state.customCatalog = parsed.customCatalog;
+              if (parsed.inventory) state.inventory = { ...state.inventory, ...parsed.inventory };
+            }
+          } catch (e) {
+            console.warn('Failed to parse saved preset', e);
+          }
+        }
+
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
       }),
 
     addStageItem: (typeId, position) =>
       set((state) => {
-        const catalogItem = stageItemsCatalog.find((c) => c.id === typeId);
+        const customItem = state.customCatalog.find((c) => c.id === typeId);
+        const catalogItem = customItem || stageItemsCatalog.find((c) => c.id === typeId);
         if (!catalogItem) return;
+
+        const currentCount = state.sim.physical.stageItems.filter((i) => i.typeId === typeId).length;
+        const maxStock = state.inventory[typeId]?.totalStock ?? 10;
+        if (currentCount >= maxStock) {
+          return;
+        }
 
         const uniqueId = `item-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
         const newItem: StageItem = {
           id: uniqueId,
           typeId: catalogItem.id,
-          name: catalogItem.displayName,
-          category: catalogItem.category as StageItem['category'],
-          position
+          name: customItem ? customItem.name : (catalogItem as any).displayName,
+          category: (catalogItem as any).category as StageItem['category'],
+          position,
+          customPorts: customItem?.ports
         };
 
         state.sim.physical.stageItems.push(newItem);
@@ -194,6 +395,12 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const validation = validateCableConnection(fromNode, fromPort, toNode, toPort, state.sim);
         if (!validation.allowed) {
           state.validationNotices = [...state.validationNotices, ...validation.notices];
+          const firstErr = validation.notices[0];
+          state.toastNotice = {
+            id: String(Date.now()),
+            message: firstErr?.message || 'Cable connection rejected',
+            type: firstErr?.type || 'error'
+          };
           allowed = false;
           return;
         }
@@ -233,8 +440,60 @@ export const useSimulationStore = create<SimulationStoreState>()(
           state.sim.physical.stageBox.connectedToSQ = false;
         }
         state.sim.physical.cables = state.sim.physical.cables.filter((c) => c.id !== cableId);
+        if (state.activeTrace?.cableId === cableId) {
+          state.activeTrace = null;
+        }
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
+      }),
+
+    // Tracing is purely click-activated to prevent hover flickering/shakiness
+    setHoverTrace: () => {},
+
+    setLockedTrace: (socketId, nodeId) =>
+      set((state) => {
+        if (!socketId && !nodeId) {
+          state.activeTrace = null;
+          return;
+        }
+
+        const cable = state.sim.physical.cables.find(
+          (c) =>
+            (socketId && (c.fromPort === socketId || c.toPort === socketId)) ||
+            (!socketId && nodeId && (c.fromNode === nodeId || c.toNode === nodeId))
+        );
+
+        // If clicking the same already-locked trace, unlock and clear it
+        if (
+          state.activeTrace?.isLocked &&
+          (cable
+            ? state.activeTrace.cableId === cable.id
+            : state.activeTrace.socketId === socketId && state.activeTrace.nodeId === nodeId)
+        ) {
+          state.activeTrace = null;
+          return;
+        }
+
+        if (cable) {
+          state.activeTrace = {
+            cableId: cable.id,
+            socketId: socketId || (cable.toNode === 'stagebox-ar2412' || cable.toNode === 'console-sq5' ? cable.toPort : cable.fromPort),
+            nodeId: nodeId || (cable.fromNode === 'stagebox-ar2412' || cable.fromNode === 'console-sq5' ? cable.toNode : cable.fromNode),
+            isLocked: true
+          };
+        } else {
+          state.activeTrace = {
+            cableId: null,
+            socketId,
+            nodeId,
+            isLocked: true
+          };
+        }
+      }),
+
+    clearTrace: () =>
+      set((state) => {
+        state.activeTrace = null;
       }),
 
     setActiveScreen: (screen) =>
@@ -262,6 +521,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
         if (ch) {
           ch.faderLevel = levelDb;
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked) linked.faderLevel = levelDb;
+          }
           state.signalPresence = computeSignalPresence(state.sim);
         }
       }),
@@ -277,6 +540,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
         if (ch) {
           ch.mute = !ch.mute;
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked) linked.mute = ch.mute;
+          }
           state.signalPresence = computeSignalPresence(state.sim);
         }
       }),
@@ -284,7 +551,13 @@ export const useSimulationStore = create<SimulationStoreState>()(
     toggleChannelPAFL: (channelId) =>
       set((state) => {
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
-        if (ch) ch.pafl = !ch.pafl;
+        if (ch) {
+          ch.pafl = !ch.pafl;
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked) linked.pafl = ch.pafl;
+          }
+        }
       }),
 
     toggleChannelMainLR: (channelId) =>
@@ -292,6 +565,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
         if (ch) {
           ch.mainLRAssigned = !ch.mainLRAssigned;
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked) linked.mainLRAssigned = ch.mainLRAssigned;
+          }
           state.signalPresence = computeSignalPresence(state.sim);
           state.validationNotices = validateSystemState(state.sim);
         }
@@ -307,6 +584,17 @@ export const useSimulationStore = create<SimulationStoreState>()(
             ch.sends[mixId].levelDb = levelDb;
             if (assigned !== undefined) ch.sends[mixId].assigned = assigned;
           }
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked) {
+              if (!linked.sends[mixId]) {
+                linked.sends[mixId] = { mixId, levelDb, preFade: ch.sends[mixId].preFade, assigned: ch.sends[mixId].assigned };
+              } else {
+                linked.sends[mixId].levelDb = levelDb;
+                if (assigned !== undefined) linked.sends[mixId].assigned = assigned;
+              }
+            }
+          }
           state.signalPresence = computeSignalPresence(state.sim);
           state.validationNotices = validateSystemState(state.sim);
         }
@@ -317,6 +605,12 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
         if (ch && ch.sends[mixId]) {
           ch.sends[mixId].preFade = !ch.sends[mixId].preFade;
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked && linked.sends[mixId]) {
+              linked.sends[mixId].preFade = ch.sends[mixId].preFade;
+            }
+          }
         }
       }),
 
@@ -325,6 +619,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
         if (ch) {
           Object.assign(ch.preamp, updates);
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked) Object.assign(linked.preamp, updates);
+          }
           state.validationNotices = validateSystemState(state.sim);
         }
       }),
@@ -332,13 +630,25 @@ export const useSimulationStore = create<SimulationStoreState>()(
     updateChannelHPF: (channelId, updates) =>
       set((state) => {
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
-        if (ch) Object.assign(ch.hpf, updates);
+        if (ch) {
+          Object.assign(ch.hpf, updates);
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked) Object.assign(linked.hpf, updates);
+          }
+        }
       }),
 
     updateChannelGate: (channelId, updates) =>
       set((state) => {
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
-        if (ch) Object.assign(ch.gate, updates);
+        if (ch) {
+          Object.assign(ch.gate, updates);
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked) Object.assign(linked.gate, updates);
+          }
+        }
       }),
 
     updateChannelPEQBand: (channelId, bandIndex, updates) =>
@@ -346,19 +656,37 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
         if (ch && ch.peq.bands[bandIndex]) {
           Object.assign(ch.peq.bands[bandIndex], updates);
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked && linked.peq.bands[bandIndex]) {
+              Object.assign(linked.peq.bands[bandIndex], updates);
+            }
+          }
         }
       }),
 
     toggleChannelPEQ: (channelId) =>
       set((state) => {
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
-        if (ch) ch.peq.enabled = !ch.peq.enabled;
+        if (ch) {
+          ch.peq.enabled = !ch.peq.enabled;
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked) linked.peq.enabled = ch.peq.enabled;
+          }
+        }
       }),
 
     updateChannelCompressor: (channelId, updates) =>
       set((state) => {
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
-        if (ch) Object.assign(ch.compressor, updates);
+        if (ch) {
+          Object.assign(ch.compressor, updates);
+          if (ch.stereo && ch.linkedChannelId) {
+            const linked = state.sim.digital.channels.find((c) => c.id === ch.linkedChannelId);
+            if (linked) Object.assign(linked.compressor, updates);
+          }
+        }
       }),
 
     updateChannelName: (channelId, name) =>
@@ -432,6 +760,12 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.sim.digital.session.geqFlipActive = next > 0;
       }),
 
+    setGeqFlipPage: (page) =>
+      set((state) => {
+        state.sim.digital.session.geqFlipPage = page;
+        state.sim.digital.session.geqFlipActive = page > 0;
+      }),
+
     setMixGeqBand: (mixId, bandIndex, gainDb) =>
       set((state) => {
         const mix = state.sim.digital.mixes.find((m) => m.id === mixId);
@@ -445,6 +779,176 @@ export const useSimulationStore = create<SimulationStoreState>()(
         const mix = state.sim.digital.mixes.find((m) => m.id === mixId);
         if (mix && mix.geq[bandIndex] !== undefined) {
           mix.geq[bandIndex] = 0;
+        }
+      }),
+
+    resetAllMixGeq: (mixId) =>
+      set((state) => {
+        const mix = state.sim.digital.mixes.find((m) => m.id === mixId);
+        if (mix) {
+          mix.geq = new Array(28).fill(0);
+        }
+      }),
+
+    toggleInputChannelStereo: (channelNumber) =>
+      set((state) => {
+        const oddNum = channelNumber % 2 === 1 ? channelNumber : channelNumber - 1;
+        const oddCh = state.sim.digital.channels.find((c) => c.channelNumber === oddNum);
+        const evenCh = state.sim.digital.channels.find((c) => c.channelNumber === oddNum + 1);
+        if (!oddCh || !evenCh) return;
+
+        const willBeStereo = !oddCh.stereo;
+        if (willBeStereo) {
+          oddCh.stereo = true;
+          oddCh.isStereoSlave = false;
+          oddCh.linkedChannelId = evenCh.id;
+          oddCh.pan = -100;
+          oddCh.mainLRPan = -100;
+
+          evenCh.stereo = true;
+          evenCh.isStereoSlave = true;
+          evenCh.linkedChannelId = oddCh.id;
+          evenCh.pan = 100;
+          evenCh.mainLRPan = 100;
+
+          // Mirror master settings to slave channel
+          evenCh.faderLevel = oddCh.faderLevel;
+          evenCh.mute = oddCh.mute;
+          evenCh.pafl = oddCh.pafl;
+          evenCh.dcaGroupMask = oddCh.dcaGroupMask;
+          evenCh.muteGroupMask = oddCh.muteGroupMask;
+          evenCh.mainLRAssigned = oddCh.mainLRAssigned;
+          evenCh.preamp = JSON.parse(JSON.stringify(oddCh.preamp));
+          evenCh.hpf = JSON.parse(JSON.stringify(oddCh.hpf));
+          evenCh.gate = JSON.parse(JSON.stringify(oddCh.gate));
+          evenCh.peq = JSON.parse(JSON.stringify(oddCh.peq));
+          evenCh.compressor = JSON.parse(JSON.stringify(oddCh.compressor));
+          evenCh.sends = JSON.parse(JSON.stringify(oddCh.sends));
+        } else {
+          oddCh.stereo = false;
+          oddCh.isStereoSlave = false;
+          oddCh.linkedChannelId = undefined;
+          oddCh.pan = 0;
+          oddCh.mainLRPan = 0;
+
+          evenCh.stereo = false;
+          evenCh.isStereoSlave = false;
+          evenCh.linkedChannelId = undefined;
+          evenCh.pan = 0;
+          evenCh.mainLRPan = 0;
+        }
+
+        state.signalPresence = computeSignalPresence(state.sim);
+        state.validationNotices = validateSystemState(state.sim);
+      }),
+
+    toggleMixStereo: (mixId) =>
+      set((state) => {
+        const mix = state.sim.digital.mixes.find((m) => m.id === mixId);
+        if (mix) {
+          mix.stereo = !mix.stereo;
+        }
+      }),
+
+    toggleMixMode: (mixId) =>
+      set((state) => {
+        const mix = state.sim.digital.mixes.find((m) => m.id === mixId);
+        if (mix) {
+          mix.mode = mix.mode === 'aux' ? 'group' : 'aux';
+          state.signalPresence = computeSignalPresence(state.sim);
+        }
+      }),
+
+    toggleMixMainLR: (mixId) =>
+      set((state) => {
+        const mix = state.sim.digital.mixes.find((m) => m.id === mixId);
+        if (mix) {
+          mix.mainLRAssigned = !mix.mainLRAssigned;
+          state.signalPresence = computeSignalPresence(state.sim);
+        }
+      }),
+
+    setSendTapPoint: (channelId, mixId, tapPoint) =>
+      set((state) => {
+        const ch = state.sim.digital.channels.find((c) => c.id === channelId);
+        if (ch && ch.sends[mixId]) {
+          ch.sends[mixId].tapPoint = tapPoint;
+          // Synchronize preFade boolean (post-fade is post-fade, others are pre)
+          ch.sends[mixId].preFade = tapPoint !== 'post-fade';
+        }
+      }),
+
+    toggleMatrixStereo: (matrixId) =>
+      set((state) => {
+        const mtx = state.sim.digital.matrices.find((m) => m.id === matrixId);
+        if (mtx) {
+          mtx.stereo = !mtx.stereo;
+        }
+      }),
+
+    setMatrixFader: (matrixId, levelDb) =>
+      set((state) => {
+        const mtx = state.sim.digital.matrices.find((m) => m.id === matrixId);
+        if (mtx) {
+          mtx.faderLevel = levelDb;
+        }
+      }),
+
+    setMatrixSource: (matrixId, source) =>
+      set((state) => {
+        const mtx = state.sim.digital.matrices.find((m) => m.id === matrixId);
+        if (mtx) {
+          mtx.source = source;
+        }
+      }),
+
+    toggleMatrixMute: (matrixId) =>
+      set((state) => {
+        const mtx = state.sim.digital.matrices.find((m) => m.id === matrixId);
+        if (mtx) {
+          mtx.mute = !mtx.mute;
+        }
+      }),
+
+    setGlobalAuxPreFade: (preFade) =>
+      set((state) => {
+        state.sim.digital.channels.forEach((ch) => {
+          Object.values(ch.sends).forEach((send) => {
+            send.preFade = preFade;
+          });
+        });
+      }),
+
+    setDcaMembership: (channelId, dcaId, isMember) =>
+      set((state) => {
+        const ch = state.sim.digital.channels.find((c) => c.id === channelId);
+        if (ch) {
+          const bit = 1 << (dcaId - 1);
+          if (isMember) {
+            ch.dcaGroupMask |= bit;
+          } else {
+            ch.dcaGroupMask &= ~bit;
+          }
+        }
+      }),
+
+    setDcaAllMembers: (dcaId, channelIds) =>
+      set((state) => {
+        const bit = 1 << (dcaId - 1);
+        state.sim.digital.channels.forEach((ch) => {
+          if (channelIds.includes(ch.id)) {
+            ch.dcaGroupMask |= bit;
+          } else {
+            ch.dcaGroupMask &= ~bit;
+          }
+        });
+      }),
+
+    updateDcaName: (dcaId, name) =>
+      set((state) => {
+        const dca = state.sim.digital.dcas.find((d) => d.id === dcaId);
+        if (dca) {
+          dca.name = name.trim();
         }
       }),
 
@@ -503,6 +1007,10 @@ export const useSimulationStore = create<SimulationStoreState>()(
             state.sim.digital.channels = JSON.parse(JSON.stringify(snap.digital.channels));
             state.sim.digital.mixes = JSON.parse(JSON.stringify(snap.digital.mixes));
             state.sim.digital.ioPatch = JSON.parse(JSON.stringify(snap.digital.ioPatch));
+            if (snap.digital.dcas) state.sim.digital.dcas = JSON.parse(JSON.stringify(snap.digital.dcas));
+            if (snap.digital.matrices) state.sim.digital.matrices = JSON.parse(JSON.stringify(snap.digital.matrices));
+            if (snap.digital.mainLR) state.sim.digital.mainLR = JSON.parse(JSON.stringify(snap.digital.mainLR));
+            if (snap.digital.muteGroups) state.sim.digital.muteGroups = JSON.parse(JSON.stringify(snap.digital.muteGroups));
             state.signalPresence = computeSignalPresence(state.sim);
             state.validationNotices = validateSystemState(state.sim);
           }

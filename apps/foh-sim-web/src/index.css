@@ -66,6 +66,17 @@
   box-shadow: 0 0 8px currentColor;
 }
 
+/* ReactFlow GPU hardware acceleration */
+.react-flow__viewport {
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+.react-flow__edge-path {
+  shape-rendering: geometricPrecision;
+}
+
 /* Fader groove and knob */
 input[type="range"].fader-slider {
   -webkit-appearance: none;
@@ -104,4 +115,17 @@ input[type="range"].fader-vertical {
   direction: rtl;
   height: 100%;
   width: 24px;
+}
+
+@keyframes cable-dash {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-cable-flow {
+  animation: cable-dash 0.9s linear infinite;
 }

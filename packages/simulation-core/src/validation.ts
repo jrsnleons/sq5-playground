@@ -39,6 +39,32 @@ export function validateCableConnection(
     return { allowed: false, notices };
   }
 
+  // USB mismatch check
+  const isFromUsb = fromPort.toLowerCase().includes('usb');
+  const isToUsb = toPort.toLowerCase().includes('usb');
+  if (isFromUsb !== isToUsb && (fromPort.startsWith('ar-') || toPort.startsWith('ar-') || fromPort.startsWith('sq-in') || toPort.startsWith('sq-in'))) {
+    notices.push({
+      type: 'error',
+      code: 'INVALID_CONNECTOR',
+      message: 'Cannot plug USB digital interface cable into an analog audio port.',
+      context: { fromNode, fromPort, toNode, toPort }
+    });
+    return { allowed: false, notices };
+  }
+
+  // HDMI mismatch check
+  const isFromHdmi = fromPort.toLowerCase().includes('hdmi') || fromPort.toLowerCase().includes('pgm');
+  const isToHdmi = toPort.toLowerCase().includes('hdmi') || toPort.toLowerCase().includes('pgm');
+  if (isFromHdmi !== isToHdmi && (fromPort.startsWith('ar-') || toPort.startsWith('ar-') || fromPort.includes('usb') || toPort.includes('usb'))) {
+    notices.push({
+      type: 'error',
+      code: 'INVALID_CONNECTOR',
+      message: 'HDMI video cables cannot plug into audio or USB ports.',
+      context: { fromNode, fromPort, toNode, toPort }
+    });
+    return { allowed: false, notices };
+  }
+
   // Check SLink 2-remote limit
   if (toPort === 'sq-slink' || fromPort === 'sq-slink') {
     const existingRemotes = state.physical.cables.filter(
@@ -52,6 +78,122 @@ export function validateCableConnection(
         code: 'SLINK_REMOTE_LIMIT',
         message: 'SLink dSnake mode supports up to 2 remotes per port.',
         context: { count: existingRemotes.length }
+      });
+      return { allowed: false, notices };
+    }
+  }
+
+  // Port direction validation
+  const getPortDirection = (nodeId: string, portId: string): 'in' | 'out' | 'bidirectional' => {
+    if (
+      portId.includes('slink') ||
+      portId.includes('dsnake') ||
+      portId.includes('expander') ||
+      portId.includes('monitor')
+    ) {
+      return 'bidirectional';
+    }
+    if (portId.toLowerCase().includes('usb')) {
+      if (portId.includes('in')) return 'in';
+      if (portId.includes('out')) return 'out';
+      return 'bidirectional';
+    }
+    if (portId.toLowerCase().includes('hdmi')) {
+      if (portId.includes('in')) return 'in';
+      if (portId.includes('out') || portId.includes('pgm') || portId.includes('aux')) return 'out';
+      return 'bidirectional';
+    }
+    if (
+      portId.startsWith('ar-in-') ||
+      portId.startsWith('sq-in-') ||
+      portId.startsWith('in-') ||
+      portId.endsWith('-in') ||
+      portId.includes('-in-')
+    ) {
+      return 'in';
+    }
+    if (
+      portId.startsWith('ar-out-') ||
+      portId.startsWith('sq-out-') ||
+      portId.startsWith('out-') ||
+      portId.endsWith('-out') ||
+      portId.includes('-out-') ||
+      portId.startsWith('thru-') ||
+      portId.startsWith('main-')
+    ) {
+      return 'out';
+    }
+
+    const item = state.physical.stageItems.find((i) => i.id === nodeId);
+    if (item) {
+      if (item.category === 'mic' || item.category === 'instrument') return 'out';
+      if (item.category === 'speaker' || item.category === 'iem') return 'in';
+    }
+    return 'bidirectional';
+  };
+
+  const fromDir = getPortDirection(fromNode, fromPort);
+  const toDir = getPortDirection(toNode, toPort);
+
+  if (fromDir === 'out' && toDir === 'out') {
+    notices.push({
+      type: 'error',
+      code: 'INVALID_DIRECTION',
+      message: 'Cannot connect an output port directly to another output port.',
+      context: { fromNode, fromPort, toNode, toPort }
+    });
+    return { allowed: false, notices };
+  }
+
+  if (fromDir === 'in' && toDir === 'in') {
+    notices.push({
+      type: 'error',
+      code: 'INVALID_DIRECTION',
+      message: 'Cannot connect an input port directly to another input port.',
+      context: { fromNode, fromPort, toNode, toPort }
+    });
+    return { allowed: false, notices };
+  }
+
+  if (fromDir === 'in' && toDir === 'out') {
+    notices.push({
+      type: 'error',
+      code: 'INVALID_DIRECTION',
+      message: 'Signal must flow from an output to an input.',
+      context: { fromNode, fromPort, toNode, toPort }
+    });
+    return { allowed: false, notices };
+  }
+
+  // Single plug per physical socket constraint (excluding daisy-chainable network ports)
+  const isNetworkPort = (port: string) =>
+    port.includes('slink') || port.includes('dsnake') || port.includes('expander') || port.includes('monitor');
+
+  if (!isNetworkPort(toPort)) {
+    const isToOccupied = state.physical.cables.some(
+      (c) => (c.toNode === toNode && c.toPort === toPort) || (c.fromNode === toNode && c.fromPort === toPort)
+    );
+    if (isToOccupied) {
+      notices.push({
+        type: 'error',
+        code: 'PORT_ALREADY_CONNECTED',
+        message: `Socket "${toPort}" on "${toNode}" already has a cable connected. Each physical socket only accepts one plug.`,
+        context: { node: toNode, port: toPort }
+      });
+      return { allowed: false, notices };
+    }
+  }
+
+  if (!isNetworkPort(fromPort)) {
+    const isFromOccupied = state.physical.cables.some(
+      (c) => (c.fromNode === fromNode && c.fromPort === fromPort) || (c.toNode === fromNode && c.toPort === fromPort)
+    );
+    if (isFromOccupied) {
+      notices.push({
+        type: 'error',
+        code: 'PORT_ALREADY_CONNECTED',
+        message: `Socket "${fromPort}" on "${fromNode}" already has a cable connected. Each physical socket only accepts one plug.`,
+        context: { node: fromNode, port: fromPort }
       });
       return { allowed: false, notices };
     }

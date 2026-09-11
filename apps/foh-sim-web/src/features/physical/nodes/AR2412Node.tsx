@@ -2,15 +2,36 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { useSimulationStore } from '../../../store/simulationStore';
 import { Radio } from 'lucide-react';
+import { PhysicalPlugGraphic } from '../components/PhysicalPlugGraphic';
 
-export const AR2412Node: React.FC<NodeProps> = memo(({ id, selected }) => {
+export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
   const isConnected = useSimulationStore((s) => s.signalPresence.slinkHasSignal);
   const cables = useSimulationStore((s) => s.sim.physical.cables);
+  const activeTrace = useSimulationStore((s) => s.activeTrace);
+  const setLockedTrace = useSimulationStore((s) => s.setLockedTrace);
+
+  const hasDsnakeCable = cables.some(
+    (c) =>
+      (c.fromPort === 'ar-dsnake' && c.toPort === 'sq-slink') ||
+      (c.toPort === 'ar-dsnake' && c.fromPort === 'sq-slink')
+  );
+
+  const isNodeTraced =
+    activeTrace?.nodeId === 'stagebox-ar2412' ||
+    cables.some(
+      (c) =>
+        c.id === activeTrace?.cableId &&
+        (c.fromNode === 'stagebox-ar2412' || c.toNode === 'stagebox-ar2412')
+    );
 
   return (
     <div
       className={`w-[660px] bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 rounded-xl shadow-2xl p-3 text-slate-100 font-sans transition-all ${
-        selected ? 'border-sky-500 shadow-sky-500/20' : 'border-slate-700'
+        isNodeTraced
+          ? 'border-sky-400 shadow-[0_0_24px_rgba(56,189,248,0.35)] ring-2 ring-sky-400/40'
+          : selected
+          ? 'border-sky-500 shadow-sky-500/20'
+          : 'border-slate-700'
       }`}
     >
       {/* Faceplate Header */}
@@ -59,24 +80,58 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ id, selected }) => {
               {Array.from({ length: 24 }, (_, i) => {
                 const portNum = i + 1;
                 const socketId = `ar-in-${portNum}`;
-                const hasConnectedCable = cables.some(
+                const connectedCable = cables.find(
                   (c) => c.toPort === socketId || c.fromPort === socketId
                 );
+                const isSocketTraced =
+                  activeTrace?.socketId === socketId ||
+                  (activeTrace?.cableId && connectedCable?.id === activeTrace.cableId);
 
                 return (
-                  <div key={socketId} className="flex flex-col items-center group relative">
+                  <div
+                    key={socketId}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (connectedCable) setLockedTrace(socketId, 'stagebox-ar2412');
+                    }}
+                    className={`flex flex-col items-center group relative ${
+                      connectedCable ? 'cursor-pointer' : ''
+                    }`}
+                  >
+                    {/* Minimalist Plug Indicator only appears when active trace */}
+                    {connectedCable && isSocketTraced && (
+                      <PhysicalPlugGraphic
+                        signalType={connectedCable.signalType}
+                        connectorType="xlr"
+                        direction="up"
+                        isTraced={true}
+                      />
+                    )}
+
                     <Handle
                       type="target"
                       position={Position.Top}
                       id={socketId}
                       className={`!w-3.5 !h-3.5 !rounded-full !border-2 transition-all ${
-                        hasConnectedCable
-                          ? '!bg-sky-400 !border-slate-950 shadow-[0_0_8px_#38bdf8]'
-                          : '!bg-slate-800 !border-slate-600 hover:!bg-sky-400'
+                        isSocketTraced
+                          ? '!bg-white !border-sky-400 shadow-[0_0_12px_#38bdf8] z-30'
+                          : connectedCable
+                          ? '!bg-sky-400 !border-slate-950 shadow-[0_0_6px_#38bdf8]'
+                          : '!bg-slate-800 !border-slate-600 hover:!border-slate-400'
                       }`}
                     />
-                    <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mt-1 shadow-inner group-hover:border-sky-400">
-                      <span className="text-[9px] font-mono font-bold text-slate-300">
+                    <div
+                      className={`w-6 h-6 rounded-full border flex items-center justify-center mt-1 shadow-inner transition-colors ${
+                        isSocketTraced
+                          ? 'bg-sky-950 border-sky-400 shadow-[0_0_8px_#38bdf8]'
+                          : 'bg-slate-800 border-slate-700 group-hover:border-slate-500'
+                      }`}
+                    >
+                      <span
+                        className={`text-[9px] font-mono font-bold ${
+                          isSocketTraced ? 'text-white font-black' : 'text-slate-300'
+                        }`}
+                      >
                         {portNum}
                       </span>
                     </div>
@@ -96,27 +151,62 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ id, selected }) => {
               {Array.from({ length: 12 }, (_, i) => {
                 const portNum = i + 1;
                 const socketId = `ar-out-${portNum}`;
-                const hasConnectedCable = cables.some(
+                const connectedCable = cables.find(
                   (c) => c.fromPort === socketId || c.toPort === socketId
                 );
+                const isSocketTraced =
+                  activeTrace?.socketId === socketId ||
+                  (activeTrace?.cableId && connectedCable?.id === activeTrace.cableId);
 
                 return (
-                  <div key={socketId} className="flex flex-col items-center group relative">
-                    <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mb-1 shadow-inner group-hover:border-teal-400">
-                      <span className="text-[9px] font-mono font-bold text-slate-300">
+                  <div
+                    key={socketId}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (connectedCable) setLockedTrace(socketId, 'stagebox-ar2412');
+                    }}
+                    className={`flex flex-col items-center group relative ${
+                      connectedCable ? 'cursor-pointer' : ''
+                    }`}
+                  >
+                    <div
+                      className={`w-6 h-6 rounded-full border flex items-center justify-center mb-1 shadow-inner transition-colors ${
+                        isSocketTraced
+                          ? 'bg-teal-950 border-teal-400 shadow-[0_0_8px_#14b8a6]'
+                          : 'bg-slate-800 border-slate-700 group-hover:border-slate-500'
+                      }`}
+                    >
+                      <span
+                        className={`text-[9px] font-mono font-bold ${
+                          isSocketTraced ? 'text-white font-black' : 'text-slate-300'
+                        }`}
+                      >
                         {portNum}
                       </span>
                     </div>
+
                     <Handle
                       type="source"
                       position={Position.Bottom}
                       id={socketId}
                       className={`!w-3.5 !h-3.5 !rounded-full !border-2 transition-all ${
-                        hasConnectedCable
-                          ? '!bg-teal-400 !border-slate-950 shadow-[0_0_8px_#2dd4bf]'
-                          : '!bg-slate-800 !border-slate-600 hover:!bg-teal-400'
+                        isSocketTraced
+                          ? '!bg-white !border-teal-400 shadow-[0_0_12px_#2dd4bf] z-30'
+                          : connectedCable
+                          ? '!bg-teal-400 !border-slate-950 shadow-[0_0_6px_#2dd4bf]'
+                          : '!bg-slate-800 !border-slate-600 hover:!border-slate-400'
                       }`}
                     />
+
+                    {/* Minimalist Plug Indicator only appears when active trace */}
+                    {connectedCable && isSocketTraced && (
+                      <PhysicalPlugGraphic
+                        signalType={connectedCable.signalType}
+                        connectorType="xlr"
+                        direction="down"
+                        isTraced={true}
+                      />
+                    )}
                   </div>
                 );
               })}
@@ -129,9 +219,27 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ id, selected }) => {
           <div className="text-[10px] font-mono text-slate-400 uppercase">Network</div>
 
           {/* dSNAKE Port */}
-          <div className="flex flex-col items-center bg-slate-950/90 p-2 rounded-lg border border-slate-800">
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              if (hasDsnakeCable) setLockedTrace('ar-dsnake', 'stagebox-ar2412');
+            }}
+            className={`flex flex-col items-center bg-slate-950/90 p-2 rounded-lg border transition-all ${
+              activeTrace?.socketId === 'ar-dsnake'
+                ? 'border-emerald-400 shadow-[0_0_12px_#10b981]'
+                : 'border-slate-800'
+            } ${hasDsnakeCable ? 'cursor-pointer' : ''}`}
+          >
             <span className="text-[10px] font-mono font-bold text-emerald-400 mb-1">dSNAKE</span>
             <div className="relative">
+              {hasDsnakeCable && activeTrace?.socketId === 'ar-dsnake' && (
+                <PhysicalPlugGraphic
+                  signalType="dsnake"
+                  connectorType="ethercon"
+                  direction="up"
+                  isTraced={true}
+                />
+              )}
               <div className="w-8 h-8 rounded-md bg-slate-800 border-2 border-emerald-600/80 flex items-center justify-center shadow-inner">
                 <Radio className="w-4 h-4 text-emerald-400" />
               </div>
@@ -139,7 +247,11 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ id, selected }) => {
                 type="source"
                 position={Position.Right}
                 id="ar-dsnake"
-                className="!w-4 !h-4 !rounded-sm !bg-emerald-500 !border-2 !border-slate-950 hover:scale-125"
+                className={`!w-4 !h-4 !rounded-sm !border-2 transition-all ${
+                  hasDsnakeCable && isConnected
+                    ? '!bg-emerald-500 !border-slate-950 shadow-[0_0_8px_#10b981]'
+                    : '!bg-slate-800 !border-slate-600'
+                }`}
               />
             </div>
             <span className="text-[9px] text-slate-500 mt-1">To SQ SLink</span>

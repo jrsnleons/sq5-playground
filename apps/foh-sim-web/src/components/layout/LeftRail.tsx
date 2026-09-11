@@ -3,7 +3,7 @@ import { useSimulationStore } from '../../store/simulationStore';
 import {
   Cable,
   Sliders,
-  BarChart2,
+  Package,
   Bookmark,
   Settings,
   HelpCircle
@@ -15,7 +15,7 @@ export const LeftRail: React.FC = () => {
   const navItems = [
     { id: 'stage', label: 'Stage', icon: Cable },
     { id: 'console', label: 'Console', icon: Sliders },
-    { id: 'meters', label: 'Meters', icon: BarChart2 },
+    { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'scenes', label: 'Scenes', icon: Bookmark },
     { id: 'setup', label: 'Setup', icon: Settings },
     { id: 'help', label: 'Help', icon: HelpCircle }

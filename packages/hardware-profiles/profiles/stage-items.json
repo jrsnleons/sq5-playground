@@ -346,5 +346,65 @@
     "requiresDI": false,
     "requiresPhantom": false,
     "defaultPhotoAlt": "Xtuga IEM1200 UHF wireless IEM transmitter rack unit"
+  },
+  {
+    "id": "stream-pc",
+    "category": "stream",
+    "subcategory": "streaming-pc",
+    "displayName": "Stream Computer",
+    "makeModel": "Streaming PC (OBS / vMix)",
+    "stockPhotoId": "pc-playback",
+    "connectorTypes": ["USB-in", "USB-in", "HDMI-out"],
+    "requiresDI": false,
+    "requiresPhantom": false,
+    "defaultPhotoAlt": "Streaming workstation running OBS and video encoders"
+  },
+  {
+    "id": "interface-behringer-umc",
+    "category": "stream",
+    "subcategory": "audio-interface",
+    "displayName": "Behringer UMC Interface",
+    "makeModel": "Behringer U-Phoria UMC202HD",
+    "stockPhotoId": "mono-di-box",
+    "connectorTypes": ["XLR-in", "XLR-in", "USB-out"],
+    "requiresDI": false,
+    "requiresPhantom": false,
+    "defaultPhotoAlt": "Behringer U-Phoria dual-input USB audio interface"
+  },
+  {
+    "id": "switcher-osee-basic",
+    "category": "stream",
+    "subcategory": "video-switcher",
+    "displayName": "Osee Switcher Basic",
+    "makeModel": "Osee GoStream Deck / Switcher",
+    "stockPhotoId": "video-switcher",
+    "connectorTypes": ["XLR-in", "XLR-in", "HDMI-in", "HDMI-in", "HDMI-out", "USB-out"],
+    "requiresDI": false,
+    "requiresPhantom": false,
+    "defaultPhotoAlt": "Osee video production switcher with analog audio in, HDMI PGM and USB streaming"
+  },
+  {
+    "id": "monitor-stream-display",
+    "category": "stream",
+    "subcategory": "video-monitor",
+    "displayName": "Stream Output Monitor",
+    "makeModel": "24\" Program Video Monitor",
+    "stockPhotoId": "stream-monitor",
+    "connectorTypes": ["XLR-in", "XLR-in", "HDMI-in"],
+    "requiresDI": false,
+    "requiresPhantom": false,
+    "defaultPhotoAlt": "Broadcast stream monitor with audio and video inputs"
+  },
+  {
+    "id": "waves-superrack-pc",
+    "category": "processing",
+    "subcategory": "plugin-host",
+    "displayName": "Waves SuperRack Computer",
+    "makeModel": "Waves SuperRack Live PC",
+    "stockPhotoId": "waves-pc",
+    "connectorTypes": ["USB-B", "USB-out"],
+    "requiresDI": false,
+    "requiresPhantom": false,
+    "defaultPhotoAlt": "Waves SuperRack live plugin processing host computer"
   }
 ]

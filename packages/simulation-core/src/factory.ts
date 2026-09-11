@@ -117,23 +117,38 @@ export function createInitialChannels(presetType: 'church' | 'scratch'): InputCh
       let levelDb = -90;
 
       if (presetType === 'church') {
-        // Map IEM sends per church rig
-        if (name === 'Keys' && mixId === 'mix-4') { assigned = true; levelDb = 0; }
-        if (name === 'Electric Guitar' && mixId === 'mix-5') { assigned = true; levelDb = 0; }
-        if (name === 'Acoustic Guitar' && mixId === 'mix-3') { assigned = true; levelDb = 0; }
-        if (name === 'Bass Guitar' && mixId === 'mix-6') { assigned = true; levelDb = 0; }
+        // Stream Aux 1
+        if (!isClickOrComms && mixId === 'mix-1') { assigned = true; levelDb = 0; }
+        // IEM mixes:
+        // mix-2: AG, mix-3: WL, mix-4: BACKUP, mix-5: KEYS, mix-6: EG, mix-7: BASS, mix-8: DRUMS, mix-9: Subwoofer
+        if (name === 'Acoustic Guitar' && mixId === 'mix-2') { assigned = true; levelDb = 0; }
+        if ((name === 'Mic 1' || name.startsWith('WIRELESS')) && mixId === 'mix-3') { assigned = true; levelDb = 0; }
+        if (name.startsWith('Mic') && mixId === 'mix-4') { assigned = true; levelDb = 0; }
+        if (name === 'Keys' && mixId === 'mix-5') { assigned = true; levelDb = 0; }
+        if (name === 'Electric Guitar' && mixId === 'mix-6') { assigned = true; levelDb = 0; }
+        if (name === 'Bass Guitar' && mixId === 'mix-7') { assigned = true; levelDb = 0; }
         if (name.includes('Snare') || name === 'Kick' || name.includes('Tom') || name === 'Hihats' || name === 'Overheads') {
-          if (mixId === 'mix-7') { assigned = true; levelDb = 0; } // Drummer IEM
-          if (mixId === 'mix-8') { assigned = true; levelDb = name === 'Kick' ? 0 : -6; } // Subs
+          if (mixId === 'mix-8') { assigned = true; levelDb = 0; } // Drummer IEM
+          if (mixId === 'mix-9') { assigned = true; levelDb = name === 'Kick' ? 0 : -6; } // Subwoofer Aux
+          // Subgroup: GRP Drums (mix-12)
+          if (mixId === 'mix-12') { assigned = true; levelDb = 0; }
         }
-        if (name === 'Click Keys' && (mixId === 'mix-4' || mixId === 'mix-1')) { assigned = true; levelDb = 0; }
-        if (name === 'Click Drums' && mixId === 'mix-7') { assigned = true; levelDb = 0; }
+        if (name.startsWith('Mic') || name === 'Lapel' || name.startsWith('WIRELESS')) {
+          // Subgroup: GRP Vocals (mix-10)
+          if (mixId === 'mix-10') { assigned = true; levelDb = 0; }
+        }
+        if (name === 'Keys' || name === 'Electric Guitar' || name === 'Acoustic Guitar' || name === 'Bass Guitar') {
+          // Subgroup: GRP Instruments (mix-11)
+          if (mixId === 'mix-11') { assigned = true; levelDb = 0; }
+        }
+        if (name === 'Click Keys' && (mixId === 'mix-5' || mixId === 'mix-3')) { assigned = true; levelDb = 0; }
+        if (name === 'Click Drums' && mixId === 'mix-8') { assigned = true; levelDb = 0; }
       }
 
       sends[mixId] = {
         mixId,
         levelDb,
-        preFade: isClickOrComms || m <= 7, // IEMs pre-fade by default
+        preFade: isClickOrComms || m <= 9, // Auxes 1-9 pre-fade by default
         assigned
       };
     }
@@ -149,17 +164,24 @@ export function createInitialChannels(presetType: 'church' | 'scratch'): InputCh
       preamp.phantom48V = true;
     }
 
+    const isStereoMaster = presetType === 'church' && i === 25;
+    const isStereoSlave = presetType === 'church' && i === 26;
+    const isStereoLinked = isStereoMaster || isStereoSlave;
+
     channels.push({
       id: chId,
       channelNumber: i,
       name,
       color: isClickOrComms ? '#eab308' : i <= 6 ? '#3b82f6' : i <= 16 ? '#f97316' : '#a855f7',
       faderLevel: 0,
-      pan: 0,
+      pan: isStereoMaster ? -100 : isStereoSlave ? 100 : 0,
       mute: false,
       pafl: false,
       dcaGroupMask,
       muteGroupMask: 0,
+      stereo: isStereoLinked,
+      isStereoSlave: isStereoSlave,
+      linkedChannelId: isStereoMaster ? 'ch-26' : isStereoSlave ? 'ch-25' : undefined,
       preamp,
       hpf: createDefaultHPF(),
       gate: createDefaultGate(),
@@ -167,34 +189,55 @@ export function createInitialChannels(presetType: 'church' | 'scratch'): InputCh
       compressor: createDefaultCompressor(),
       sends,
       mainLRAssigned: !isClickOrComms, // Click & Comms NEVER assigned to Main LR
-      mainLRPan: 0
+      mainLRPan: isStereoMaster ? -100 : isStereoSlave ? 100 : 0
     });
   }
 
   return channels;
 }
 
-export function createInitialMixes(): MixChannel[] {
-  const mixDefs: Array<{ id: string; num: number; name: string; stereo: boolean }> = [
-    { id: 'mix-1', num: 1, name: 'IEM WL', stereo: false },
-    { id: 'mix-2', num: 2, name: 'IEM BACKUP', stereo: false },
-    { id: 'mix-3', num: 3, name: 'IEM AG', stereo: false },
-    { id: 'mix-4', num: 4, name: 'IEM KEYS', stereo: false },
-    { id: 'mix-5', num: 5, name: 'IEM EG', stereo: false },
-    { id: 'mix-6', num: 6, name: 'IEM BASS', stereo: false },
-    { id: 'mix-7', num: 7, name: 'IEM DRUMS', stereo: false },
-    { id: 'mix-8', num: 8, name: 'Subs', stereo: false },
-    { id: 'mix-9', num: 9, name: 'Front Fills', stereo: false },
-    { id: 'mix-10', num: 10, name: 'Stream', stereo: true },
-    { id: 'mix-11', num: 11, name: 'Monitor', stereo: true },
-    { id: 'mix-12', num: 12, name: 'Record', stereo: true }
+export function createInitialMixes(presetType: 'church' | 'scratch' = 'church'): MixChannel[] {
+  if (presetType === 'scratch') {
+    return Array.from({ length: 12 }, (_, i) => {
+      const num = i + 1;
+      return {
+        id: `mix-${num}`,
+        mixNumber: num,
+        name: `Mix ${num}`,
+        mode: 'aux' as const,
+        stereo: false,
+        faderLevel: 0,
+        mute: false,
+        pafl: false,
+        geq: new Array(28).fill(0),
+        peq: createDefaultPEQ(),
+        compressor: createDefaultCompressor(),
+        delayMs: 0,
+        mainLRAssigned: false
+      };
+    });
+  }
+
+  const mixDefs: Array<{ id: string; num: number; name: string; mode: 'aux' | 'group'; stereo: boolean; mainLRAssigned?: boolean }> = [
+    { id: 'mix-1', num: 1, name: 'Stream', mode: 'aux', stereo: true },
+    { id: 'mix-2', num: 2, name: 'IEM AG', mode: 'aux', stereo: false },
+    { id: 'mix-3', num: 3, name: 'IEM WL', mode: 'aux', stereo: false },
+    { id: 'mix-4', num: 4, name: 'IEM BACKUP', mode: 'aux', stereo: false },
+    { id: 'mix-5', num: 5, name: 'IEM KEYS', mode: 'aux', stereo: false },
+    { id: 'mix-6', num: 6, name: 'IEM EG', mode: 'aux', stereo: false },
+    { id: 'mix-7', num: 7, name: 'IEM BASS', mode: 'aux', stereo: false },
+    { id: 'mix-8', num: 8, name: 'IEM DRUMS', mode: 'aux', stereo: false },
+    { id: 'mix-9', num: 9, name: 'Subwoofer', mode: 'aux', stereo: false },
+    { id: 'mix-10', num: 10, name: 'GRP Vocals', mode: 'group', stereo: true, mainLRAssigned: true },
+    { id: 'mix-11', num: 11, name: 'GRP Instruments', mode: 'group', stereo: true, mainLRAssigned: true },
+    { id: 'mix-12', num: 12, name: 'GRP Drums', mode: 'group', stereo: true, mainLRAssigned: true }
   ];
 
   return mixDefs.map((m) => ({
     id: m.id,
     mixNumber: m.num,
     name: m.name,
-    mode: 'aux',
+    mode: m.mode,
     stereo: m.stereo,
     faderLevel: 0,
     mute: false,
@@ -203,19 +246,27 @@ export function createInitialMixes(): MixChannel[] {
     peq: createDefaultPEQ(),
     compressor: createDefaultCompressor(),
     delayMs: 0,
-    mainLRAssigned: false
+    mainLRAssigned: m.mainLRAssigned ?? false
   }));
 }
 
 export function createInitialMatrices(): MatrixChannel[] {
   return [
-    { id: 'matrix-1', name: 'PA Arrays', stereo: true, source: 'main-lr', faderLevel: 0, mute: false, pafl: false },
-    { id: 'matrix-2', name: 'Matrix 2', stereo: true, source: 'main-lr', faderLevel: 0, mute: false, pafl: false },
+    { id: 'matrix-1', name: 'Left Array Matrix', stereo: true, source: 'main-lr', faderLevel: 0, mute: false, pafl: false },
+    { id: 'matrix-2', name: 'Right Array Matrix', stereo: true, source: 'main-lr', faderLevel: 0, mute: false, pafl: false },
     { id: 'matrix-3', name: 'Matrix 3', stereo: true, source: 'main-lr', faderLevel: 0, mute: false, pafl: false }
   ];
 }
 
-export function createInitialDCAs(): DCA[] {
+export function createInitialDCAs(presetType: 'church' | 'scratch' = 'church'): DCA[] {
+  if (presetType === 'scratch') {
+    return Array.from({ length: 8 }, (_, i) => ({
+      id: i + 1,
+      name: `DCA ${i + 1}`,
+      levelDb: 0,
+      mute: false
+    }));
+  }
   return [
     { id: 1, name: 'DRUMS', levelDb: 0, mute: false },
     { id: 2, name: 'VOCALS', levelDb: 0, mute: false },
@@ -266,9 +317,9 @@ export function createInitialState(preset: 'church' | 'scratch' = 'church'): Sim
     digital: {
       ioPatch: rawPreset.digital.ioPatch || { inputs: {}, outputs: {} },
       channels: createInitialChannels(preset),
-      mixes: createInitialMixes(),
+      mixes: createInitialMixes(preset),
       matrices: createInitialMatrices(),
-      dcas: createInitialDCAs(),
+      dcas: createInitialDCAs(preset),
       muteGroups: createInitialMuteGroups(),
       mainLR: {
         faderLevel: 0,
@@ -325,7 +376,11 @@ export function recallSceneWithFilter(
       activeSceneId: targetScene.id,
       channels: nextChannels,
       mixes: filter.blockFaders ? currentState.digital.mixes : (snap.digital.mixes || currentState.digital.mixes),
-      ioPatch: filter.blockRouting ? currentState.digital.ioPatch : (snap.digital.ioPatch || currentState.digital.ioPatch)
+      ioPatch: filter.blockRouting ? currentState.digital.ioPatch : (snap.digital.ioPatch || currentState.digital.ioPatch),
+      dcas: filter.blockFaders ? currentState.digital.dcas : (snap.digital.dcas || currentState.digital.dcas),
+      matrices: filter.blockFaders ? currentState.digital.matrices : (snap.digital.matrices || currentState.digital.matrices),
+      mainLR: filter.blockFaders ? currentState.digital.mainLR : (snap.digital.mainLR || currentState.digital.mainLR),
+      muteGroups: snap.digital.muteGroups || currentState.digital.muteGroups
     }
   };
 }

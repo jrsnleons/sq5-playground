@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSimulationStore } from '../../store/simulationStore';
 import {
   Activity,
@@ -7,6 +7,7 @@ import {
   Sliders,
   FolderOpen
 } from 'lucide-react';
+import { ConfirmDialogModal } from '../modals/ConfirmDialogModal';
 
 export const TopBar: React.FC = () => {
   const {
@@ -17,6 +18,8 @@ export const TopBar: React.FC = () => {
     setShowEntryModal,
     resetCurrentPreset
   } = useSimulationStore();
+
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const isDsnakeConnected = signalPresence.slinkHasSignal;
   const warningCount = validationNotices.filter((n) => n.type === 'warning').length;
@@ -100,17 +103,23 @@ export const TopBar: React.FC = () => {
 
         {/* Reset Button */}
         <button
-          onClick={() => {
-            if (window.confirm('Reset current rig to preset defaults?')) {
-              resetCurrentPreset();
-            }
-          }}
+          onClick={() => setShowResetConfirm(true)}
           title="Reset Preset"
           className="p-1.5 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
         </button>
       </div>
+
+      <ConfirmDialogModal
+        isOpen={showResetConfirm}
+        title="Reset Configuration"
+        message="Are you sure you want to reset the current rig and mixer settings back to the preset defaults? All unsaved routing and patch changes will be lost."
+        confirmLabel="Reset Defaults"
+        isDestructive={true}
+        onConfirm={resetCurrentPreset}
+        onCancel={() => setShowResetConfirm(false)}
+      />
     </header>
   );
 };

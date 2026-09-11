@@ -16,7 +16,15 @@ export const BezierCableEdge: React.FC<EdgeProps> = memo(({
 }) => {
   const removeCable = useSimulationStore((s) => s.removeCable);
   const hasSignal = useSimulationStore((s) => s.signalPresence.cableHasSignal[id]);
+  const activeTrace = useSimulationStore((s) => s.activeTrace);
+  const setLockedTrace = useSimulationStore((s) => s.setLockedTrace);
+  const cables = useSimulationStore((s) => s.sim.physical.cables);
+  const currentCable = cables.find((c) => c.id === id);
   const signalType = (data?.signalType as SignalType) || 'generic';
+
+  const isTraced = activeTrace?.cableId === id;
+  const hasActiveTrace = !!activeTrace?.cableId;
+  const isDimmed = hasActiveTrace && !isTraced;
 
   // Calculate standard bezier path
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -44,6 +52,10 @@ export const BezierCableEdge: React.FC<EdgeProps> = memo(({
         return '#facc15';
       case 'speaker':
         return '#94a3b8';
+      case 'usb':
+        return '#fbbf24';
+      case 'video':
+        return '#818cf8';
       default:
         return '#64748b';
     }
@@ -51,26 +63,46 @@ export const BezierCableEdge: React.FC<EdgeProps> = memo(({
 
   const cableColor = getCableColor();
 
+  const handleEdgeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentCable) {
+      setLockedTrace(currentCable.toPort, currentCable.toNode);
+    }
+  };
+
   return (
     <>
-      {/* Invisible wide hit area for easy clicking */}
+      {/* Invisible wide hit area for easy clicking and track selection */}
       <path
         d={edgePath}
         fill="none"
         stroke="transparent"
         strokeWidth={24}
+        onClick={handleEdgeClick}
         className="cursor-pointer pointer-events-stroke"
       />
 
-      {/* Glow shadow when carrying signal */}
-      {hasSignal && (
+      {/* Tracing intense illuminated glow halo */}
+      {isTraced && (
         <path
           d={edgePath}
           fill="none"
           stroke={cableColor}
-          strokeWidth={7}
-          strokeOpacity={0.3}
-          className="pointer-events-none filter blur-[2px]"
+          strokeWidth={11}
+          strokeOpacity={0.65}
+          className="pointer-events-none animate-pulse"
+        />
+      )}
+
+      {/* Glow shadow when carrying signal and not dimmed */}
+      {!isTraced && hasSignal && !isDimmed && (
+        <path
+          d={edgePath}
+          fill="none"
+          stroke={cableColor}
+          strokeWidth={6.5}
+          strokeOpacity={0.35}
+          className="pointer-events-none"
         />
       )}
 
@@ -79,13 +111,32 @@ export const BezierCableEdge: React.FC<EdgeProps> = memo(({
         id={id}
         d={edgePath}
         fill="none"
-        stroke={selected ? '#ffffff' : cableColor}
-        strokeWidth={selected ? 4 : signalType === 'dsnake' ? 3.5 : 2.5}
-        strokeDasharray={signalType === 'dsnake' ? '6 3' : undefined}
+        stroke={isTraced ? '#ffffff' : selected ? '#ffffff' : cableColor}
+        strokeWidth={isTraced ? 4.5 : selected ? 4 : signalType === 'dsnake' ? 3.5 : 2.5}
+        strokeDasharray={signalType === 'dsnake' && !isTraced ? '6 3' : undefined}
+        onClick={handleEdgeClick}
         className={`transition-all cursor-pointer ${
-          hasSignal ? 'opacity-100' : 'opacity-70'
+          isDimmed
+            ? 'opacity-15'
+            : isTraced
+            ? 'opacity-100'
+            : hasSignal
+            ? 'opacity-100'
+            : 'opacity-70'
         } hover:stroke-white`}
       />
+
+      {/* Animated Traveling Signal Pulse along the wire when traced */}
+      {isTraced && (
+        <path
+          d={edgePath}
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth={2.5}
+          strokeDasharray="8 12"
+          className="pointer-events-none animate-cable-flow"
+        />
+      )}
 
       {/* Interactive Unplug Button when cable is selected */}
       {selected && (

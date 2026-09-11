@@ -12,6 +12,14 @@ export type ConnectorType =
   | '3.5mm'
   | 'EtherCon'
   | 'USB-B'
+  | 'USB-A'
+  | 'USB-C'
+  | 'USB-in'
+  | 'USB-out'
+  | 'HDMI-in'
+  | 'HDMI-out'
+  | 'RF-in'
+  | 'RF-out'
   | 'AES-XLR';
 
 export type SignalType =
@@ -23,16 +31,26 @@ export type SignalType =
   | 'iem'
   | 'click'
   | 'comms'
+  | 'usb'
+  | 'video'
   | 'generic';
+
+export interface CustomPortDef {
+  id: string;
+  label: string;
+  direction: 'in' | 'out' | 'thru';
+  connector: 'xlr' | 'trs' | 'ts' | 'ethercon' | 'rf' | 'usb' | 'hdmi';
+}
 
 export interface StageItem {
   id: string;
   typeId: string;
   name: string;
-  category: 'mic' | 'instrument' | 'di-box' | 'playback' | 'click' | 'comms' | 'speaker' | 'iem' | 'cable';
+  category: 'mic' | 'instrument' | 'di-box' | 'playback' | 'click' | 'comms' | 'speaker' | 'iem' | 'cable' | 'stream' | 'processing';
   position: { x: number; y: number };
   notes?: string;
   photoOverride?: string;
+  customPorts?: CustomPortDef[];
 }
 
 export interface Cable {
@@ -96,6 +114,7 @@ export interface ChannelSend {
   levelDb: number; // -inf to +10 dB (-90 to +10)
   preFade: boolean;
   assigned: boolean;
+  tapPoint?: 'post-preamp' | 'post-peq' | 'post-compressor' | 'post-fade';
 }
 
 export interface InputChannel {
@@ -110,6 +129,9 @@ export interface InputChannel {
   pafl: boolean;
   dcaGroupMask: number; // bitmask for DCA 1-8
   muteGroupMask: number; // bitmask for Mute Group 1-8
+  stereo?: boolean; // true if channel is part of a stereo pair (e.g. 1-2, 25-26)
+  isStereoSlave?: boolean; // true for even-numbered right channel slave (omitted from fader ribbon)
+  linkedChannelId?: string; // ID of paired channel (e.g. "ch-26" for "ch-25")
   preamp: ProcessingPreamp;
   hpf: ProcessingHPF;
   gate: ProcessingGate;
@@ -229,7 +251,7 @@ export interface SimulationState {
     session: {
       selectedChannelId: string;
       selectedMixId: string; // "main-lr" or "mix-X"
-      activeScreen: 'home' | 'io' | 'processing' | 'routing' | 'fx' | 'meters' | 'scenes' | 'setup' | 'utility';
+      activeScreen: 'faders' | 'home' | 'io' | 'processing' | 'routing' | 'fx' | 'meters' | 'scenes' | 'setup' | 'utility';
       layer: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
       geqFlipActive: boolean;
       geqFlipPage: 0 | 1 | 2; // 0=off, 1=bands 1-14, 2=bands 15-28
@@ -248,6 +270,7 @@ export interface ValidationNotice {
 
 export interface SignalPresenceMap {
   channelsWithSignal: Record<string, boolean>;
+  rawInputsWithSignal: Record<string, boolean>;
   iemOnlyChannels: Record<string, boolean>;
   mixesWithSignal: Record<string, boolean>;
   mainLRHasSignal: boolean;

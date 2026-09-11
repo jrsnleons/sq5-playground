@@ -24,8 +24,8 @@ export const MetersScreen: React.FC = () => {
           </span>
           <div className="flex-1 grid grid-cols-24 gap-1 overflow-x-auto items-end pb-1">
             {sim.digital.channels.map((ch) => {
-              const hasSignal = signalPresence.channelsWithSignal[ch.id];
-              const level = hasSignal ? (ch.faderLevel > -30 ? 75 : 40) : 5;
+              const hasSignal = signalPresence.rawInputsWithSignal?.[ch.id] ?? signalPresence.channelsWithSignal[ch.id];
+              const level = hasSignal ? 72 : 5;
 
               return (
                 <div key={ch.id} className="flex flex-col items-center h-full justify-end group">

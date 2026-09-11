@@ -13,10 +13,10 @@ export const BottomStatusStrip: React.FC = () => {
     <footer className="h-7 bg-slate-950 border-t border-slate-800/80 px-3 flex items-center justify-between text-[11px] text-slate-400 select-none z-20 shrink-0">
       <div className="flex items-center space-x-4">
         {/* Selected Channel Indicator */}
-        <div className="flex items-center space-x-1.5">
-          <span className="text-slate-400 font-mono">SEL:</span>
+        <div className="flex items-center space-x-1.5 min-w-0">
+          <span className="text-slate-400 font-mono shrink-0">SEL:</span>
           {selectedCh ? (
-            <span className="font-semibold text-slate-100">
+            <span className="font-semibold text-slate-100 truncate max-w-[120px] sm:max-w-[200px]">
               CH {selectedCh.channelNumber} — {selectedCh.name}
             </span>
           ) : (
@@ -25,20 +25,20 @@ export const BottomStatusStrip: React.FC = () => {
         </div>
 
         {/* Selected Mix / Master Target */}
-        <div className="flex items-center space-x-1.5">
+        <div className="flex items-center space-x-1.5 shrink-0">
           <span className="text-slate-400 font-mono">TARGET:</span>
           <span className="font-semibold text-amber-300">{selectedMix}</span>
         </div>
 
         {/* Current Layer */}
-        <div className="flex items-center space-x-1 font-mono">
+        <div className="flex items-center space-x-1 font-mono shrink-0">
           <span className="text-slate-400">LAYER:</span>
           <span className="text-sky-400 font-bold">{sim.digital.session.layer}</span>
         </div>
       </div>
 
       {/* Audio Glossary Quick Tooltip Terms */}
-      <div className="hidden md:flex items-center space-x-3 text-slate-300 text-[11px]">
+      <div className="hidden lg:flex items-center space-x-3 text-slate-300 text-[11px]">
         <span
           title="dSNAKE: Allen & Heath proprietary protocol transmitting 40 in / 20 out uncompressed 48 kHz digital audio over standard Cat5e Ethernet cable up to 100m."
           className="hover:text-white cursor-help underline decoration-dotted decoration-slate-500"
