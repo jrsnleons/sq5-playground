@@ -5,8 +5,20 @@ import { LeftRail } from './components/layout/LeftRail';
 import { BottomStatusStrip } from './components/layout/BottomStatusStrip';
 import { NoticesModal } from './components/modals/NoticesModal';
 import { EntryModeModal } from './components/modals/EntryModeModal';
+import { SimulationBriefingBanner } from './components/layout/SimulationBriefingBanner';
 import { MobileBlockScreen } from './components/layout/MobileBlockScreen';
 import { Loader2, X, AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import { isSupabaseConfigured, supabase } from './services/supabase';
+
+const AuthModal = lazy(() =>
+  import('./components/modals/AuthModal').then((m) => ({ default: m.AuthModal }))
+);
+const SimulationsModal = lazy(() =>
+  import('./components/modals/SimulationsModal').then((m) => ({ default: m.SimulationsModal }))
+);
+const AdminCreateSimulationModal = lazy(() =>
+  import('./components/modals/AdminCreateSimulationModal').then((m) => ({ default: m.AdminCreateSimulationModal }))
+);
 
 const PhysicalCanvas = lazy(() =>
   import('./features/physical/PhysicalCanvas').then((m) => ({ default: m.PhysicalCanvas }))
@@ -35,7 +47,63 @@ const ViewLoadingFallback = () => (
 );
 
 export const App: React.FC = () => {
-  const { activeTab, toastNotice, setToastNotice } = useSimulationStore();
+  const {
+    activeTab,
+    toastNotice,
+    setToastNotice,
+    setSyncStatus,
+    setUserProfile,
+    refreshSimulations
+  } = useSimulationStore();
+
+  useEffect(() => {
+    // Initial fetch of practice simulations
+    refreshSimulations().catch(console.warn);
+
+    // Online / Offline Detection
+    const handleOnline = () => {
+      setSyncStatus(isSupabaseConfigured() ? 'synced' : 'local-only');
+    };
+    const handleOffline = () => {
+      setSyncStatus('offline');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Supabase Auth State Change Listener
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    const client = supabase;
+    if (isSupabaseConfigured() && client) {
+      const { data } = client.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+          const { data: profile } = await client
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          setUserProfile({
+            id: session.user.id,
+            email: session.user.email || '',
+            displayName: profile?.display_name || session.user.email?.split('@')[0] || 'Member',
+            role: profile?.role || 'member'
+          });
+          setSyncStatus('synced');
+        } else if (event === 'SIGNED_OUT') {
+          setUserProfile(null);
+          setSyncStatus('local-only');
+        }
+      });
+      authSubscription = data.subscription;
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      if (authSubscription) authSubscription.unsubscribe();
+    };
+  }, [setSyncStatus, setUserProfile, refreshSimulations]);
 
   useEffect(() => {
     if (toastNotice) {
@@ -59,6 +127,9 @@ export const App: React.FC = () => {
         <LeftRail />
 
         <main className="flex-1 h-full overflow-hidden relative bg-slate-950">
+          {/* Active Simulation Task Briefing Floating Card */}
+          <SimulationBriefingBanner />
+
           <Suspense fallback={<ViewLoadingFallback />}>
             {activeTab === 'stage' && <PhysicalCanvas />}
             {activeTab === 'console' && <DigitalConsoleView />}
@@ -122,6 +193,11 @@ export const App: React.FC = () => {
       {/* Global Modals */}
       <NoticesModal />
       <EntryModeModal />
+      <Suspense fallback={null}>
+        <AuthModal />
+        <SimulationsModal />
+        <AdminCreateSimulationModal />
+      </Suspense>
     </div>
   );
 };

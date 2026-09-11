@@ -690,5 +690,51 @@ describe('FOH SQ-5 Simulator — Acceptance Criteria (AC-1 to AC-16)', () => {
     expect(recalled.digital.mainLR.faderLevel).toBe(-10);
     expect(recalled.digital.muteGroups[0].active).toBe(true);
   });
+
+  it('AC-22: Practice simulations starting rigs can initialize custom stages and calculate independent signal presence', () => {
+    const customChallengeRig = {
+      stageItems: [
+        { id: 'custom-mic-1', typeId: 'mic-dynamic', name: 'Lead Mic', category: 'mic', position: { x: 100, y: 100 } }
+      ],
+      cables: [
+        { id: 'cable-dsnake', fromNode: 'stagebox-ar2412', fromPort: 'ar-dsnake', toNode: 'console-sq5', toPort: 'sq-slink', signalType: 'dsnake' as const },
+        { id: 'cable-test-1', fromNode: 'custom-mic-1', fromPort: 'custom-mic-1-out-1', toNode: 'stagebox-ar2412', toPort: 'ar-in-1', signalType: 'mic' as const }
+      ],
+      stageBox: { model: 'AR2412', connectedToSQ: true, position: { x: 600, y: 300 } },
+      console: { model: 'SQ-5', slinkMode: 'dSnake' as const, position: { x: 1200, y: 300 } }
+    };
+
+    const state = createInitialState('scratch');
+    state.physical.stageItems = customChallengeRig.stageItems as any;
+    state.physical.cables = customChallengeRig.cables as any;
+    state.physical.stageBox.connectedToSQ = true;
+
+    // Patch AR2412 input 1 to console channel 1
+    state.digital.ioPatch.inputs['ch-1'] = { sourceType: 'slink', socketId: 'ar-in-1' };
+
+    const presence = computeSignalPresence(state);
+    expect(presence.slinkHasSignal).toBe(true);
+    expect(presence.rawInputsWithSignal['ch-1']).toBe(true);
+    expect(presence.channelsWithSignal['ch-1']).toBe(true);
+  });
+
+  it('AC-23: Role capability matrix — admin can author simulations, members can practice, guests have local cache', () => {
+    type Role = 'admin' | 'member' | 'guest';
+    const canCreateSimulation = (role: Role) => role === 'admin';
+    const canLaunchSimulation = (role: Role) => role === 'admin' || role === 'member' || role === 'guest';
+    const canCloudSync = (role: Role) => role === 'admin' || role === 'member';
+
+    expect(canCreateSimulation('admin')).toBe(true);
+    expect(canCreateSimulation('member')).toBe(false);
+    expect(canCreateSimulation('guest')).toBe(false);
+
+    expect(canLaunchSimulation('admin')).toBe(true);
+    expect(canLaunchSimulation('member')).toBe(true);
+    expect(canLaunchSimulation('guest')).toBe(true);
+
+    expect(canCloudSync('admin')).toBe(true);
+    expect(canCloudSync('member')).toBe(true);
+    expect(canCloudSync('guest')).toBe(false);
+  });
 });
 

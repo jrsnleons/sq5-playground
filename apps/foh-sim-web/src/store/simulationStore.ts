@@ -16,6 +16,15 @@ import {
   validateCableConnection
 } from '@foh-sim/simulation-core';
 import stageItemsCatalog from '@foh-sim/hardware-profiles/stage-items.json';
+import { localCache } from '../services/localCache';
+import { simulationService } from '../services/simulationService';
+import {
+  UserProfile,
+  UserRole,
+  PracticeSimulation,
+  isSupabaseConfigured,
+  supabase
+} from '../services/supabase';
 
 export interface CustomEquipmentCatalogItem {
   id: string;
@@ -65,6 +74,39 @@ interface SimulationStoreState {
   setSelectedNodeId: (id: string | null) => void;
   setNoticesModalOpen: (open: boolean) => void;
   setShowEntryModal: (show: boolean) => void;
+
+  // Auth & Roles (Admin / Member / Guest)
+  currentUser: UserProfile | null;
+  userRole: UserRole;
+  authModalOpen: boolean;
+  setAuthModalOpen: (open: boolean) => void;
+  setUserProfile: (profile: UserProfile | null) => void;
+  setUserRole: (role: UserRole) => void;
+  signOut: () => void;
+
+  // Practice Simulations & Training Challenges
+  simulationsList: PracticeSimulation[];
+  activeSimulation: PracticeSimulation | null;
+  simulationsModalOpen: boolean;
+  adminCreateModalOpen: boolean;
+  briefingBannerVisible: boolean;
+  setSimulationsModalOpen: (open: boolean) => void;
+  setAdminCreateModalOpen: (open: boolean) => void;
+  setBriefingBannerVisible: (visible: boolean) => void;
+  loadSimulation: (sim: PracticeSimulation) => void;
+  exitSimulation: () => void;
+  refreshSimulations: () => Promise<void>;
+  publishNewSimulation: (payload: {
+    title: string;
+    description: string;
+    category: PracticeSimulation['category'];
+    difficulty: PracticeSimulation['difficulty'];
+    briefing: string;
+  }) => Promise<boolean>;
+
+  // Cloud Sync
+  syncStatus: 'offline' | 'local-only' | 'syncing' | 'synced' | 'error';
+  setSyncStatus: (status: 'offline' | 'local-only' | 'syncing' | 'synced' | 'error') => void;
 
   // Presets & Modes
   loadPreset: (mode: 'church' | 'scratch') => void;
@@ -294,6 +336,129 @@ export const useSimulationStore = create<SimulationStoreState>()(
     setShowEntryModal: (show) =>
       set((state) => {
         state.showEntryModal = show;
+      }),
+
+    // Auth & Roles
+    currentUser: localCache.getUserProfile(),
+    userRole: localCache.getUserRole(),
+    authModalOpen: false,
+    setAuthModalOpen: (open) =>
+      set((state) => {
+        state.authModalOpen = open;
+      }),
+    setUserProfile: (profile) =>
+      set((state) => {
+        state.currentUser = profile;
+        state.userRole = profile?.role || 'guest';
+        localCache.saveUserProfile(profile);
+      }),
+    setUserRole: (role) =>
+      set((state) => {
+        state.userRole = role;
+        localCache.setUserRole(role);
+      }),
+    signOut: () =>
+      set((state) => {
+        state.currentUser = null;
+        state.userRole = 'guest';
+        localCache.saveUserProfile(null);
+        if (isSupabaseConfigured() && supabase) {
+          supabase.auth.signOut().catch(console.warn);
+        }
+      }),
+
+    // Practice Simulations
+    simulationsList: localCache.getSimulations(),
+    activeSimulation: null,
+    simulationsModalOpen: false,
+    adminCreateModalOpen: false,
+    briefingBannerVisible: false,
+    setSimulationsModalOpen: (open) =>
+      set((state) => {
+        state.simulationsModalOpen = open;
+      }),
+    setAdminCreateModalOpen: (open) =>
+      set((state) => {
+        state.adminCreateModalOpen = open;
+      }),
+    setBriefingBannerVisible: (visible) =>
+      set((state) => {
+        state.briefingBannerVisible = visible;
+      }),
+    loadSimulation: (sim) =>
+      set((state) => {
+        state.activeSimulation = sim;
+        state.briefingBannerVisible = true;
+        state.simulationsModalOpen = false;
+        if (sim.startingRig) {
+          if (sim.startingRig.stageItems) {
+            state.sim.physical.stageItems = JSON.parse(JSON.stringify(sim.startingRig.stageItems));
+          }
+          if (sim.startingRig.cables) {
+            state.sim.physical.cables = JSON.parse(JSON.stringify(sim.startingRig.cables));
+          }
+          if (sim.startingRig.ioPatch) {
+            state.sim.digital.ioPatch = JSON.parse(JSON.stringify(sim.startingRig.ioPatch));
+          }
+          if (sim.startingRig.channels) {
+            state.sim.digital.channels = JSON.parse(JSON.stringify(sim.startingRig.channels));
+          }
+          if (sim.startingRig.mixes) {
+            state.sim.digital.mixes = JSON.parse(JSON.stringify(sim.startingRig.mixes));
+          }
+        } else {
+          const mode = sim.category === 'patching' ? 'scratch' : 'church';
+          state.sim = createInitialState(mode);
+        }
+        state.signalPresence = computeSignalPresence(state.sim);
+        state.validationNotices = validateSystemState(state.sim);
+      }),
+    exitSimulation: () =>
+      set((state) => {
+        state.activeSimulation = null;
+        state.briefingBannerVisible = false;
+      }),
+    refreshSimulations: async () => {
+      const list = await simulationService.fetchSimulations();
+      set((state) => {
+        state.simulationsList = list;
+      });
+    },
+    publishNewSimulation: async (payload) => {
+      const currentSim = get().sim;
+      const startingRig = {
+        stageItems: JSON.parse(JSON.stringify(currentSim.physical.stageItems)),
+        cables: JSON.parse(JSON.stringify(currentSim.physical.cables)),
+        ioPatch: JSON.parse(JSON.stringify(currentSim.digital.ioPatch)),
+        channels: JSON.parse(JSON.stringify(currentSim.digital.channels)),
+        mixes: JSON.parse(JSON.stringify(currentSim.digital.mixes))
+      };
+      const res = await simulationService.createSimulation({
+        ...payload,
+        startingRig
+      });
+      set((state) => {
+        state.simulationsList = [
+          res.simulation,
+          ...state.simulationsList.filter((s) => s.id !== res.simulation.id)
+        ];
+        state.adminCreateModalOpen = false;
+        state.activeSimulation = res.simulation;
+        state.briefingBannerVisible = true;
+      });
+      return res.savedToCloud;
+    },
+
+    // Cloud Sync Status
+    syncStatus:
+      typeof navigator !== 'undefined' && !navigator.onLine
+        ? 'offline'
+        : isSupabaseConfigured()
+        ? 'synced'
+        : 'local-only',
+    setSyncStatus: (status) =>
+      set((state) => {
+        state.syncStatus = status;
       }),
 
     loadPreset: (mode) =>

@@ -5,9 +5,12 @@ import {
   AlertTriangle,
   RotateCcw,
   Sliders,
-  FolderOpen
+  FolderOpen,
+  Award,
+  ShieldCheck
 } from 'lucide-react';
 import { ConfirmDialogModal } from '../modals/ConfirmDialogModal';
+import { CloudSyncBadge } from './CloudSyncBadge';
 
 export const TopBar: React.FC = () => {
   const {
@@ -16,7 +19,10 @@ export const TopBar: React.FC = () => {
     validationNotices,
     setNoticesModalOpen,
     setShowEntryModal,
-    resetCurrentPreset
+    resetCurrentPreset,
+    userRole,
+    setSimulationsModalOpen,
+    setAdminCreateModalOpen
   } = useSimulationStore();
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -39,7 +45,7 @@ export const TopBar: React.FC = () => {
         </div>
 
         {/* Current Scene Badge */}
-        <div className="hidden sm:flex items-center space-x-1.5 text-xs text-slate-300 bg-slate-800/80 px-2 py-1 rounded border border-slate-700">
+        <div className="hidden xl:flex items-center space-x-1.5 text-xs text-slate-300 bg-slate-800/80 px-2 py-1 rounded border border-slate-700">
           <span className="text-slate-400 text-[11px]">SCENE:</span>
           <span className="font-medium text-amber-300">
             {currentScene ? `${currentScene.id}: ${currentScene.name}` : '1: Sunday Service'}
@@ -48,7 +54,7 @@ export const TopBar: React.FC = () => {
       </div>
 
       {/* Center Hardware / Network Status Pill */}
-      <div className="flex items-center space-x-2">
+      <div className="hidden md:flex items-center space-x-2">
         <div
           className={`flex items-center space-x-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${
             isDsnakeConnected
@@ -92,13 +98,36 @@ export const TopBar: React.FC = () => {
           </button>
         )}
 
+        {/* Practice Challenges Button */}
+        <button
+          onClick={() => setSimulationsModalOpen(true)}
+          className="flex items-center space-x-1.5 px-2.5 py-1 text-xs rounded bg-sky-950/80 text-sky-200 hover:bg-sky-900 border border-sky-800 transition-colors font-medium"
+        >
+          <Award className="w-3.5 h-3.5 text-sky-400" />
+          <span className="hidden sm:inline">Challenges</span>
+        </button>
+
+        {/* Admin Create Challenge Button (visible when role is admin) */}
+        {userRole === 'admin' && (
+          <button
+            onClick={() => setAdminCreateModalOpen(true)}
+            className="hidden xl:flex items-center space-x-1 px-2.5 py-1 text-xs rounded bg-amber-950/80 text-amber-200 hover:bg-amber-900 border border-amber-700 transition-colors font-medium"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+            <span>Create Sim</span>
+          </button>
+        )}
+
+        {/* Cloud Sync & Role Badge */}
+        <CloudSyncBadge />
+
         {/* Presets Button */}
         <button
           onClick={() => setShowEntryModal(true)}
           className="flex items-center space-x-1 px-2.5 py-1 text-xs rounded bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-slate-700 transition-colors"
         >
           <FolderOpen className="w-3.5 h-3.5 text-slate-400" />
-          <span>Presets</span>
+          <span className="hidden md:inline">Presets</span>
         </button>
 
         {/* Reset Button */}
