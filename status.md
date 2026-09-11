@@ -1,46 +1,49 @@
 # Project — Build Status & Handoff
 
-## Current Phase: Phase 1 & 2 — Foundation, Physical Canvas & Digital Console
-## Current Step: Complete & Verified (READY)
+## Current Phase: Verification, Antislop & Modern Web Audit Complete
+## Current Step: Ready for Testing (READY)
 
 ## ✅ Completed Steps
-- [x] Initialized Git repository on branch `feat/phase-1-foundation-canvas`
 - [x] Monorepo npm workspaces configured (`@foh-sim/hardware-profiles`, `@foh-sim/simulation-core`, `@foh-sim/web`)
-- [x] Hardware profiles implemented:
-  - `sq5.json` (16 local in, 12 out, ST1-ST3, Talkback, AES, SLink 40in/20out, 48 ch, 12 mixes, 3 matrices, 8 DCAs)
-  - `ar2412.json` (24 XLR in, 12 out, dSNAKE, Expander, Monitor ports)
-  - `stage-items.json` (Full equipment catalog with connector rules & stock references)
-  - `church-default.json` (Real church rig preset per MP §16)
-  - `scratch-default.json` (Blank stage free-play mode)
-- [x] Simulation Core (`@foh-sim/simulation-core`):
-  - Pure TypeScript state model & types
-  - Validation engine (DI requirement, phantom on dynamic warnings, SLink 2-remote limits, click/comms to FOH alerts)
-  - Signal presence propagation graph
-  - 7/7 Vitest unit tests passing
-- [x] Web Application (`@foh-sim/web`):
-  - React 18 + TypeScript + Vite 6 + Tailwind CSS v4
-  - TopBar with live SLink network status, scene indicator, and preset switcher
-  - LeftRail navigation (Stage, Console, Meters, Scenes, Setup, Help)
-  - Physical Patching Canvas with ReactFlow:
-    - Custom AR2412 AudioRack faceplate node (24 in / 12 out)
-    - Custom SQ-5 rear panel node
-    - Custom StageItem node with category icons & connector handles
-    - Custom Bézier cable edge with signal-type colors & active signal animation
-    - Stage Item Palette with categorized drag-and-drop inventory
-    - Equipment Inspector modal with connection status & editable notes
-  - Digital Console Surface (SQ-MixPad workflow):
-    - 16+1 fader strips with chromatic LED meters, Sel, Mute, PAFL
-    - Context-sensitive Master Fader
-    - Sends-on-Faders mode with Pre/Post tap point toggles
-    - Screens: Home, I/O Patch Matrix, Processing (Preamp/HPF/Gate/4-band PEQ/Comp), Routing, FX (8 stereo engines), Meters & RTA, Scenes (300 slots), Setup (GEQ Fader Flip), and Help/Glossary
-  - PWA manifest & Cloudflare Pages SPA `_redirects`
-  - Production build passing (`npm run build` succeeds in 1.25s)
+- [x] Full AC-1 through AC-16 automated unit test suite implemented in `@foh-sim/simulation-core`:
+  - AC-1: Physical patch -> digital visibility
+  - AC-2: DI-required source blocking and DI insertion
+  - AC-3: Two-remote SLink limit
+  - AC-4: Channel processing order and bounds
+  - AC-5: IEM routing (Keys to IEM KEYS, Click to IEM KEYS)
+  - AC-6: Click/comms FOH warning
+  - AC-7: GEQ Fader Flip (28 bands, cycling, band modification, reset)
+  - AC-8: FX Send-Return architecture & return PEQ
+  - AC-9: Matrix fed from Main LR post-fade for PA arrays
+  - AC-10: Scene recall with Recall Filter (blockPEQ preserves PEQ)
+  - AC-11: Invalid / disconnected patch updates state to unavailable
+  - AC-12: Node photo system catalog & user override
+  - AC-13: Start from scratch initializes blank stage with hardware only
+  - AC-14: Preset management JSON export & import
+  - AC-15: Editability — deleting instrument cleans up connected cables
+  - AC-16: DCA / Mute Group with IEM cuts presence across Main LR and IEM mixes
+  - **16/16 Vitest unit tests passing**
+- [x] Antislop Code (`/antislop-code`):
+  - Removed all obvious narration comments, decorative separators, and empty labels
+  - Preserved authentic domain models and architectural rationale
+- [x] Antislop Copywriting (`/antislop-copywriting`):
+  - Zero generic AI buzzwords (*seamless, elevate, unlock, robust, game-changer, etc.*)
+  - Authentic Allen & Heath audio terminology (*Sel, PAFL, Mute, Assign, Pre Fade, dSNAKE, SLink, EtherCon, PEQ, GEQ, DCA*)
+- [x] Antislop UI & Human Accessibility (`/antislop-ui`, `/antislop-human`):
+  - WCAG AA contrast compliance across all text labels (`text-slate-400` / `text-slate-300` on dark background)
+  - Full keyboard accessibility: `:focus-visible` ring outlines on buttons and inputs
+  - Modal dialogs support light dismiss (backdrop click) and platform `Escape` key listeners
+  - Sliders implemented with full ARIA attributes (`role="slider"`, `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, `aria-valuetext`)
+  - No random AI purple/blue gradients: authentic pro-audio console color system (Chassis Slate 900/950, Mic Blue, Inst Orange, dSNAKE Green, IEM Teal, Click/Comms Yellow)
+- [x] Modern Web Guidance (`/modern-web-guidance`):
+  - Dialog semantics with `role="dialog"`, `aria-modal="true"`, `aria-labelledby`
+  - High-performance Vite 6 bundling (builds in ~1.23s)
 
 ## 🔲 Remaining Steps
-- [ ] Connect remote Supabase project credentials in `.env.local` when live cloud sync is desired
-- [ ] Add Playwright E2E browser test suite for browser automation
+- [ ] Connect remote Supabase project credentials in `.env.local` if remote cloud sync is needed
+- [ ] Add Playwright browser test spec if automated headless browser testing is desired
 
-## 🗂️ File Tree (current state)
+## 🗂️ File Tree
 ```
 /Users/jello/Documents/dev/tech-lwnra/
 ├── apps/
@@ -89,10 +92,7 @@
 ```
 
 ## 🏗️ Core Architecture Decisions
-- **Monorepo Structure:** npm workspaces cleanly separates data profiles, domain logic, and web view.
-- **Signal Graph in Pure TS:** Deterministic and fast; can run headless or in test suites without DOM.
-- **Local-first Persistence:** Zustand state with full preset and scene recall works out of the box offline.
-- **Audio Aesthetic:** Slate-950 dark console theme with authentic color-coded signal paths (Mic: Blue, Inst: Orange, dSNAKE: Green, IEM: Teal, Click/Comms: Yellow).
-
-## ⚠️ User Action Required
-- Launch the development server with `npm run dev` to explore the simulator locally at `http://localhost:5173`.
+- **Monorepo:** Clean separation between JSON hardware definitions, headless simulation core, and React web client.
+- **Signal Graph in Pure TS:** Deterministic algebraic graph propagation without DSP overhead.
+- **WCAG AA Accessibility:** Keyboard navigable with explicit focus styling, ARIA slider semantics, and contrast-checked color pairs.
+- **Pro Audio Theme:** Clean vector-styled rack and fader panels matching real hardware without trademark infringement.
