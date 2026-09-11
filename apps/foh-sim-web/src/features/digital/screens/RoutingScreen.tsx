@@ -16,6 +16,8 @@ import {
 export const RoutingScreen: React.FC = () => {
   const {
     sim,
+    userRole,
+    setToastNotice,
     toggleChannelMainLR,
     setChannelSend,
     toggleSendPreFade,
@@ -30,6 +32,8 @@ export const RoutingScreen: React.FC = () => {
     toggleMatrixMute
   } = useSimulationStore();
 
+  const isGuest = userRole === 'guest';
+
   const [activeTab, setActiveTab] = useState<'channel' | 'dca' | 'matrix'>('dca');
   const [selectedDcaId, setSelectedDcaId] = useState<number>(1);
   const [editingDcaId, setEditingDcaId] = useState<number | null>(null);
@@ -37,11 +41,19 @@ export const RoutingScreen: React.FC = () => {
 
   const startEditingDca = (dcaId: number, currentName: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isGuest) {
+      setToastNotice({ message: 'DCA renaming is locked in Guest mode. Sign in to edit.', type: 'info' });
+      return;
+    }
     setEditingDcaId(dcaId);
     setEditingDcaName(currentName);
   };
 
   const saveDcaName = (dcaId: number) => {
+    if (isGuest) {
+      setEditingDcaId(null);
+      return;
+    }
     if (editingDcaName.trim()) {
       updateDcaName(dcaId, editingDcaName.trim());
     }
@@ -63,6 +75,10 @@ export const RoutingScreen: React.FC = () => {
   );
 
   const handleToggleDcaChannel = (chId: string) => {
+    if (isGuest) {
+      setToastNotice({ message: 'DCA assignment is locked in Guest mode. Sign in to edit.', type: 'info' });
+      return;
+    }
     const ch = sim.digital.channels.find((c) => c.id === chId);
     if (!ch) return;
     const isMember = (ch.dcaGroupMask & (1 << (selectedDcaId - 1))) !== 0;
@@ -70,6 +86,10 @@ export const RoutingScreen: React.FC = () => {
   };
 
   const handleAssignAllDca = () => {
+    if (isGuest) {
+      setToastNotice({ message: 'DCA assignment is locked in Guest mode. Sign in to edit.', type: 'info' });
+      return;
+    }
     setDcaAllMembers(
       selectedDcaId,
       sim.digital.channels.map((c) => c.id)
@@ -77,6 +97,10 @@ export const RoutingScreen: React.FC = () => {
   };
 
   const handleClearAllDca = () => {
+    if (isGuest) {
+      setToastNotice({ message: 'DCA assignment is locked in Guest mode. Sign in to edit.', type: 'info' });
+      return;
+    }
     setDcaAllMembers(selectedDcaId, []);
   };
 
@@ -183,7 +207,7 @@ export const RoutingScreen: React.FC = () => {
                     >
                       <div className="flex items-center justify-between text-[10px] text-slate-400 uppercase font-bold">
                         <span>DCA {dca.id}</span>
-                        {!isEditingThisDca && (
+                        {!isEditingThisDca && !isGuest && (
                           <button
                             onClick={(e) => startEditingDca(dca.id, dca.name, e)}
                             title="Rename DCA (or double-click name)"
@@ -194,7 +218,7 @@ export const RoutingScreen: React.FC = () => {
                         )}
                       </div>
 
-                      {isEditingThisDca ? (
+                      {isEditingThisDca && !isGuest ? (
                         <div className="flex items-center space-x-1 my-1">
                           <input
                             type="text"
@@ -221,9 +245,11 @@ export const RoutingScreen: React.FC = () => {
                         </div>
                       ) : (
                         <div
-                          onDoubleClick={(e) => startEditingDca(dca.id, dca.name, e)}
-                          title="Double click to rename"
-                          className="text-xs font-bold truncate my-0.5 hover:underline cursor-text"
+                          onDoubleClick={(e) => !isGuest && startEditingDca(dca.id, dca.name, e)}
+                          title={isGuest ? dca.name : 'Double click to rename'}
+                          className={`text-xs font-bold truncate my-0.5 ${
+                            isGuest ? 'cursor-default' : 'hover:underline cursor-text'
+                          }`}
                         >
                           {dca.name}
                         </div>
@@ -245,14 +271,24 @@ export const RoutingScreen: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={handleAssignAllDca}
-                    className="flex items-center space-x-1 px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-bold border border-slate-700"
+                    disabled={isGuest}
+                    className={`flex items-center space-x-1 px-3 py-1 rounded text-xs font-bold border transition-colors ${
+                      isGuest
+                        ? 'opacity-50 cursor-not-allowed bg-slate-900 border-slate-800 text-slate-500'
+                        : 'bg-slate-800 hover:bg-slate-700 text-sky-400 border-slate-700'
+                    }`}
                   >
                     <PlusCircle className="w-3.5 h-3.5" />
                     <span>Assign All 48 Channels</span>
                   </button>
                   <button
                     onClick={handleClearAllDca}
-                    className="flex items-center space-x-1 px-3 py-1 rounded bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 text-xs border border-slate-700"
+                    disabled={isGuest}
+                    className={`flex items-center space-x-1 px-3 py-1 rounded text-xs border transition-colors ${
+                      isGuest
+                        ? 'opacity-50 cursor-not-allowed bg-slate-900 border-slate-800 text-slate-500'
+                        : 'bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border-slate-700'
+                    }`}
                   >
                     <MinusCircle className="w-3.5 h-3.5" />
                     <span>Clear DCA {selectedDcaId}</span>
@@ -280,7 +316,10 @@ export const RoutingScreen: React.FC = () => {
                     <button
                       key={ch.id}
                       onClick={() => handleToggleDcaChannel(ch.id)}
+                      disabled={isGuest}
                       className={`p-2 rounded-lg border text-left font-mono transition-all flex items-center justify-between ${
+                        isGuest ? 'cursor-default opacity-85' : ''
+                      } ${
                         isMember
                           ? 'bg-sky-600/30 border-sky-500 text-white shadow-sm'
                           : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
@@ -312,7 +351,7 @@ export const RoutingScreen: React.FC = () => {
                   Complete 48-Channel × 8-DCA Matrix Overview
                 </span>
                 <span className="text-[10px] font-mono text-slate-500">
-                  Touch any cell to toggle assignment
+                  {isGuest ? 'Overview (Locked in Guest Mode)' : 'Touch any cell to toggle assignment'}
                 </span>
               </div>
               <div className="overflow-x-auto max-h-96">
@@ -338,8 +377,16 @@ export const RoutingScreen: React.FC = () => {
                           return (
                             <td
                               key={dca.id}
-                              onClick={() => setDcaMembership(ch.id, dca.id, !isMember)}
-                              className="py-2 px-2 text-center cursor-pointer hover:bg-sky-950/40 transition-colors"
+                              onClick={() => {
+                                if (isGuest) {
+                                  setToastNotice({ message: 'DCA assignment is locked in Guest mode. Sign in to edit.', type: 'info' });
+                                  return;
+                                }
+                                setDcaMembership(ch.id, dca.id, !isMember);
+                              }}
+                              className={`py-2 px-2 text-center transition-colors ${
+                                isGuest ? 'cursor-default' : 'cursor-pointer hover:bg-sky-950/40'
+                              }`}
                             >
                               {isMember ? (
                                 <span className="inline-block px-1.5 py-0.5 rounded bg-sky-600 text-white font-bold text-[10px]">
@@ -373,8 +420,17 @@ export const RoutingScreen: React.FC = () => {
               </div>
 
               <button
-                onClick={() => toggleChannelMainLR(channel.id)}
+                onClick={() => {
+                  if (isGuest) {
+                    setToastNotice({ message: 'Main LR routing is locked in Guest mode. Sign in to edit.', type: 'info' });
+                    return;
+                  }
+                  toggleChannelMainLR(channel.id);
+                }}
+                disabled={isGuest}
                 className={`px-4 py-2 rounded text-xs font-mono font-bold transition-all ${
+                  isGuest ? 'cursor-not-allowed opacity-75' : ''
+                } ${
                   channel.mainLRAssigned
                     ? 'bg-sky-600 text-white shadow-[0_0_8px_#0284c7]'
                     : 'bg-slate-800 text-slate-500'
@@ -402,8 +458,17 @@ export const RoutingScreen: React.FC = () => {
                       <div className="text-[10px] text-slate-500">Group Bus ({grp.stereo ? 'Stereo' : 'Mono'})</div>
                     </div>
                     <button
-                      onClick={() => toggleMixMainLR(grp.id)}
+                      onClick={() => {
+                        if (isGuest) {
+                          setToastNotice({ message: 'Subgroup routing is locked in Guest mode. Sign in to edit.', type: 'info' });
+                          return;
+                        }
+                        toggleMixMainLR(grp.id);
+                      }}
+                      disabled={isGuest}
                       className={`px-3 py-1.5 rounded text-[11px] font-mono font-bold transition-all border ${
+                        isGuest ? 'cursor-not-allowed opacity-75' : ''
+                      } ${
                         grp.mainLRAssigned
                           ? 'bg-indigo-600 text-white border-indigo-400 shadow-[0_0_8px_#6366f1]'
                           : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
@@ -455,10 +520,12 @@ export const RoutingScreen: React.FC = () => {
                           <input
                             type="checkbox"
                             checked={send.assigned}
-                            onChange={(e) =>
-                              setChannelSend(channel.id, mix.id, send.levelDb, e.target.checked)
-                            }
-                            className={`rounded cursor-pointer ${isGroup ? 'accent-indigo-500' : 'accent-sky-500'}`}
+                            disabled={isGuest}
+                            onChange={(e) => {
+                              if (isGuest) return;
+                              setChannelSend(channel.id, mix.id, send.levelDb, e.target.checked);
+                            }}
+                            className={`rounded ${isGuest ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isGroup ? 'accent-indigo-500' : 'accent-sky-500'}`}
                           />
                           <span className={`text-xs font-bold ${isGroup ? 'text-indigo-300' : 'text-slate-200'}`}>
                             {isGroup ? `[GRP] ${mix.name.replace(/^GRP\s*/, '')}` : mix.name}
@@ -469,8 +536,9 @@ export const RoutingScreen: React.FC = () => {
                         <div className="flex items-center space-x-1">
                           <select
                             value={currentTap}
-                            onChange={(e) => setSendTapPoint(channel.id, mix.id, e.target.value as any)}
-                            className="bg-slate-900 border border-slate-700 text-slate-200 text-[10px] font-mono rounded px-1.5 py-0.5 focus:outline-none focus:border-sky-500"
+                            disabled={isGuest}
+                            onChange={(e) => !isGuest && setSendTapPoint(channel.id, mix.id, e.target.value as any)}
+                            className={`bg-slate-900 border border-slate-700 text-slate-200 text-[10px] font-mono rounded px-1.5 py-0.5 focus:outline-none focus:border-sky-500 ${isGuest ? 'cursor-not-allowed opacity-75' : ''}`}
                           >
                             <option value="post-preamp">PRE (Preamp)</option>
                             <option value="post-peq">PRE (PEQ)</option>
@@ -487,12 +555,12 @@ export const RoutingScreen: React.FC = () => {
                           min="-90"
                           max="10"
                           step="1"
-                          disabled={!send.assigned}
+                          disabled={!send.assigned || isGuest}
                           value={send.levelDb}
                           onChange={(e) =>
-                            setChannelSend(channel.id, mix.id, parseFloat(e.target.value))
+                            !isGuest && setChannelSend(channel.id, mix.id, parseFloat(e.target.value))
                           }
-                          className={`flex-1 cursor-pointer ${isGroup ? 'accent-indigo-500' : 'accent-sky-500'}`}
+                          className={`flex-1 ${isGuest || !send.assigned ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isGroup ? 'accent-indigo-500' : 'accent-sky-500'}`}
                         />
                         <span className="text-[10px] font-mono w-10 text-right text-slate-300">
                           {send.levelDb <= -85 ? '-∞' : `${send.levelDb > 0 ? '+' : ''}${send.levelDb}dB`}
@@ -522,8 +590,17 @@ export const RoutingScreen: React.FC = () => {
                       <span className="text-xs font-bold text-white font-mono">{mtx.name}</span>
                       <button
                         type="button"
-                        onClick={() => toggleMatrixStereo(mtx.id)}
+                        disabled={isGuest}
+                        onClick={() => {
+                          if (isGuest) {
+                            setToastNotice({ message: 'Matrix routing is locked in Guest mode. Sign in to edit.', type: 'info' });
+                            return;
+                          }
+                          toggleMatrixStereo(mtx.id);
+                        }}
                         className={`text-[9px] px-2 py-0.5 rounded font-mono font-bold border transition-colors ${
+                          isGuest ? 'cursor-not-allowed opacity-75' : ''
+                        } ${
                           mtx.stereo
                             ? 'bg-teal-950 text-teal-300 border-teal-700'
                             : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
@@ -540,8 +617,9 @@ export const RoutingScreen: React.FC = () => {
                       </label>
                       <select
                         value={mtx.source}
-                        onChange={(e) => setMatrixSource(mtx.id, e.target.value as 'main-lr' | 'mix')}
-                        className="w-full bg-slate-900 border border-slate-700 text-sky-400 text-xs font-mono rounded p-1.5 focus:outline-none focus:border-sky-500"
+                        disabled={isGuest}
+                        onChange={(e) => !isGuest && setMatrixSource(mtx.id, e.target.value as 'main-lr' | 'mix')}
+                        className={`w-full bg-slate-900 border border-slate-700 text-sky-400 text-xs font-mono rounded p-1.5 focus:outline-none focus:border-sky-500 ${isGuest ? 'cursor-not-allowed opacity-75' : ''}`}
                       >
                         <option value="main-lr">Main LR Master Bus</option>
                         <option value="mix">Assigned Mix Bus Sum</option>
@@ -562,14 +640,24 @@ export const RoutingScreen: React.FC = () => {
                           min="-90"
                           max="10"
                           step="1"
+                          disabled={isGuest}
                           value={mtx.faderLevel}
-                          onChange={(e) => setMatrixFader(mtx.id, parseFloat(e.target.value))}
-                          className="flex-1 accent-sky-500 cursor-pointer"
+                          onChange={(e) => !isGuest && setMatrixFader(mtx.id, parseFloat(e.target.value))}
+                          className={`flex-1 accent-sky-500 ${isGuest ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                         />
                         <button
                           type="button"
-                          onClick={() => toggleMatrixMute(mtx.id)}
+                          disabled={isGuest}
+                          onClick={() => {
+                            if (isGuest) {
+                              setToastNotice({ message: 'Matrix routing is locked in Guest mode. Sign in to edit.', type: 'info' });
+                              return;
+                            }
+                            toggleMatrixMute(mtx.id);
+                          }}
                           className={`px-2 py-1 text-[10px] font-bold font-mono rounded transition-colors ${
+                            isGuest ? 'cursor-not-allowed opacity-75' : ''
+                          } ${
                             mtx.mute
                               ? 'bg-rose-600 text-white shadow-[0_0_6px_#f43f5e]'
                               : 'bg-slate-800 text-slate-400 hover:text-white'

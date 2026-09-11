@@ -16,12 +16,15 @@ export const IOPatchScreen: React.FC = () => {
   const {
     sim,
     signalPresence,
+    userRole,
     patchInputSocket,
     unpatchInputSocket,
     patchOutputSocket,
     unpatchOutputSocket,
     updateChannelName
   } = useSimulationStore();
+
+  const isGuest = userRole === 'guest';
 
   const [activeCategory, setActiveCategory] = useState<'inputs' | 'outputs' | 'tielines'>('inputs');
   const [sourceBank, setSourceBank] = useState<'slink' | 'local' | 'usb'>('slink');
@@ -81,6 +84,11 @@ export const IOPatchScreen: React.FC = () => {
 
   const handleCellClick = (chId: string, socket: { id: string; type: 'slink' | 'local' | 'usb'; label: string }, chName: string) => {
     setSelectedRowChId(chId);
+    if (isGuest) {
+      setLockNotice('Input patching is locked in Guest mode. Sign in as Member or Admin to edit.');
+      setTimeout(() => setLockNotice(null), 3000);
+      return;
+    }
     if (safeIOLocked) {
       setLockNotice('Safe I/O Lock is active. Unlock in the top toolbar to modify patch.');
       setTimeout(() => setLockNotice(null), 3000);
@@ -97,6 +105,11 @@ export const IOPatchScreen: React.FC = () => {
 
   // 1:1 Auto-Patch for visible sockets across channels
   const handleAutoPatch1to1 = () => {
+    if (isGuest) {
+      setLockNotice('Auto-patching is locked in Guest mode. Sign in as Member or Admin to edit.');
+      setTimeout(() => setLockNotice(null), 3000);
+      return;
+    }
     if (safeIOLocked) {
       setLockNotice('Safe I/O Lock is active. Unlock in the top toolbar to modify patch.');
       setTimeout(() => setLockNotice(null), 3000);
@@ -113,6 +126,11 @@ export const IOPatchScreen: React.FC = () => {
 
   // Clear all input patches
   const handleUnpatchAll = () => {
+    if (isGuest) {
+      setLockNotice('Clearing patches is locked in Guest mode. Sign in as Member or Admin to edit.');
+      setTimeout(() => setLockNotice(null), 3000);
+      return;
+    }
     if (safeIOLocked) {
       setLockNotice('Safe I/O Lock is active. Unlock in the top toolbar to modify patch.');
       setTimeout(() => setLockNotice(null), 3000);
@@ -126,11 +144,20 @@ export const IOPatchScreen: React.FC = () => {
 
   const startEditingChannel = (chId: string, currentName: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isGuest) {
+      setLockNotice('Channel renaming is locked in Guest mode. Sign in as Member or Admin to edit.');
+      setTimeout(() => setLockNotice(null), 3000);
+      return;
+    }
     setEditingChId(chId);
     setEditingChName(currentName);
   };
 
   const saveChannelName = (chId: string) => {
+    if (isGuest) {
+      setEditingChId(null);
+      return;
+    }
     if (editingChName.trim()) {
       updateChannelName(chId, editingChName.trim());
     }
@@ -294,16 +321,26 @@ export const IOPatchScreen: React.FC = () => {
             <>
               <button
                 onClick={handleAutoPatch1to1}
-                title="Patch sockets 1-to-1 to input channels"
-                className="flex items-center space-x-1 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-mono font-bold border border-slate-700 transition-colors"
+                disabled={isGuest}
+                title={isGuest ? 'Patching locked in Guest mode' : 'Patch sockets 1-to-1 to input channels'}
+                className={`flex items-center space-x-1 px-3 py-1.5 rounded text-xs font-mono font-bold border transition-colors ${
+                  isGuest
+                    ? 'opacity-50 cursor-not-allowed bg-slate-900 border-slate-800 text-slate-500'
+                    : 'bg-slate-800 hover:bg-slate-700 text-sky-400 border-slate-700'
+                }`}
               >
                 <Zap className="w-3.5 h-3.5" />
                 <span>1:1 Patch</span>
               </button>
               <button
                 onClick={handleUnpatchAll}
-                title="Clear all input channel assignments"
-                className="flex items-center space-x-1 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 text-xs font-mono border border-slate-700 transition-colors"
+                disabled={isGuest}
+                title={isGuest ? 'Patching locked in Guest mode' : 'Clear all input channel assignments'}
+                className={`flex items-center space-x-1 px-2.5 py-1.5 rounded text-xs font-mono border transition-colors ${
+                  isGuest
+                    ? 'opacity-50 cursor-not-allowed bg-slate-900 border-slate-800 text-slate-500'
+                    : 'bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border-slate-700'
+                }`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Clear All</span>
@@ -358,7 +395,7 @@ export const IOPatchScreen: React.FC = () => {
               {/* Top-Left Header: Channels Column Info */}
               <div className="w-56 p-2.5 font-mono text-[11px] font-bold text-slate-300 border-r border-slate-800 shrink-0 bg-slate-950 flex items-center justify-between sticky left-0 z-40">
                 <span>DEST CHANNEL (1–48)</span>
-                <span className="text-slate-500 text-[9px]">DOUBLE-CLICK TO RENAME</span>
+                <span className="text-slate-500 text-[9px]">{isGuest ? 'READ-ONLY' : 'DOUBLE-CLICK TO RENAME'}</span>
               </div>
 
               {/* Socket Headers with Live Status LEDs */}
@@ -441,7 +478,7 @@ export const IOPatchScreen: React.FC = () => {
                         </span>
                       )}
 
-                      {isEditingThisCh ? (
+                      {isEditingThisCh && !isGuest ? (
                         <div className="flex items-center space-x-1 flex-1">
                           <input
                             type="text"
@@ -464,9 +501,11 @@ export const IOPatchScreen: React.FC = () => {
                         </div>
                       ) : (
                         <span
-                          onDoubleClick={(e) => startEditingChannel(ch.id, ch.name, e)}
-                          className="font-semibold text-slate-200 truncate text-[11px] cursor-pointer hover:text-sky-300"
-                          title="Double-click to rename"
+                          onDoubleClick={(e) => !isGuest && startEditingChannel(ch.id, ch.name, e)}
+                          className={`font-semibold text-slate-200 truncate text-[11px] ${
+                            isGuest ? 'cursor-default' : 'cursor-pointer hover:text-sky-300'
+                          }`}
+                          title={isGuest ? ch.name : 'Double-click to rename'}
                         >
                           {ch.name}
                         </span>
@@ -474,7 +513,7 @@ export const IOPatchScreen: React.FC = () => {
                     </div>
 
                     <div className="flex items-center space-x-1.5 shrink-0">
-                      {!isEditingThisCh && (
+                      {!isEditingThisCh && !isGuest && (
                         <button
                           onClick={(e) => startEditingChannel(ch.id, ch.name, e)}
                           title="Rename channel"
@@ -590,6 +629,11 @@ export const IOPatchScreen: React.FC = () => {
                       <div
                         key={sock.id}
                         onClick={() => {
+                          if (isGuest) {
+                            setLockNotice('Output patching is locked in Guest mode. Sign in as Member or Admin to edit.');
+                            setTimeout(() => setLockNotice(null), 3000);
+                            return;
+                          }
                           if (safeIOLocked) {
                             setLockNotice('Safe I/O Lock is active.');
                             setTimeout(() => setLockNotice(null), 3000);
@@ -601,9 +645,13 @@ export const IOPatchScreen: React.FC = () => {
                             patchOutputSocket(sock.id, bus.type, bus.id, bus.name);
                           }
                         }}
-                        className={`w-24 h-10 border-r border-slate-800/60 flex items-center justify-center cursor-pointer transition-all ${
+                        className={`w-24 h-10 border-r border-slate-800/60 flex items-center justify-center transition-all ${
+                          isGuest ? 'cursor-default' : 'cursor-pointer'
+                        } ${
                           isPatched
                             ? 'bg-teal-600 text-white font-bold shadow-inner'
+                            : isGuest
+                            ? ''
                             : 'hover:bg-slate-800/60'
                         }`}
                       >

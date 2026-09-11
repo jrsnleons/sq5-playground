@@ -931,6 +931,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     updateChannelName: (channelId, name) =>
       set((state) => {
+        if (state.userRole === 'guest') return;
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
         if (ch) {
           ch.name = name;
@@ -1161,6 +1162,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setDcaMembership: (channelId, dcaId, isMember) =>
       set((state) => {
+        if (state.userRole === 'guest') return;
         const ch = state.sim.digital.channels.find((c) => c.id === channelId);
         if (ch) {
           const bit = 1 << (dcaId - 1);
@@ -1174,6 +1176,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     setDcaAllMembers: (dcaId, channelIds) =>
       set((state) => {
+        if (state.userRole === 'guest') return;
         const bit = 1 << (dcaId - 1);
         state.sim.digital.channels.forEach((ch) => {
           if (channelIds.includes(ch.id)) {
@@ -1186,6 +1189,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     updateDcaName: (dcaId, name) =>
       set((state) => {
+        if (state.userRole === 'guest') return;
         const dca = state.sim.digital.dcas.find((d) => d.id === dcaId);
         if (dca) {
           dca.name = name.trim();
@@ -1194,6 +1198,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     patchInputSocket: (channelId, sourceType, socketId, label) =>
       set((state) => {
+        if (state.userRole === 'guest') return;
         state.sim.digital.ioPatch.inputs[channelId] = { sourceType, socketId, label };
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
@@ -1201,6 +1206,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     unpatchInputSocket: (channelId) =>
       set((state) => {
+        if (state.userRole === 'guest') return;
         delete state.sim.digital.ioPatch.inputs[channelId];
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
@@ -1208,6 +1214,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     patchOutputSocket: (socketId, destType, busId, label) =>
       set((state) => {
+        if (state.userRole === 'guest') return;
         state.sim.digital.ioPatch.outputs[socketId] = { destType, busId, label };
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
@@ -1215,6 +1222,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
     unpatchOutputSocket: (socketId) =>
       set((state) => {
+        if (state.userRole === 'guest') return;
         delete state.sim.digital.ioPatch.outputs[socketId];
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);

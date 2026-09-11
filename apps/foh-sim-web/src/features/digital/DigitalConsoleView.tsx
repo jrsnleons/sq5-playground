@@ -127,7 +127,7 @@ export const DigitalConsoleView: React.FC = () => {
             <Lock className="w-3.5 h-3.5 shrink-0" />
             <span className="font-bold">READ-ONLY MODE:</span>
             <span className="text-slate-300 font-sans hidden sm:inline">
-              You are exploring the console in preview mode. Faders and mutes are locked.
+              You are exploring the console in preview mode. Faders, routing, patching, and renaming are locked.
             </span>
           </div>
           <button
