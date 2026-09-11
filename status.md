@@ -1,7 +1,7 @@
 # Project — Build Status & Handoff
 
 ## Current Phase: Verification, Antislop & Modern Web Audit Complete
-## Current Step: Ready for Testing (READY)
+## Current Step: Dev Server Running at http://localhost:5173 (ACTIVE)
 
 ## ✅ Completed Steps
 - [x] Monorepo npm workspaces configured (`@foh-sim/hardware-profiles`, `@foh-sim/simulation-core`, `@foh-sim/web`)
