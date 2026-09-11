@@ -90,7 +90,6 @@ interface SimulationStoreState {
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
   setUserProfile: (profile: UserProfile | null) => void;
-  setUserRole: (role: UserRole) => void;
   signOut: () => void;
 
   // Practice Simulations & Training Challenges
@@ -426,11 +425,6 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.currentUser = profile;
         state.userRole = profile?.role || 'guest';
         localCache.saveUserProfile(profile);
-      }),
-    setUserRole: (role) =>
-      set((state) => {
-        state.userRole = role;
-        localCache.setUserRole(role);
       }),
     signOut: () =>
       set((state) => {

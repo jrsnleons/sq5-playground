@@ -110,7 +110,15 @@ export const localCache = {
   getUserProfile(): UserProfile | null {
     try {
       const data = localStorage.getItem(CACHE_KEYS.PROFILE);
-      return data ? JSON.parse(data) : null;
+      if (!data) return null;
+      const profile = JSON.parse(data);
+      // Purge any legacy simulator / mock IDs
+      if (!profile || !profile.id || profile.id.startsWith('demo-') || profile.id.startsWith('user-')) {
+        localStorage.removeItem(CACHE_KEYS.PROFILE);
+        localStorage.removeItem(CACHE_KEYS.USER_ROLE);
+        return null;
+      }
+      return profile;
     } catch {
       return null;
     }
@@ -118,7 +126,7 @@ export const localCache = {
 
   saveUserProfile(profile: UserProfile | null) {
     try {
-      if (profile) {
+      if (profile && (profile.role === 'admin' || profile.role === 'member')) {
         localStorage.setItem(CACHE_KEYS.PROFILE, JSON.stringify(profile));
         localStorage.setItem(CACHE_KEYS.USER_ROLE, profile.role);
       } else {
@@ -132,21 +140,13 @@ export const localCache = {
 
   getUserRole(): UserRole {
     try {
-      const role = localStorage.getItem(CACHE_KEYS.USER_ROLE);
-      if (role === 'admin' || role === 'member' || role === 'guest') {
-        return role;
+      const profile = this.getUserProfile();
+      if (profile && (profile.role === 'admin' || profile.role === 'member')) {
+        return profile.role;
       }
       return 'guest';
     } catch {
       return 'guest';
-    }
-  },
-
-  setUserRole(role: UserRole) {
-    try {
-      localStorage.setItem(CACHE_KEYS.USER_ROLE, role);
-    } catch (e) {
-      console.warn('LocalStorage setUserRole failed', e);
     }
   },
 

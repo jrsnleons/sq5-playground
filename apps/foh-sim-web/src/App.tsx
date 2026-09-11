@@ -90,22 +90,36 @@ export const App: React.FC = () => {
     if (isSupabaseConfigured() && client) {
       const { data } = client.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
-          const { data: profile } = await client
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+          try {
+            let profile = null;
+            // Retry up to 3 times to allow the PostgreSQL handle_new_user trigger to populate on initial signup
+            for (let attempt = 0; attempt < 3; attempt++) {
+              const { data: p } = await client
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+              if (p) {
+                profile = p;
+                break;
+              }
+              await new Promise((r) => setTimeout(r, 300));
+            }
 
-          setUserProfile({
-            id: session.user.id,
-            email: session.user.email || '',
-            displayName: profile?.display_name || session.user.email?.split('@')[0] || 'Member',
-            role: profile?.role || 'member'
-          });
-          setSyncStatus('synced');
-        } else if (event === 'SIGNED_OUT') {
+            const role = profile?.role === 'admin' ? 'admin' : 'member';
+            setUserProfile({
+              id: session.user.id,
+              email: session.user.email || '',
+              displayName: profile?.display_name || session.user.email?.split('@')[0] || 'Member',
+              role
+            });
+            setSyncStatus('synced');
+          } catch (err) {
+            console.warn('Failed to load user profile on auth state change:', err);
+          }
+        } else {
           setUserProfile(null);
-          setSyncStatus('local-only');
+          setSyncStatus(isSupabaseConfigured() ? 'synced' : 'local-only');
         }
       });
       authSubscription = data.subscription;

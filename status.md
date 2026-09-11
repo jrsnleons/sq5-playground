@@ -20,6 +20,7 @@
 - [x] **P3 (Matrix Feeds):** Added interactive source selection ('main-lr' | 'mix'), stereo toggle, fader, and mute controls to Matrix cards in `RoutingScreen.tsx`.
 - [x] **P3 (Scratch Defaults):** Created generic default Mixes 1–12 and DCAs 1–8 for scratch mode in `factory.ts`.
 - [x] **P3 (DX & Typing):** Added `"typecheck": "tsc --noEmit"` across all packages, verified zero TS errors, and code-split routes via `React.lazy()` to eliminate bundle warnings.
+- [x] **P1 (Security & Auth):** Removed account simulator, demo role switchers, and mock auth fallbacks. Implemented authentic Supabase Authentication backed by PostgreSQL `public.profiles`, with automatic Admin assignment for the initial registrant and strict Guest lockouts for unauthenticated visitors.
 
 
 ## 🗂️ File Tree
