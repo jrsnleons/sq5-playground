@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "id": "scratch-default",
+    "name": "Start from Scratch",
+    "description": "Blank stage with AR2412 stage box and SQ-5 console. No instruments, cables, or digital patches pre-configured.",
+    "isFactoryPreset": true,
+    "schemaVersion": 1,
+    "createdAt": "2026-09-11T00:00:00Z",
+    "lastModifiedAt": "2026-09-11T00:00:00Z"
+  },
+  "physical": {
+    "stageItems": [],
+    "cables": [],
+    "stageBox": {
+      "model": "AR2412",
+      "position": { "x": 100, "y": 280 }
+    },
+    "console": {
+      "model": "SQ-5",
+      "slinkMode": "dSnake",
+      "position": { "x": 1050, "y": 240 }
+    }
+  },
+  "digital": {
+    "ioPatch": {
+      "inputs": {},
+      "outputs": {}
+    },
+    "channels": [],
+    "mixes": [],
+    "matrices": []
+  }
+}

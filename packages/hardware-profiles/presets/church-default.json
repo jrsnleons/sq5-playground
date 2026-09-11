@@ -1,0 +1,201 @@
+{
+  "metadata": {
+    "id": "church-default",
+    "name": "Church Rig Default",
+    "description": "Standard church rig setup: AR2412 stage box (24 in / 12 out), SQ-5 console, 7 IEM mixes, DI boxes, click/comms routing, line arrays, subs, fills, and livestream/record feeds.",
+    "isFactoryPreset": true,
+    "schemaVersion": 1,
+    "createdAt": "2026-09-11T00:00:00Z",
+    "lastModifiedAt": "2026-09-11T00:00:00Z"
+  },
+  "physical": {
+    "stageBox": {
+      "model": "AR2412",
+      "position": { "x": 620, "y": 320 }
+    },
+    "console": {
+      "model": "SQ-5",
+      "slinkMode": "dSnake",
+      "position": { "x": 1400, "y": 280 }
+    },
+    "stageItems": [
+      { "id": "item-aud-r", "typeId": "mic-condenser", "name": "Audience R", "category": "mic", "position": { "x": 40, "y": 40 } },
+      { "id": "item-mic-1", "typeId": "mic-dynamic", "name": "Mic 1", "category": "mic", "position": { "x": 40, "y": 140 } },
+      { "id": "item-mic-2", "typeId": "mic-dynamic", "name": "Mic 2", "category": "mic", "position": { "x": 40, "y": 240 } },
+      { "id": "item-mic-3", "typeId": "mic-dynamic", "name": "Mic 3", "category": "mic", "position": { "x": 40, "y": 340 } },
+      { "id": "item-mic-4", "typeId": "mic-dynamic", "name": "Mic 4", "category": "mic", "position": { "x": 40, "y": 440 } },
+      { "id": "item-mic-5", "typeId": "mic-dynamic", "name": "Mic 5", "category": "mic", "position": { "x": 40, "y": 540 } },
+      { "id": "item-click-keys", "typeId": "source-click-keys", "name": "Click Keys", "category": "click", "position": { "x": 40, "y": 640 } },
+      { "id": "item-click-drums", "typeId": "source-click-drums", "name": "Click Drums", "category": "click", "position": { "x": 40, "y": 740 } },
+      { "id": "item-lapel", "typeId": "mic-lapel", "name": "Lapel", "category": "mic", "position": { "x": 40, "y": 840 } },
+      { "id": "item-comms-keys", "typeId": "comms-talkback-mic", "name": "Comms Keys", "category": "comms", "position": { "x": 40, "y": 940 } },
+      { "id": "item-comms-bass", "typeId": "comms-talkback-mic", "name": "Comms Bass", "category": "comms", "position": { "x": 40, "y": 1040 } },
+      { "id": "item-comms-drums", "typeId": "comms-talkback-mic", "name": "Comms Drums", "category": "comms", "position": { "x": 40, "y": 1140 } },
+
+      { "id": "item-keys", "typeId": "inst-keys", "name": "Keys", "category": "instrument", "position": { "x": 240, "y": 40 } },
+      { "id": "item-di-keys", "typeId": "di-mono-passive", "name": "DI 4 (Keys)", "category": "di-box", "position": { "x": 420, "y": 40 } },
+
+      { "id": "item-eg", "typeId": "inst-electric-guitar", "name": "Electric Guitar", "category": "instrument", "position": { "x": 240, "y": 140 } },
+      { "id": "item-di-eg", "typeId": "di-mono-passive", "name": "DI 1 (EG)", "category": "di-box", "position": { "x": 420, "y": 140 } },
+
+      { "id": "item-ag", "typeId": "inst-acoustic-guitar", "name": "Acoustic Guitar", "category": "instrument", "position": { "x": 240, "y": 240 } },
+      { "id": "item-di-ag", "typeId": "di-mono-passive", "name": "DI 2 (AG)", "category": "di-box", "position": { "x": 420, "y": 240 } },
+
+      { "id": "item-bass", "typeId": "inst-bass-guitar", "name": "Bass Guitar", "category": "instrument", "position": { "x": 240, "y": 340 } },
+      { "id": "item-di-bass", "typeId": "di-mono-passive", "name": "DI 3 (Bass)", "category": "di-box", "position": { "x": 420, "y": 340 } },
+
+      { "id": "item-kick", "typeId": "drum-kick", "name": "Kick", "category": "instrument", "position": { "x": 240, "y": 440 } },
+      { "id": "item-snare-top", "typeId": "drum-snare-top", "name": "Snare Top", "category": "instrument", "position": { "x": 240, "y": 540 } },
+      { "id": "item-tom1", "typeId": "drum-tom", "name": "Tom 1", "category": "instrument", "position": { "x": 240, "y": 640 } },
+      { "id": "item-snare-bot", "typeId": "drum-snare-bottom", "name": "Snare Bottom", "category": "instrument", "position": { "x": 240, "y": 740 } },
+      { "id": "item-fl-tom", "typeId": "drum-tom", "name": "Floor Tom", "category": "instrument", "position": { "x": 240, "y": 840 } },
+      { "id": "item-hihat", "typeId": "drum-hihat", "name": "Hihats", "category": "instrument", "position": { "x": 240, "y": 940 } },
+      { "id": "item-oh", "typeId": "drum-overheads", "name": "Overheads", "category": "instrument", "position": { "x": 240, "y": 1040 } },
+      { "id": "item-aud-l", "typeId": "mic-condenser", "name": "Audience L", "category": "mic", "position": { "x": 240, "y": 1140 } },
+
+      { "id": "item-pc", "typeId": "playback-propresenter-pc", "name": "ProPresenter PC", "category": "playback", "position": { "x": 1080, "y": 40 } },
+      { "id": "item-di-pc", "typeId": "di-stereo-passive", "name": "DI 5 (PC Stereo)", "category": "di-box", "position": { "x": 1240, "y": 40 } },
+      { "id": "item-wireless-rx", "typeId": "rx-wireless-dual", "name": "Shure SVX288 Dual Rx", "category": "mic", "position": { "x": 1240, "y": 140 } },
+
+      { "id": "item-iem-ag", "typeId": "iem-behringer-p1", "name": "IEM AG", "category": "iem", "position": { "x": 420, "y": 500 } },
+      { "id": "item-iem-wl", "typeId": "iem-xtuga-iem1200", "name": "IEM WL (Wireless)", "category": "iem", "position": { "x": 420, "y": 590 } },
+      { "id": "item-iem-backup", "typeId": "iem-xtuga-iem1200", "name": "IEM Backup", "category": "iem", "position": { "x": 420, "y": 680 } },
+      { "id": "item-iem-keys", "typeId": "iem-behringer-p1", "name": "IEM Keys", "category": "iem", "position": { "x": 420, "y": 770 } },
+      { "id": "item-iem-eg", "typeId": "iem-behringer-p1", "name": "IEM EG", "category": "iem", "position": { "x": 420, "y": 860 } },
+      { "id": "item-iem-bass", "typeId": "iem-behringer-p1", "name": "IEM Bass", "category": "iem", "position": { "x": 420, "y": 950 } },
+      { "id": "item-iem-drums", "typeId": "iem-behringer-p1", "name": "IEM Drums", "category": "iem", "position": { "x": 420, "y": 1040 } },
+
+      { "id": "item-front-fills", "typeId": "speaker-front-fill", "name": "Front Fills Pair", "category": "speaker", "position": { "x": 1080, "y": 680 } },
+      { "id": "item-subs", "typeId": "speaker-subwoofer", "name": "Subwoofers Pair", "category": "speaker", "position": { "x": 1080, "y": 770 } },
+      { "id": "item-array-r", "typeId": "speaker-array-r", "name": "Line Array Right", "category": "speaker", "position": { "x": 1080, "y": 860 } },
+      { "id": "item-array-l", "typeId": "speaker-array-l", "name": "Line Array Left", "category": "speaker", "position": { "x": 1080, "y": 950 } }
+    ],
+    "cables": [
+      { "id": "cable-dsnake", "fromNode": "stagebox-ar2412", "fromPort": "ar-dsnake", "toNode": "console-sq5", "toPort": "sq-slink", "signalType": "dsnake" },
+
+      { "id": "cable-in-1", "fromNode": "item-aud-r", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-1", "signalType": "mic" },
+      { "id": "cable-in-2", "fromNode": "item-mic-1", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-2", "signalType": "mic" },
+      { "id": "cable-in-3", "fromNode": "item-mic-2", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-3", "signalType": "mic" },
+      { "id": "cable-in-4", "fromNode": "item-mic-3", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-4", "signalType": "mic" },
+      { "id": "cable-in-5", "fromNode": "item-mic-4", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-5", "signalType": "mic" },
+      { "id": "cable-in-6", "fromNode": "item-mic-5", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-6", "signalType": "mic" },
+      { "id": "cable-in-7", "fromNode": "item-click-keys", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-7", "signalType": "click" },
+      { "id": "cable-in-8", "fromNode": "item-click-drums", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-8", "signalType": "click" },
+      { "id": "cable-in-9", "fromNode": "item-lapel", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-9", "signalType": "mic" },
+      { "id": "cable-in-10", "fromNode": "item-comms-keys", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-10", "signalType": "comms" },
+      { "id": "cable-in-11", "fromNode": "item-comms-bass", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-11", "signalType": "comms" },
+      { "id": "cable-in-12", "fromNode": "item-comms-drums", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-12", "signalType": "comms" },
+
+      { "id": "cable-keys-di", "fromNode": "item-keys", "fromPort": "out-1", "toNode": "item-di-keys", "toPort": "in-1", "signalType": "instrument" },
+      { "id": "cable-in-13", "fromNode": "item-di-keys", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-13", "signalType": "mic" },
+
+      { "id": "cable-eg-di", "fromNode": "item-eg", "fromPort": "out-1", "toNode": "item-di-eg", "toPort": "in-1", "signalType": "instrument" },
+      { "id": "cable-in-14", "fromNode": "item-di-eg", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-14", "signalType": "mic" },
+
+      { "id": "cable-ag-di", "fromNode": "item-ag", "fromPort": "out-1", "toNode": "item-di-ag", "toPort": "in-1", "signalType": "instrument" },
+      { "id": "cable-in-15", "fromNode": "item-di-ag", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-15", "signalType": "mic" },
+
+      { "id": "cable-bass-di", "fromNode": "item-bass", "fromPort": "out-1", "toNode": "item-di-bass", "toPort": "in-1", "signalType": "instrument" },
+      { "id": "cable-in-16", "fromNode": "item-di-bass", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-16", "signalType": "mic" },
+
+      { "id": "cable-in-17", "fromNode": "item-kick", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-17", "signalType": "mic" },
+      { "id": "cable-in-18", "fromNode": "item-snare-top", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-18", "signalType": "mic" },
+      { "id": "cable-in-19", "fromNode": "item-tom1", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-19", "signalType": "mic" },
+      { "id": "cable-in-20", "fromNode": "item-snare-bot", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-20", "signalType": "mic" },
+      { "id": "cable-in-21", "fromNode": "item-fl-tom", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-21", "signalType": "mic" },
+      { "id": "cable-in-22", "fromNode": "item-hihat", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-22", "signalType": "mic" },
+      { "id": "cable-in-23", "fromNode": "item-oh", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-23", "signalType": "mic" },
+      { "id": "cable-in-24", "fromNode": "item-aud-l", "fromPort": "out-1", "toNode": "stagebox-ar2412", "toPort": "ar-in-24", "signalType": "mic" },
+
+      { "id": "cable-pc-di-l", "fromNode": "item-pc", "fromPort": "out-1", "toNode": "item-di-pc", "toPort": "in-1", "signalType": "instrument" },
+      { "id": "cable-pc-di-r", "fromNode": "item-pc", "fromPort": "out-2", "toNode": "item-di-pc", "toPort": "in-2", "signalType": "instrument" },
+      { "id": "cable-sq-in-1", "fromNode": "item-di-pc", "fromPort": "out-1", "toNode": "console-sq5", "toPort": "sq-in-1", "signalType": "mic" },
+      { "id": "cable-sq-in-2", "fromNode": "item-di-pc", "fromPort": "out-2", "toNode": "console-sq5", "toPort": "sq-in-2", "signalType": "mic" },
+      { "id": "cable-sq-in-4", "fromNode": "item-wireless-rx", "fromPort": "out-1", "toNode": "console-sq5", "toPort": "sq-in-4", "signalType": "mic" },
+      { "id": "cable-sq-in-5", "fromNode": "item-wireless-rx", "fromPort": "out-2", "toNode": "console-sq5", "toPort": "sq-in-5", "signalType": "mic" },
+
+      { "id": "cable-out-1", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-1", "toNode": "item-iem-ag", "toPort": "in-1", "signalType": "iem" },
+      { "id": "cable-out-2", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-2", "toNode": "item-iem-wl", "toPort": "in-1", "signalType": "iem" },
+      { "id": "cable-out-3", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-3", "toNode": "item-iem-backup", "toPort": "in-1", "signalType": "iem" },
+      { "id": "cable-out-5", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-5", "toNode": "item-iem-keys", "toPort": "in-1", "signalType": "iem" },
+      { "id": "cable-out-6", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-6", "toNode": "item-iem-eg", "toPort": "in-1", "signalType": "iem" },
+      { "id": "cable-out-7", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-7", "toNode": "item-iem-bass", "toPort": "in-1", "signalType": "iem" },
+      { "id": "cable-out-8", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-8", "toNode": "item-iem-drums", "toPort": "in-1", "signalType": "iem" },
+
+      { "id": "cable-out-9", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-9", "toNode": "item-front-fills", "toPort": "in-1", "signalType": "speaker" },
+      { "id": "cable-out-10", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-10", "toNode": "item-subs", "toPort": "in-1", "signalType": "speaker" },
+      { "id": "cable-out-11", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-11", "toNode": "item-array-r", "toPort": "in-1", "signalType": "speaker" },
+      { "id": "cable-out-12", "fromNode": "stagebox-ar2412", "fromPort": "ar-out-12", "toNode": "item-array-l", "toPort": "in-1", "signalType": "speaker" }
+    ]
+  },
+  "digital": {
+    "ioPatch": {
+      "inputs": {
+        "ch-1": { "sourceType": "slink", "socketId": "ar-in-1", "label": "Audience R" },
+        "ch-2": { "sourceType": "slink", "socketId": "ar-in-2", "label": "Mic 1" },
+        "ch-3": { "sourceType": "slink", "socketId": "ar-in-3", "label": "Mic 2" },
+        "ch-4": { "sourceType": "slink", "socketId": "ar-in-4", "label": "Mic 3" },
+        "ch-5": { "sourceType": "slink", "socketId": "ar-in-5", "label": "Mic 4" },
+        "ch-6": { "sourceType": "slink", "socketId": "ar-in-6", "label": "Mic 5" },
+        "ch-7": { "sourceType": "slink", "socketId": "ar-in-7", "label": "Click Keys" },
+        "ch-8": { "sourceType": "slink", "socketId": "ar-in-8", "label": "Click Drums" },
+        "ch-9": { "sourceType": "slink", "socketId": "ar-in-9", "label": "Lapel" },
+        "ch-10": { "sourceType": "slink", "socketId": "ar-in-10", "label": "Comms Keys" },
+        "ch-11": { "sourceType": "slink", "socketId": "ar-in-11", "label": "Comms Bass" },
+        "ch-12": { "sourceType": "slink", "socketId": "ar-in-12", "label": "Comms Drums" },
+        "ch-13": { "sourceType": "slink", "socketId": "ar-in-13", "label": "Keys" },
+        "ch-14": { "sourceType": "slink", "socketId": "ar-in-14", "label": "Electric Guitar" },
+        "ch-15": { "sourceType": "slink", "socketId": "ar-in-15", "label": "Acoustic Guitar" },
+        "ch-16": { "sourceType": "slink", "socketId": "ar-in-16", "label": "Bass Guitar" },
+        "ch-17": { "sourceType": "slink", "socketId": "ar-in-17", "label": "Kick" },
+        "ch-18": { "sourceType": "slink", "socketId": "ar-in-18", "label": "Snare Top" },
+        "ch-19": { "sourceType": "slink", "socketId": "ar-in-19", "label": "Tom 1" },
+        "ch-20": { "sourceType": "slink", "socketId": "ar-in-20", "label": "Snare Bottom" },
+        "ch-21": { "sourceType": "slink", "socketId": "ar-in-21", "label": "Floor Tom" },
+        "ch-22": { "sourceType": "slink", "socketId": "ar-in-22", "label": "Hihats" },
+        "ch-23": { "sourceType": "slink", "socketId": "ar-in-23", "label": "Overheads" },
+        "ch-24": { "sourceType": "slink", "socketId": "ar-in-24", "label": "Audience L" },
+        "ch-25": { "sourceType": "local", "socketId": "sq-in-1", "label": "PROPC L" },
+        "ch-26": { "sourceType": "local", "socketId": "sq-in-2", "label": "PROPC R" },
+        "ch-27": { "sourceType": "local", "socketId": "sq-in-4", "label": "WIRELESS 1" },
+        "ch-28": { "sourceType": "local", "socketId": "sq-in-5", "label": "WIRELESS 2" }
+      },
+      "outputs": {
+        "ar-out-1": { "destType": "mix", "busId": "mix-3", "label": "IEM AG" },
+        "ar-out-2": { "destType": "mix", "busId": "mix-1", "label": "IEM WL" },
+        "ar-out-3": { "destType": "mix", "busId": "mix-2", "label": "IEM BACKUP" },
+        "ar-out-5": { "destType": "mix", "busId": "mix-4", "label": "IEM KEYS" },
+        "ar-out-6": { "destType": "mix", "busId": "mix-5", "label": "IEM EG" },
+        "ar-out-7": { "destType": "mix", "busId": "mix-6", "label": "IEM BASS" },
+        "ar-out-8": { "destType": "mix", "busId": "mix-7", "label": "IEM DRUMS" },
+        "ar-out-9": { "destType": "mix", "busId": "mix-9", "label": "Front Fills" },
+        "ar-out-10": { "destType": "mix", "busId": "mix-8", "label": "Subs" },
+        "ar-out-11": { "destType": "matrix", "busId": "matrix-1-r", "label": "Array R" },
+        "ar-out-12": { "destType": "matrix", "busId": "matrix-1-l", "label": "Array L" },
+        "sq-out-7": { "destType": "mix", "busId": "mix-12-l", "label": "Record L" },
+        "sq-out-8": { "destType": "mix", "busId": "mix-12-r", "label": "Record R" },
+        "sq-out-9": { "destType": "mix", "busId": "mix-11-l", "label": "Monitor L" },
+        "sq-out-10": { "destType": "mix", "busId": "mix-11-r", "label": "Monitor R" },
+        "sq-out-11": { "destType": "mix", "busId": "mix-10-l", "label": "Stream L" },
+        "sq-out-12": { "destType": "mix", "busId": "mix-10-r", "label": "Stream R" }
+      }
+    },
+    "mixes": [
+      { "id": "mix-1", "name": "IEM WL", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-2", "name": "IEM BACKUP", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-3", "name": "IEM AG", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-4", "name": "IEM KEYS", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-5", "name": "IEM EG", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-6", "name": "IEM BASS", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-7", "name": "IEM DRUMS", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-8", "name": "Subs", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-9", "name": "Front Fills", "mode": "aux", "stereo": false, "faderLevel": 0 },
+      { "id": "mix-10", "name": "Stream", "mode": "aux", "stereo": true, "faderLevel": 0 },
+      { "id": "mix-11", "name": "Monitor", "mode": "aux", "stereo": true, "faderLevel": 0 },
+      { "id": "mix-12", "name": "Record", "mode": "aux", "stereo": true, "faderLevel": 0 }
+    ],
+    "matrices": [
+      { "id": "matrix-1", "name": "PA Arrays", "stereo": true, "source": "main-lr", "faderLevel": 0 }
+    ]
+  }
+}

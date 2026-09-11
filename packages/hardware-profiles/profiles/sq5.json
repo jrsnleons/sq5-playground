@@ -1,0 +1,78 @@
+{
+  "id": "sq-5",
+  "displayName": "Allen & Heath SQ-5",
+  "manufacturer": "Allen & Heath",
+  "stockPhotoId": "sq5",
+  "firmware": "V1.6.0",
+  "localSockets": {
+    "inputs": [
+      { "id": "sq-in-1", "label": "In 1", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-2", "label": "In 2", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-3", "label": "In 3", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-4", "label": "In 4", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-5", "label": "In 5", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-6", "label": "In 6", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-7", "label": "In 7", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-8", "label": "In 8", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-9", "label": "In 9", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-10", "label": "In 10", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-11", "label": "In 11", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-12", "label": "In 12", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-13", "label": "In 13", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-14", "label": "In 14", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-15", "label": "In 15", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-16", "label": "In 16", "type": "XLR-in", "preamp": true, "phantom48v": true, "pad": true },
+      { "id": "sq-in-st1-l", "label": "ST1 L", "type": "TRS", "preamp": false },
+      { "id": "sq-in-st1-r", "label": "ST1 R", "type": "TRS", "preamp": false },
+      { "id": "sq-in-st2-l", "label": "ST2 L", "type": "TRS", "preamp": false },
+      { "id": "sq-in-st2-r", "label": "ST2 R", "type": "TRS", "preamp": false },
+      { "id": "sq-in-st3", "label": "ST3 (3.5mm)", "type": "3.5mm", "preamp": false },
+      { "id": "sq-in-talkback", "label": "Talkback", "type": "XLR-in", "preamp": true, "phantom48v": true },
+      { "id": "sq-in-footswitch", "label": "Footswitch", "type": "TS", "preamp": false }
+    ],
+    "outputs": [
+      { "id": "sq-out-1", "label": "Out 1", "type": "XLR-out" },
+      { "id": "sq-out-2", "label": "Out 2", "type": "XLR-out" },
+      { "id": "sq-out-3", "label": "Out 3", "type": "XLR-out" },
+      { "id": "sq-out-4", "label": "Out 4", "type": "XLR-out" },
+      { "id": "sq-out-5", "label": "Out 5", "type": "XLR-out" },
+      { "id": "sq-out-6", "label": "Out 6", "type": "XLR-out" },
+      { "id": "sq-out-7", "label": "Out 7", "type": "XLR-out" },
+      { "id": "sq-out-8", "label": "Out 8", "type": "XLR-out" },
+      { "id": "sq-out-9", "label": "Out 9", "type": "XLR-out" },
+      { "id": "sq-out-10", "label": "Out 10", "type": "XLR-out" },
+      { "id": "sq-out-11", "label": "Out 11", "type": "XLR-out" },
+      { "id": "sq-out-12", "label": "Out 12", "type": "XLR-out" },
+      { "id": "sq-out-trs-a", "label": "TRS Out A", "type": "TRS" },
+      { "id": "sq-out-trs-b", "label": "TRS Out B", "type": "TRS" },
+      { "id": "sq-out-aes", "label": "AES Out", "type": "AES-XLR" }
+    ]
+  },
+  "slink": {
+    "id": "sq-slink",
+    "label": "SLink",
+    "type": "EtherCon",
+    "modes": ["dSnake", "DX", "gigaACE"],
+    "currentMode": "dSnake",
+    "maxDsnakeRemotes": 2
+  },
+  "usb": {
+    "id": "sq-usb",
+    "label": "USB-B Audio",
+    "type": "USB-B",
+    "channels": 32,
+    "sampleRate": 48000
+  },
+  "channels": {
+    "inputs": 48,
+    "mixes": 12,
+    "matrices": { "stereoMax": 3, "monoMax": 6 },
+    "fxSends": 4,
+    "fxReturns": 8,
+    "dca": 8,
+    "muteGroups": 8
+  },
+  "scenes": {
+    "perShow": 300
+  }
+}
