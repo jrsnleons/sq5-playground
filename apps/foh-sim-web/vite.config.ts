@@ -12,10 +12,16 @@ export default defineConfig({
     host: true
   },
   build: {
-    chunkSizeWarningLimit: 700,
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         manualChunks(id) {
+          if (id.includes('react') || id.includes('react-dom')) {
+            return 'vendor-react';
+          }
+          if (id.includes('@xyflow')) {
+            return 'vendor-xyflow';
+          }
           if (id.includes('@supabase') || id.includes('cross-fetch') || id.includes('websocket')) {
             return 'supabase-client';
           }
