@@ -145,14 +145,19 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
             step="0.5"
             value={faderVal}
             onChange={handleFaderChange}
-            aria-label={`${channel.name} fader`}
-            className="fader-slider fader-vertical cursor-pointer"
+            role="slider"
+            aria-label={`${channel.name} channel volume fader`}
+            aria-valuemin={-90}
+            aria-valuemax={10}
+            aria-valuenow={faderVal}
+            aria-valuetext={faderVal <= -85 ? 'Minus Infinity dB' : `${faderVal.toFixed(1)} dB`}
+            className="fader-slider fader-vertical cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none"
           />
         </div>
       </div>
 
       {/* dB readout */}
-      <div className="text-center font-mono text-[10px] text-slate-400 py-0.5 bg-slate-950/80 rounded border border-slate-800/80 my-1">
+      <div className="text-center font-mono text-[10px] text-slate-300 py-0.5 bg-slate-950/80 rounded border border-slate-800/80 my-1">
         {faderVal <= -85 ? '-∞' : `${faderVal > 0 ? '+' : ''}${faderVal.toFixed(1)} dB`}
       </div>
 
@@ -160,12 +165,13 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
       <div className="space-y-1">
         <button
           onClick={() => toggleChannelMute(channel.id)}
-          className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-all ${
+          aria-label={`Mute ${channel.name}`}
+          className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-all focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none ${
             channel.mute
               ? 'bg-rose-600 text-white shadow-[0_0_8px_#e11d48]'
               : isDcaMuted
               ? 'bg-rose-950 text-rose-300 border border-rose-700 animate-pulse'
-              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
           }`}
         >
           {isDcaMuted && !channel.mute ? 'DCA MUTE' : 'MUTE'}

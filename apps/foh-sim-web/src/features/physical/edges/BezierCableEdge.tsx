@@ -32,18 +32,18 @@ export const BezierCableEdge: React.FC<EdgeProps> = ({
   const getCableColor = () => {
     switch (signalType) {
       case 'mic':
-        return '#38bdf8'; // Sky blue
+        return '#38bdf8';
       case 'instrument':
-        return '#fb923c'; // Orange
+        return '#fb923c';
       case 'dsnake':
-        return '#34d399'; // Emerald green
+        return '#34d399';
       case 'iem':
-        return '#2dd4bf'; // Teal
+        return '#2dd4bf';
       case 'click':
       case 'comms':
-        return '#facc15'; // Yellow
+        return '#facc15';
       case 'speaker':
-        return '#94a3b8'; // Grey
+        return '#94a3b8';
       default:
         return '#64748b';
     }

@@ -48,27 +48,22 @@ export const PhysicalCanvas: React.FC = () => {
     []
   );
 
-  // Build ReactFlow Nodes from simulation state
   const nodes: Node[] = useMemo(() => {
-    const list: Node[] = [];
+    const list: Node[] = [
+      {
+        id: 'stagebox-ar2412',
+        type: 'ar2412',
+        position: sim.physical.stageBox.position,
+        data: { label: 'AR2412 Stage Box' }
+      },
+      {
+        id: 'console-sq5',
+        type: 'sq5rear',
+        position: sim.physical.console.position,
+        data: { label: 'SQ-5 Console' }
+      }
+    ];
 
-    // 1. AR2412 Stage Box Node
-    list.push({
-      id: 'stagebox-ar2412',
-      type: 'ar2412',
-      position: sim.physical.stageBox.position,
-      data: { label: 'AR2412 Stage Box' }
-    });
-
-    // 2. SQ-5 Console Rear Node
-    list.push({
-      id: 'console-sq5',
-      type: 'sq5rear',
-      position: sim.physical.console.position,
-      data: { label: 'SQ-5 Console' }
-    });
-
-    // 3. Stage Items
     for (const item of sim.physical.stageItems) {
       list.push({
         id: item.id,
@@ -81,7 +76,6 @@ export const PhysicalCanvas: React.FC = () => {
     return list;
   }, [sim.physical]);
 
-  // Build ReactFlow Edges from cables
   const edges: Edge[] = useMemo(() => {
     return sim.physical.cables.map((cable) => ({
       id: cable.id,
@@ -112,7 +106,6 @@ export const PhysicalCanvas: React.FC = () => {
         return;
       }
 
-      // Determine signal type
       let signalType: SignalType = 'mic';
       if (connection.sourceHandle.includes('dsnake') || connection.targetHandle.includes('slink')) {
         signalType = 'dsnake';

@@ -82,8 +82,13 @@ export const MasterStrip: React.FC = () => {
             step="0.5"
             value={faderVal}
             onChange={handleFaderChange}
+            role="slider"
             aria-label={`${title} Master Fader`}
-            className="fader-slider fader-vertical cursor-pointer"
+            aria-valuemin={-90}
+            aria-valuemax={10}
+            aria-valuenow={faderVal}
+            aria-valuetext={faderVal <= -85 ? 'Minus Infinity dB' : `${faderVal.toFixed(1)} dB`}
+            className="fader-slider fader-vertical cursor-pointer focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
           />
         </div>
       </div>
@@ -97,10 +102,11 @@ export const MasterStrip: React.FC = () => {
       <div className="space-y-1">
         <button
           onClick={handleToggleMute}
-          className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-all ${
+          aria-label={`Mute ${title}`}
+          className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-all focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none ${
             isMuted
               ? 'bg-rose-600 text-white shadow-[0_0_8px_#e11d48]'
-              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
           }`}
         >
           MUTE
@@ -108,7 +114,7 @@ export const MasterStrip: React.FC = () => {
 
         {/* Scribble Strip */}
         <div className="p-1 rounded bg-slate-900 border border-amber-600/80 text-center">
-          <div className="text-[9px] font-mono text-slate-400">BUS MASTER</div>
+          <div className="text-[9px] font-mono text-slate-300">BUS MASTER</div>
           <div className="text-[11px] font-black text-amber-300 truncate font-mono">
             {title}
           </div>

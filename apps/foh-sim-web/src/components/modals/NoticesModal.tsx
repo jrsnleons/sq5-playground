@@ -9,31 +9,51 @@ export const NoticesModal: React.FC = () => {
     validationNotices
   } = useSimulationStore();
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && noticesModalOpen) {
+        setNoticesModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [noticesModalOpen, setNoticesModalOpen]);
+
   if (!noticesModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden font-sans text-slate-100 animate-in fade-in zoom-in-95 duration-150">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="notices-modal-title"
+      onClick={() => setNoticesModalOpen(false)}
+      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden font-sans text-slate-100 cursor-default animate-in fade-in zoom-in-95 duration-150"
+      >
         {/* Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-5 h-5 text-amber-400" />
-            <h2 className="text-sm font-bold text-white uppercase font-mono">
+            <h2 id="notices-modal-title" className="text-sm font-bold text-white uppercase font-mono">
               System Validation &amp; Warnings ({validationNotices.length})
             </h2>
           </div>
           <button
             onClick={() => setNoticesModalOpen(false)}
-            className="text-slate-400 hover:text-white p-1 rounded transition-colors"
+            aria-label="Close dialog"
+            className="text-slate-400 hover:text-white p-1 rounded transition-colors focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Notices List */}
         <div className="p-4 max-h-[70vh] overflow-y-auto space-y-3">
           {validationNotices.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 text-xs">
+            <div className="text-center py-8 text-slate-300 text-xs">
               All physical connections and routing rules are verified and valid.
             </div>
           ) : (
@@ -45,7 +65,7 @@ export const NoticesModal: React.FC = () => {
                     ? 'bg-rose-950/40 border-rose-800 text-rose-200'
                     : notice.type === 'warning'
                     ? 'bg-amber-950/40 border-amber-800 text-amber-200'
-                    : 'bg-slate-950/60 border-slate-800 text-slate-300'
+                    : 'bg-slate-950/60 border-slate-800 text-slate-200'
                 }`}
               >
                 {notice.type === 'error' ? (
@@ -68,7 +88,7 @@ export const NoticesModal: React.FC = () => {
         <div className="p-3 border-t border-slate-800 flex justify-end bg-slate-950/60">
           <button
             onClick={() => setNoticesModalOpen(false)}
-            className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-medium transition-colors"
+            className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none"
           >
             Dismiss
           </button>

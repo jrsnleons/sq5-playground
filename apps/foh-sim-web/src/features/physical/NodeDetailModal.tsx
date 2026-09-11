@@ -25,6 +25,16 @@ export const NodeDetailModal: React.FC = () => {
     }
   }, [stageItem]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedNodeId) {
+        setSelectedNodeId(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNodeId, setSelectedNodeId]);
+
   if (!stageItem) return null;
 
   const catalogDef = stageItemsCatalog.find((c) => c.id === stageItem.typeId);
@@ -43,18 +53,26 @@ export const NodeDetailModal: React.FC = () => {
   };
 
   return (
-    <div className="absolute right-4 top-4 w-80 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl shadow-2xl z-20 overflow-hidden font-sans text-slate-100 animate-in fade-in slide-in-from-right-4 duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="node-inspector-title"
+      className="absolute right-4 top-4 w-80 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl shadow-2xl z-20 overflow-hidden font-sans text-slate-100 animate-in fade-in slide-in-from-right-4 duration-200"
+    >
       {/* Header */}
       <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
         <div className="flex items-center space-x-2">
           <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-800">
             {stageItem.category}
           </span>
-          <span className="text-xs font-bold text-slate-200">Equipment Inspector</span>
+          <span id="node-inspector-title" className="text-xs font-bold text-slate-200">
+            Equipment Inspector
+          </span>
         </div>
         <button
           onClick={() => setSelectedNodeId(null)}
-          className="text-slate-400 hover:text-white p-1 rounded transition-colors"
+          aria-label="Close inspector"
+          className="text-slate-400 hover:text-white p-1 rounded transition-colors focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none"
         >
           <X className="w-4 h-4" />
         </button>

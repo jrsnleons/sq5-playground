@@ -9,7 +9,8 @@ import {
   ProcessingGate,
   ProcessingHPF,
   ProcessingPreamp,
-  SimulationState
+  SimulationState,
+  Scene
 } from './types';
 import churchPresetJson from '@foh-sim/hardware-profiles/church-default.json';
 import scratchPresetJson from '@foh-sim/hardware-profiles/scratch-default.json';
@@ -242,26 +243,28 @@ export function createInitialMuteGroups(): MuteGroup[] {
 
 export function createInitialState(preset: 'church' | 'scratch' = 'church'): SimulationState {
   const isChurch = preset === 'church';
-  const rawPreset = isChurch ? churchPresetJson : scratchPresetJson;
+  const rawPreset = isChurch
+    ? JSON.parse(JSON.stringify(churchPresetJson))
+    : JSON.parse(JSON.stringify(scratchPresetJson));
 
   return {
     entryMode: isChurch ? 'church-preset' : 'scratch',
     physical: {
-      stageItems: (rawPreset.physical.stageItems as any) || [],
-      cables: (rawPreset.physical.cables as any) || [],
+      stageItems: rawPreset.physical.stageItems || [],
+      cables: rawPreset.physical.cables || [],
       stageBox: {
         model: 'AR2412',
         connectedToSQ: isChurch,
-        position: rawPreset.physical.stageBox.position
+        position: { ...rawPreset.physical.stageBox.position }
       },
       console: {
         model: 'SQ-5',
         slinkMode: 'dSnake',
-        position: rawPreset.physical.console.position
+        position: { ...rawPreset.physical.console.position }
       }
     },
     digital: {
-      ioPatch: (rawPreset.digital.ioPatch as any) || { inputs: {}, outputs: {} },
+      ioPatch: rawPreset.digital.ioPatch || { inputs: {}, outputs: {} },
       channels: createInitialChannels(preset),
       mixes: createInitialMixes(),
       matrices: createInitialMatrices(),
@@ -289,3 +292,62 @@ export function createInitialState(preset: 'church' | 'scratch' = 'church'): Sim
     activePresetId: isChurch ? 'church-default' : 'scratch-default'
   };
 }
+
+export function recallSceneWithFilter(
+  currentState: SimulationState,
+  targetScene: Scene
+): SimulationState {
+  if (!targetScene.snapshot || !targetScene.snapshot.digital) {
+    return currentState;
+  }
+  const snap = targetScene.snapshot as SimulationState;
+  const filter = targetScene.recallFilter || {};
+
+  const nextChannels = currentState.digital.channels.map((currentCh, index) => {
+    const snapCh = snap.digital.channels[index];
+    if (!snapCh) return currentCh;
+
+    return {
+      ...snapCh,
+      peq: filter.blockPEQ ? currentCh.peq : snapCh.peq,
+      preamp: filter.blockPreamp ? currentCh.preamp : snapCh.preamp,
+      gate: filter.blockDynamics ? currentCh.gate : snapCh.gate,
+      compressor: filter.blockDynamics ? currentCh.compressor : snapCh.compressor,
+      faderLevel: filter.blockFaders ? currentCh.faderLevel : snapCh.faderLevel,
+      sends: filter.blockRouting ? currentCh.sends : snapCh.sends
+    };
+  });
+
+  return {
+    ...currentState,
+    digital: {
+      ...currentState.digital,
+      activeSceneId: targetScene.id,
+      channels: nextChannels,
+      mixes: filter.blockFaders ? currentState.digital.mixes : (snap.digital.mixes || currentState.digital.mixes),
+      ioPatch: filter.blockRouting ? currentState.digital.ioPatch : (snap.digital.ioPatch || currentState.digital.ioPatch)
+    }
+  };
+}
+
+export function exportPresetAsJson(state: SimulationState, name: string): string {
+  const payload = {
+    metadata: {
+      id: `preset-${Date.now()}`,
+      name,
+      schemaVersion: 1,
+      createdAt: new Date().toISOString()
+    },
+    state
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+export function importPresetFromJson(jsonString: string): SimulationState {
+  const parsed = JSON.parse(jsonString);
+  if (!parsed.state || !parsed.state.digital || !parsed.state.physical) {
+    throw new Error('Invalid preset JSON format');
+  }
+  return parsed.state;
+}
+
