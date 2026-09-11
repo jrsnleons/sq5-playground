@@ -1,6 +1,7 @@
 {
-  "name": "foh-sq5-simulator-monorepo",
+  "name": "sq5-playground",
   "version": "0.1.0",
+  "description": "Interactive audio engineering training playground and sandbox for church AV ministry volunteers.",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -11,6 +12,7 @@
     "build": "npm run build --workspaces --if-present",
     "preview": "npm run preview --workspace=@foh-sim/web",
     "test": "npm run test --workspaces --if-present",
+    "test:run": "vitest run",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {

@@ -710,7 +710,7 @@ describe('FOH SQ-5 Simulator — Acceptance Criteria (AC-1 to AC-16)', () => {
     state.physical.stageBox.connectedToSQ = true;
 
     // Patch AR2412 input 1 to console channel 1
-    state.digital.ioPatch.inputs['ch-1'] = { sourceType: 'slink', socketId: 'ar-in-1' };
+    state.digital.ioPatch.inputs['ch-1'] = { sourceType: 'slink', socketId: 'ar-in-1', label: 'AR2412 In 1' };
 
     const presence = computeSignalPresence(state);
     expect(presence.slinkHasSignal).toBe(true);
