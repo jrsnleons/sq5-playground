@@ -206,6 +206,18 @@ export const SetupScreen: React.FC = () => {
     }
   };
 
+  if (userRole === 'guest') {
+    return (
+      <div className="w-full h-full bg-black flex flex-col items-center justify-center p-6 text-center">
+        <Lock className="w-8 h-8 text-neutral-600 mb-3" />
+        <h3 className="text-xs font-semibold text-white uppercase font-mono tracking-wider">Access Restricted</h3>
+        <p className="text-xs text-neutral-400 max-w-sm mt-1">
+          Settings are restricted to team members and administrators. Please sign in to manage credentials or presets.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full bg-black flex flex-col overflow-hidden select-none font-sans text-neutral-100">
       {/* Header */}

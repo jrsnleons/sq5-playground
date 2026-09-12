@@ -19,7 +19,6 @@ import { AR2412Node } from './nodes/AR2412Node';
 import { SQ5RearNode } from './nodes/SQ5RearNode';
 import { StageItemNode } from './nodes/StageItemNode';
 import { BezierCableEdge } from './edges/BezierCableEdge';
-import { StageItemPalette } from './StageItemPalette';
 import { NodeDetailModal } from './NodeDetailModal';
 import { CableTraceBadge } from './components/CableTraceBadge';
 import { SignalType } from '@foh-sim/simulation-core';
@@ -342,9 +341,6 @@ const PhysicalCanvasContent: React.FC = () => {
 
       {/* Floating Cable Trace HUD Badge */}
       <CableTraceBadge />
-
-      {/* Stage Item Draggable Palette */}
-      <StageItemPalette />
 
       {/* Node Details Inspector Modal */}
       <NodeDetailModal />

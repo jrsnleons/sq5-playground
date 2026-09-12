@@ -64,7 +64,7 @@ export const App: React.FC = () => {
     fetchScenes().catch(console.warn);
 
     // Guard tab access based on active role
-    if (userRole === 'guest' && activeTab !== 'stage' && activeTab !== 'console' && activeTab !== 'setup') {
+    if (userRole === 'guest' && activeTab !== 'stage' && activeTab !== 'console' && activeTab !== 'scenes') {
       setActiveTab('stage');
     } else if ((activeTab as string) === 'help') {
       setActiveTab('stage');
@@ -162,7 +162,7 @@ export const App: React.FC = () => {
                 <ScenesScreen />
               </div>
             )}
-            {activeTab === 'setup' && (
+            {activeTab === 'setup' && userRole !== 'guest' && (
               <div className="h-full p-4 overflow-hidden">
                 <SetupScreen />
               </div>

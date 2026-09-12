@@ -36,6 +36,8 @@ export const ScenesScreen: React.FC = () => {
     setToastNotice
   } = useSimulationStore();
 
+  const isGuest = userRole === 'guest';
+
   const [activeTab, setActiveTab] = useState<'all' | 'official' | 'custom'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -269,18 +271,27 @@ export const ScenesScreen: React.FC = () => {
             <span>Sync</span>
           </button>
 
-          <button
-            onClick={() => {
-              setSceneTitle(`Sunday Mix ${new Date().toLocaleDateString()}`);
-              setStoreModalOpen(true);
-            }}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-white hover:bg-neutral-200 text-black rounded-lg text-xs font-bold font-mono transition-colors shadow"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Store Current Mix</span>
-          </button>
+          {!isGuest && (
+            <button
+              onClick={() => {
+                setSceneTitle(`Sunday Mix ${new Date().toLocaleDateString()}`);
+                setStoreModalOpen(true);
+              }}
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-white hover:bg-neutral-200 text-black rounded-lg text-xs font-bold font-mono transition-colors shadow"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Store Current Mix</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Read-only Guest Banner */}
+      {isGuest && (
+        <div className="mb-5 px-4 py-2 rounded-xl bg-neutral-900 border border-white/[0.08] text-xs font-mono text-neutral-400 flex items-center justify-between">
+          <span>Preview mode: You can recall snapshots to preview console setups. Creating and editing scenes requires signing in.</span>
+        </div>
+      )}
 
       {/* Active Scene Console Telemetry HUD */}
       <div className="mb-6 bg-[#141417] border border-white/15 rounded-xl p-4 shadow-[0_12px_32px_-4px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.18)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -404,14 +415,14 @@ export const ScenesScreen: React.FC = () => {
             >
               Clear Search
             </button>
-          ) : (
+          ) : !isGuest ? (
             <button
               onClick={() => setStoreModalOpen(true)}
               className="px-3.5 py-1.5 bg-white hover:bg-neutral-200 text-black rounded-lg text-xs font-bold font-mono transition-colors"
             >
               Store Current Mix
             </button>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -500,13 +511,15 @@ export const ScenesScreen: React.FC = () => {
                     )}
 
                     {/* Duplicate action */}
-                    <button
-                      onClick={() => handleDuplicateToMyScenes(scene)}
-                      title="Clone to My Snapshots"
-                      className="p-1.5 rounded-lg bg-[#141417] hover:bg-neutral-800 border border-white/15 text-neutral-300 hover:text-white transition-colors"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
+                    {!isGuest && (
+                      <button
+                        onClick={() => handleDuplicateToMyScenes(scene)}
+                        title="Clone to My Snapshots"
+                        className="p-1.5 rounded-lg bg-[#141417] hover:bg-neutral-800 border border-white/15 text-neutral-300 hover:text-white transition-colors"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    )}
 
                     {/* Admin Overwrite / Edit / Delete */}
                     {userRole === 'admin' && (
@@ -641,27 +654,31 @@ export const ScenesScreen: React.FC = () => {
                       </button>
                     )}
 
-                    <button
-                      onClick={() => handleOverwriteWithConsole(scene)}
-                      title="Update slot with current console state"
-                      className="p-1.5 rounded-lg bg-[#141417] hover:bg-neutral-800 border border-white/15 text-neutral-300 hover:text-white transition-colors"
-                    >
-                      <Save className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => openEditModal(scene)}
-                      title="Edit scene title and slot"
-                      className="p-1.5 rounded-lg bg-[#141417] hover:bg-neutral-800 border border-white/15 text-neutral-300 hover:text-white transition-colors"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(scene)}
-                      title="Delete snapshot"
-                      className="p-1.5 rounded-lg bg-[#141417] hover:bg-red-950/50 border border-white/15 hover:border-red-900/50 text-neutral-400 hover:text-red-300 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {!isGuest && (
+                      <>
+                        <button
+                          onClick={() => handleOverwriteWithConsole(scene)}
+                          title="Update slot with current console state"
+                          className="p-1.5 rounded-lg bg-[#141417] hover:bg-neutral-800 border border-white/15 text-neutral-300 hover:text-white transition-colors"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => openEditModal(scene)}
+                          title="Edit scene title and slot"
+                          className="p-1.5 rounded-lg bg-[#141417] hover:bg-neutral-800 border border-white/15 text-neutral-300 hover:text-white transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(scene)}
+                          title="Delete snapshot"
+                          className="p-1.5 rounded-lg bg-[#141417] hover:bg-red-950/50 border border-white/15 hover:border-red-900/50 text-neutral-400 hover:text-red-300 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               );

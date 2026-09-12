@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Sparkles, Sliders, Power } from 'lucide-react';
+import { useSimulationStore } from '../../../store/simulationStore';
 
 interface FXEngineParams {
   param1: number; // Decay or Time
@@ -9,6 +10,9 @@ interface FXEngineParams {
 }
 
 export const FXScreen: React.FC = () => {
+  const { userRole, setToastNotice } = useSimulationStore();
+  const isGuest = userRole === 'guest';
+
   const initialEngines = [
     { id: 1, name: 'SMR Reverb (Vocal Hall)', mode: 'Send-Return', returnChan: 'FX Ret 1', p1Label: 'Decay', p1Min: 0.5, p1Max: 8.0, p1Step: 0.1, p1Unit: 's', p2Label: 'Pre-delay', p2Min: 0, p2Max: 150, p2Step: 5, p2Unit: 'ms' },
     { id: 2, name: 'Stereo Tap Delay', mode: 'Send-Return', returnChan: 'FX Ret 2', p1Label: 'Delay Time', p1Min: 50, p1Max: 1200, p1Step: 10, p1Unit: 'ms', p2Label: 'Feedback', p2Min: 0, p2Max: 90, p2Step: 1, p2Unit: '%' },
@@ -32,6 +36,10 @@ export const FXScreen: React.FC = () => {
   });
 
   const updateParam = (id: number, key: keyof FXEngineParams, val: any) => {
+    if (isGuest) {
+      setToastNotice({ message: 'FX editing is locked in Guest mode.', type: 'info' });
+      return;
+    }
     setEngineState((prev) => ({
       ...prev,
       [id]: {
@@ -53,6 +61,12 @@ export const FXScreen: React.FC = () => {
         <span className="text-xs text-neutral-500 font-mono">SQ-5 V1.6.0 FX RACK</span>
       </div>
 
+      {isGuest && (
+        <div className="mb-5 px-4 py-2 rounded-lg bg-neutral-900 border border-white/[0.08] text-xs font-mono text-neutral-400 flex items-center justify-between">
+          <span>Read-only view. Sign in as a team member or administrator to edit FX engine parameters and bypass states.</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {initialEngines.map((fx) => {
           const st = engineState[fx.id] || { param1: 2.0, param2: 20, mix: 100, active: true };
@@ -69,7 +83,10 @@ export const FXScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => updateParam(fx.id, 'active', !st.active)}
+                  disabled={isGuest}
                   className={`flex items-center space-x-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-medium border transition-colors ${
+                    isGuest ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                  } ${
                     st.active
                       ? 'bg-white/10 text-white border-white/20'
                       : 'bg-neutral-900 text-neutral-500 border-white/[0.08]'
@@ -96,9 +113,9 @@ export const FXScreen: React.FC = () => {
                     max={fx.p1Max}
                     step={fx.p1Step}
                     value={st.param1}
-                    disabled={!st.active}
+                    disabled={!st.active || isGuest}
                     onChange={(e) => updateParam(fx.id, 'param1', parseFloat(e.target.value))}
-                    className="w-full accent-white cursor-pointer disabled:opacity-40"
+                    className={`w-full accent-white ${isGuest ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'} disabled:opacity-40`}
                   />
                 </div>
 
@@ -114,9 +131,9 @@ export const FXScreen: React.FC = () => {
                     max={fx.p2Max}
                     step={fx.p2Step}
                     value={st.param2}
-                    disabled={!st.active}
+                    disabled={!st.active || isGuest}
                     onChange={(e) => updateParam(fx.id, 'param2', parseFloat(e.target.value))}
-                    className="w-full accent-white cursor-pointer disabled:opacity-40"
+                    className={`w-full accent-white ${isGuest ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'} disabled:opacity-40`}
                   />
                 </div>
 
@@ -132,9 +149,9 @@ export const FXScreen: React.FC = () => {
                     max="100"
                     step="1"
                     value={st.mix}
-                    disabled={!st.active}
+                    disabled={!st.active || isGuest}
                     onChange={(e) => updateParam(fx.id, 'mix', parseInt(e.target.value, 10))}
-                    className="w-full accent-white cursor-pointer disabled:opacity-40"
+                    className={`w-full accent-white ${isGuest ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'} disabled:opacity-40`}
                   />
                 </div>
               </div>

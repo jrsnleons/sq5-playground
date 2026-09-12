@@ -110,6 +110,13 @@ export const MixerConfigScreen: React.FC = () => {
         </div>
       </div>
 
+      {/* Read-only Guest Banner */}
+      {isGuest && (
+        <div className="bg-neutral-900 border-b border-white/[0.08] px-6 py-2 text-xs font-mono text-neutral-400 flex items-center justify-between shrink-0">
+          <span>Read-only view. Sign in as a team member or administrator to edit bus architecture, stereo pairing, and console parameters.</span>
+        </div>
+      )}
+
       {/* Notice Banner */}
       {notice && (
         <div className="bg-emerald-950/40 border-b border-emerald-900/40 px-6 py-2 text-xs font-mono text-emerald-300 flex items-center space-x-2 shrink-0 animate-in fade-in">
@@ -511,8 +518,19 @@ export const MixerConfigScreen: React.FC = () => {
               </p>
 
               <button
-                onClick={cycleGeqFlip}
-                className="w-full py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg text-xs font-semibold transition-all border border-white/[0.08] hover:border-white/20 flex items-center justify-center space-x-2"
+                onClick={() => {
+                  if (isGuest) {
+                    setToastNotice({ message: 'GEQ Fader Flip is locked in Guest mode.', type: 'info' });
+                    return;
+                  }
+                  cycleGeqFlip();
+                }}
+                disabled={isGuest}
+                className={`w-full py-2.5 rounded-lg text-xs font-semibold transition-all border flex items-center justify-center space-x-2 ${
+                  isGuest
+                    ? 'bg-neutral-900 text-neutral-500 border-white/[0.08] cursor-not-allowed opacity-60'
+                    : 'bg-neutral-900 hover:bg-neutral-800 text-white border-white/[0.08] hover:border-white/20'
+                }`}
               >
                 <Sliders className="w-4 h-4 text-neutral-400" />
                 <span>
