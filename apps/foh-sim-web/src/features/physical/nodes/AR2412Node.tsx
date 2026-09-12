@@ -10,11 +10,12 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
   const activeTrace = useSimulationStore((s) => s.activeTrace);
   const setLockedTrace = useSimulationStore((s) => s.setLockedTrace);
 
-  const hasDsnakeCable = cables.some(
+  const dsnakeCable = cables.find(
     (c) =>
       (c.fromPort === 'ar-dsnake' && c.toPort === 'sq-slink') ||
       (c.toPort === 'ar-dsnake' && c.fromPort === 'sq-slink')
   );
+  const hasDsnakeCable = !!dsnakeCable;
 
   const isNodeTraced =
     activeTrace?.nodeId === 'stagebox-ar2412' ||
@@ -99,7 +100,7 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
                     key={socketId}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (connectedCable) setLockedTrace(socketId, 'stagebox-ar2412');
+                      if (connectedCable) setLockedTrace(socketId, 'stagebox-ar2412', connectedCable.id);
                     }}
                     className={`flex flex-col items-center group relative ${
                       connectedCable ? 'cursor-pointer' : ''
@@ -168,7 +169,7 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
                     key={socketId}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (connectedCable) setLockedTrace(socketId, 'stagebox-ar2412');
+                      if (connectedCable) setLockedTrace(socketId, 'stagebox-ar2412', connectedCable.id);
                     }}
                     className={`flex flex-col items-center relative group p-0.5 rounded transition-all ${
                       connectedCable ? 'cursor-pointer' : ''
@@ -227,7 +228,7 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
           <div
             onClick={(e) => {
               e.stopPropagation();
-              if (hasDsnakeCable) setLockedTrace('ar-dsnake', 'stagebox-ar2412');
+              if (dsnakeCable) setLockedTrace('ar-dsnake', 'stagebox-ar2412', dsnakeCable.id);
             }}
             className={`flex flex-col items-center bg-[#0c0c0e] p-2 rounded-lg border transition-all ${
               activeTrace?.socketId === 'ar-dsnake'

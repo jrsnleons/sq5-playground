@@ -1,5 +1,57 @@
 import { Cable, SimulationState, ValidationNotice } from './types';
 
+export function getPortDirection(
+  nodeId: string,
+  portId: string,
+  state: SimulationState
+): 'in' | 'out' | 'bidirectional' {
+  if (
+    portId.includes('slink') ||
+    portId.includes('dsnake') ||
+    portId.includes('expander') ||
+    portId.includes('monitor')
+  ) {
+    return 'bidirectional';
+  }
+  if (portId.toLowerCase().includes('usb')) {
+    if (portId.includes('in')) return 'in';
+    if (portId.includes('out')) return 'out';
+    return 'bidirectional';
+  }
+  if (portId.toLowerCase().includes('hdmi')) {
+    if (portId.includes('in')) return 'in';
+    if (portId.includes('out') || portId.includes('pgm') || portId.includes('aux')) return 'out';
+    return 'bidirectional';
+  }
+  if (
+    portId.startsWith('ar-in-') ||
+    portId.startsWith('sq-in-') ||
+    portId.startsWith('in-') ||
+    portId.endsWith('-in') ||
+    portId.includes('-in-')
+  ) {
+    return 'in';
+  }
+  if (
+    portId.startsWith('ar-out-') ||
+    portId.startsWith('sq-out-') ||
+    portId.startsWith('out-') ||
+    portId.endsWith('-out') ||
+    portId.includes('-out-') ||
+    portId.startsWith('thru-') ||
+    portId.startsWith('main-')
+  ) {
+    return 'out';
+  }
+
+  const item = state.physical.stageItems.find((i) => i.id === nodeId);
+  if (item) {
+    if (item.category === 'mic' || item.category === 'instrument') return 'out';
+    if (item.category === 'speaker' || item.category === 'iem') return 'in';
+  }
+  return 'bidirectional';
+}
+
 export function validateCableConnection(
   fromNode: string,
   fromPort: string,
@@ -84,56 +136,8 @@ export function validateCableConnection(
   }
 
   // Port direction validation
-  const getPortDirection = (nodeId: string, portId: string): 'in' | 'out' | 'bidirectional' => {
-    if (
-      portId.includes('slink') ||
-      portId.includes('dsnake') ||
-      portId.includes('expander') ||
-      portId.includes('monitor')
-    ) {
-      return 'bidirectional';
-    }
-    if (portId.toLowerCase().includes('usb')) {
-      if (portId.includes('in')) return 'in';
-      if (portId.includes('out')) return 'out';
-      return 'bidirectional';
-    }
-    if (portId.toLowerCase().includes('hdmi')) {
-      if (portId.includes('in')) return 'in';
-      if (portId.includes('out') || portId.includes('pgm') || portId.includes('aux')) return 'out';
-      return 'bidirectional';
-    }
-    if (
-      portId.startsWith('ar-in-') ||
-      portId.startsWith('sq-in-') ||
-      portId.startsWith('in-') ||
-      portId.endsWith('-in') ||
-      portId.includes('-in-')
-    ) {
-      return 'in';
-    }
-    if (
-      portId.startsWith('ar-out-') ||
-      portId.startsWith('sq-out-') ||
-      portId.startsWith('out-') ||
-      portId.endsWith('-out') ||
-      portId.includes('-out-') ||
-      portId.startsWith('thru-') ||
-      portId.startsWith('main-')
-    ) {
-      return 'out';
-    }
-
-    const item = state.physical.stageItems.find((i) => i.id === nodeId);
-    if (item) {
-      if (item.category === 'mic' || item.category === 'instrument') return 'out';
-      if (item.category === 'speaker' || item.category === 'iem') return 'in';
-    }
-    return 'bidirectional';
-  };
-
-  const fromDir = getPortDirection(fromNode, fromPort);
-  const toDir = getPortDirection(toNode, toPort);
+  const fromDir = getPortDirection(fromNode, fromPort, state);
+  const toDir = getPortDirection(toNode, toPort, state);
 
   if (fromDir === 'out' && toDir === 'out') {
     notices.push({

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSimulationStore } from '../../store/simulationStore';
+import { SignalType } from '@foh-sim/simulation-core';
 import stageItemsCatalog from '@foh-sim/hardware-profiles/stage-items.json';
 import { X, Trash2, Edit3, Check, Plug, Unlink, Camera, RotateCcw } from 'lucide-react';
 import { ConfirmDialogModal } from '../../components/modals/ConfirmDialogModal';
@@ -13,6 +14,7 @@ export const NodeDetailModal: React.FC = () => {
     updateStageItemDetails,
     removeStageItem,
     removeCable,
+    updateCableSignalType,
     setNodePhoto,
     removeNodePhoto
   } = useSimulationStore();
@@ -52,6 +54,13 @@ export const NodeDetailModal: React.FC = () => {
   if (!stageItem) return null;
 
   const catalogDef = stageItemsCatalog.find((c) => c.id === stageItem.typeId);
+
+  const getNodeLabel = (nodeId: string) => {
+    if (nodeId === 'stagebox-ar2412') return 'AR2412 Stage Box';
+    if (nodeId === 'console-sq5') return 'SQ-5 Console';
+    const item = sim.physical.stageItems.find((i) => i.id === nodeId);
+    return item?.name || nodeId;
+  };
 
   // Find cables connected to this node
   const connectedCables = sim.physical.cables.filter(
@@ -216,30 +225,57 @@ export const NodeDetailModal: React.FC = () => {
               No cables connected. Drag from the ports to patch.
             </div>
           ) : (
-            <div className="space-y-1.5">
-              {connectedCables.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between p-2 bg-black/60 rounded-lg border border-white/[0.06] font-mono text-[11px]"
-                >
-                  <div className="flex items-center space-x-1.5 truncate">
-                    <span className="text-white font-medium">{c.fromPort}</span>
-                    <span className="text-neutral-500">→</span>
-                    <span className="text-white font-medium">{c.toPort}</span>
-                    <span className="text-[9px] px-1 py-0.2 rounded bg-white/[0.06] text-neutral-400 font-mono uppercase">
-                      {c.signalType}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => removeCable(c.id)}
-                    title="Unplug / disconnect this cable"
-                    className="flex items-center space-x-1 px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[10px] font-mono font-medium transition-colors ml-2 shrink-0 cursor-pointer"
+            <div className="space-y-2">
+              {connectedCables.map((c) => {
+                const isFromThis = c.fromNode === stageItem.id;
+                const remoteNodeName = getNodeLabel(isFromThis ? c.toNode : c.fromNode);
+                const remotePort = isFromThis ? c.toPort : c.fromPort;
+                const localPort = isFromThis ? c.fromPort : c.toPort;
+
+                return (
+                  <div
+                    key={c.id}
+                    className="p-2 bg-black/60 rounded-lg border border-white/[0.06] font-mono text-[11px] space-y-1.5"
                   >
-                    <Unlink className="w-3 h-3" />
-                    <span>Unplug</span>
-                  </button>
-                </div>
-              ))}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1.5 text-neutral-300 min-w-0">
+                        <span className="text-white font-semibold shrink-0">{localPort}</span>
+                        <span className="text-neutral-500 shrink-0">{isFromThis ? '→' : '←'}</span>
+                        <span className="text-neutral-200 truncate max-w-[130px]" title={remoteNodeName}>
+                          {remoteNodeName}
+                        </span>
+                        <span className="text-neutral-400 text-[10px] shrink-0">({remotePort})</span>
+                      </div>
+                      <button
+                        onClick={() => removeCable(c.id)}
+                        title="Unplug / disconnect this cable"
+                        className="flex items-center space-x-1 px-2 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[10px] font-mono transition-colors ml-2 shrink-0 cursor-pointer"
+                      >
+                        <Unlink className="w-3 h-3" />
+                        <span>Unplug</span>
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-white/[0.04] text-[10px]">
+                      <span className="text-neutral-400 text-[9px]">Wire Type:</span>
+                      <select
+                        value={c.signalType}
+                        onChange={(e) => updateCableSignalType(c.id, e.target.value as SignalType)}
+                        className="bg-neutral-900 border border-white/20 rounded px-1.5 py-0.5 text-[9px] text-neutral-200 font-mono focus:outline-none cursor-pointer"
+                      >
+                        <option value="mic">Mic (Analog)</option>
+                        <option value="instrument">Instrument (1/4" TRS)</option>
+                        <option value="speaker">Speaker</option>
+                        <option value="iem">IEM</option>
+                        <option value="click">Click</option>
+                        <option value="comms">Comms</option>
+                        <option value="usb">USB Digital</option>
+                        <option value="video">Video (HDMI)</option>
+                        <option value="dsnake">dSNAKE Cat5e</option>
+                      </select>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

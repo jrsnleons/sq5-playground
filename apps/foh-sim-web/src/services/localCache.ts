@@ -161,13 +161,13 @@ export const safeStorage = {
 export const localCache = {
   getUserProfile(): UserProfile | null {
     try {
-      const data = localStorage.getItem(CACHE_KEYS.PROFILE);
+      const data = safeStorage.getItem(CACHE_KEYS.PROFILE);
       if (!data) return null;
       const profile = JSON.parse(data);
       // Purge any legacy simulator / mock IDs
       if (!profile || !profile.id || profile.id.startsWith('demo-') || profile.id.startsWith('user-')) {
-        localStorage.removeItem(CACHE_KEYS.PROFILE);
-        localStorage.removeItem(CACHE_KEYS.USER_ROLE);
+        safeStorage.removeItem(CACHE_KEYS.PROFILE);
+        safeStorage.removeItem(CACHE_KEYS.USER_ROLE);
         return null;
       }
       return profile;
@@ -179,11 +179,11 @@ export const localCache = {
   saveUserProfile(profile: UserProfile | null) {
     try {
       if (profile && (profile.role === 'admin' || profile.role === 'member')) {
-        localStorage.setItem(CACHE_KEYS.PROFILE, JSON.stringify(profile));
-        localStorage.setItem(CACHE_KEYS.USER_ROLE, profile.role);
+        safeStorage.setItem(CACHE_KEYS.PROFILE, JSON.stringify(profile));
+        safeStorage.setItem(CACHE_KEYS.USER_ROLE, profile.role);
       } else {
-        localStorage.removeItem(CACHE_KEYS.PROFILE);
-        localStorage.setItem(CACHE_KEYS.USER_ROLE, 'guest');
+        safeStorage.removeItem(CACHE_KEYS.PROFILE);
+        safeStorage.setItem(CACHE_KEYS.USER_ROLE, 'guest');
       }
     } catch (e) {
       console.warn('LocalStorage saveUserProfile failed', e);
@@ -204,7 +204,7 @@ export const localCache = {
 
   getSimulations(): PracticeSimulation[] {
     try {
-      const data = localStorage.getItem(CACHE_KEYS.SIMULATIONS);
+      const data = safeStorage.getItem(CACHE_KEYS.SIMULATIONS);
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -219,7 +219,7 @@ export const localCache = {
 
   saveSimulations(simulations: PracticeSimulation[]) {
     try {
-      localStorage.setItem(CACHE_KEYS.SIMULATIONS, JSON.stringify(simulations));
+      safeStorage.setItem(CACHE_KEYS.SIMULATIONS, JSON.stringify(simulations));
     } catch (e) {
       console.warn('Failed to save simulations to cache', e);
     }
@@ -234,7 +234,7 @@ export const localCache = {
 
   getUserScenes(): MemberScene[] {
     try {
-      const data = localStorage.getItem('foh_sim_cached_user_scenes');
+      const data = safeStorage.getItem('foh_sim_cached_user_scenes');
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
@@ -247,7 +247,7 @@ export const localCache = {
 
   saveUserScenes(scenes: MemberScene[]) {
     try {
-      localStorage.setItem('foh_sim_cached_user_scenes', JSON.stringify(scenes));
+      safeStorage.setItem('foh_sim_cached_user_scenes', JSON.stringify(scenes));
     } catch (e) {
       console.warn('Failed to save user scenes', e);
     }
@@ -269,7 +269,7 @@ export const localCache = {
 
   getOfficialScenes(): MemberScene[] {
     try {
-      const data = localStorage.getItem('foh_sim_cached_official_scenes');
+      const data = safeStorage.getItem('foh_sim_cached_official_scenes');
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -282,7 +282,7 @@ export const localCache = {
 
   saveOfficialScenes(scenes: MemberScene[]) {
     try {
-      localStorage.setItem('foh_sim_cached_official_scenes', JSON.stringify(scenes));
+      safeStorage.setItem('foh_sim_cached_official_scenes', JSON.stringify(scenes));
     } catch (e) {
       console.warn('Failed to save official scenes to cache', e);
     }
@@ -304,7 +304,7 @@ export const localCache = {
 
   getInventoryItems(): EquipmentInventoryItem[] {
     try {
-      const data = localStorage.getItem('foh_sim_cached_inventory');
+      const data = safeStorage.getItem('foh_sim_cached_inventory');
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -317,7 +317,7 @@ export const localCache = {
 
   saveInventoryItems(items: EquipmentInventoryItem[]) {
     try {
-      localStorage.setItem('foh_sim_cached_inventory', JSON.stringify(items));
+      safeStorage.setItem('foh_sim_cached_inventory', JSON.stringify(items));
     } catch (e) {
       console.warn('Failed to save inventory to cache', e);
     }

@@ -41,6 +41,7 @@ const PhysicalCanvasContent: React.FC = () => {
   const removeCable = useSimulationStore((s) => s.removeCable);
   const setSelectedNodeId = useSimulationStore((s) => s.setSelectedNodeId);
   const clearTrace = useSimulationStore((s) => s.clearTrace);
+  const setLockedTrace = useSimulationStore((s) => s.setLockedTrace);
   const saveActiveStageLayout = useSimulationStore((s) => s.saveActiveStageLayout);
   const saveStageAsDefaultPreset = useSimulationStore((s) => s.saveStageAsDefaultPreset);
   const setActiveTab = useSimulationStore((s) => s.setActiveTab);
@@ -199,8 +200,12 @@ const PhysicalCanvasContent: React.FC = () => {
           selected: e.id === edge.id
         }))
       );
+      const cable = cables.find((c) => c.id === edge.id);
+      if (cable) {
+        setLockedTrace(cable.toPort, cable.toNode, cable.id);
+      }
     },
-    [setEdges, setSelectedNodeId]
+    [cables, setEdges, setLockedTrace, setSelectedNodeId]
   );
 
   const handleConnect = useCallback(
@@ -214,6 +219,9 @@ const PhysicalCanvasContent: React.FC = () => {
         return;
       }
 
+      const sourceItem = stageItems.find((i) => i.id === connection.source);
+      const targetItem = stageItems.find((i) => i.id === connection.target);
+
       let signalType: SignalType = 'mic';
       if (connection.sourceHandle.includes('dsnake') || connection.targetHandle.includes('slink')) {
         signalType = 'dsnake';
@@ -226,18 +234,29 @@ const PhysicalCanvasContent: React.FC = () => {
         connection.targetHandle.includes('pgm')
       ) {
         signalType = 'video';
-      } else if (connection.sourceHandle.includes('thru-1') && (connection.source.includes('speaker') || connection.source.includes('fill') || connection.source.includes('sub'))) {
+      } else if (
+        (connection.sourceHandle.includes('thru-1') && (connection.source.includes('speaker') || connection.source.includes('fill') || connection.source.includes('sub'))) ||
+        targetItem?.category === 'speaker' ||
+        sourceItem?.category === 'speaker' ||
+        connection.targetHandle.includes('speaker') ||
+        connection.sourceHandle.includes('speaker')
+      ) {
         signalType = 'speaker';
-      } else if (connection.sourceHandle.includes('thru') || connection.sourceHandle.includes('in-1')) {
-        signalType = 'instrument';
-      } else if (connection.sourceHandle.includes('ar-out-') && Number(connection.sourceHandle.split('-')[2]) <= 8) {
+      } else if (
+        targetItem?.category === 'iem' ||
+        (connection.sourceHandle.includes('ar-out-') && Number(connection.sourceHandle.split('-')[2]) <= 8)
+      ) {
         signalType = 'iem';
-      } else if (connection.sourceHandle.includes('click')) {
+      } else if (
+        sourceItem?.category === 'instrument' ||
+        connection.sourceHandle.includes('thru') ||
+        (sourceItem?.category === 'playback' && targetItem?.category === 'di-box')
+      ) {
+        signalType = 'instrument';
+      } else if (sourceItem?.category === 'click' || connection.sourceHandle.includes('click')) {
         signalType = 'click';
-      } else if (connection.sourceHandle.includes('comms')) {
+      } else if (sourceItem?.category === 'comms' || connection.sourceHandle.includes('comms')) {
         signalType = 'comms';
-      } else if (connection.targetHandle.includes('speaker') || connection.sourceHandle.includes('speaker')) {
-        signalType = 'speaker';
       }
 
       connectCable(
@@ -248,7 +267,7 @@ const PhysicalCanvasContent: React.FC = () => {
         signalType
       );
     },
-    [connectCable]
+    [connectCable, stageItems]
   );
 
   useEffect(() => {
@@ -256,11 +275,12 @@ const PhysicalCanvasContent: React.FC = () => {
       if (e.key === 'Escape') {
         clearTrace();
         setSelectedNodeId(null);
+        setEdges((eds) => eds.map((e) => ({ ...e, selected: false })));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [clearTrace, setSelectedNodeId]);
+  }, [clearTrace, setSelectedNodeId, setEdges]);
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-black select-none">
@@ -365,6 +385,7 @@ const PhysicalCanvasContent: React.FC = () => {
         onPaneClick={() => {
           setSelectedNodeId(null);
           clearTrace();
+          setEdges((eds) => eds.map((e) => ({ ...e, selected: false })));
         }}
         fitView
         fitViewOptions={{ padding: 0.25 }}

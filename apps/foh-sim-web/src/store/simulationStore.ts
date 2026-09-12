@@ -13,10 +13,11 @@ import {
   createInitialState,
   computeSignalPresence,
   validateSystemState,
-  validateCableConnection
+  validateCableConnection,
+  getPortDirection
 } from '@foh-sim/simulation-core';
 import stageItemsCatalog from '@foh-sim/hardware-profiles/stage-items.json';
-import { localCache, MemberScene, DEFAULT_OFFICIAL_SCENES, EquipmentInventoryItem } from '../services/localCache';
+import { localCache, safeStorage, MemberScene, DEFAULT_OFFICIAL_SCENES, EquipmentInventoryItem } from '../services/localCache';
 import { simulationService } from '../services/simulationService';
 import { sceneService } from '../services/sceneService';
 import { inventoryService } from '../services/inventoryService';
@@ -176,7 +177,8 @@ interface SimulationStoreState {
     isLocked: boolean;
   } | null;
   setHoverTrace: (socketId: string | null, nodeId: string | null) => void;
-  setLockedTrace: (socketId: string | null, nodeId: string | null) => void;
+  setLockedTrace: (socketId: string | null, nodeId: string | null, cableId?: string | null) => void;
+  updateCableSignalType: (cableId: string, signalType: SignalType) => void;
   clearTrace: () => void;
 
   // Digital Console actions
@@ -294,7 +296,7 @@ export const saveActiveStageLayoutToStorage = (sim: any) => {
       stageBox: sim.physical.stageBox,
       console: sim.physical.console
     };
-    localStorage.setItem('foh_sim_active_stage_layout', JSON.stringify(layout));
+    safeStorage.setItem('foh_sim_active_stage_layout', JSON.stringify(layout));
   } catch (e) {
     // Ignore storage quota or disabled storage
   }
@@ -303,8 +305,8 @@ export const saveActiveStageLayoutToStorage = (sim: any) => {
 const getInitialSim = () => {
   const sim = createInitialState('church');
   try {
-    const activeLayout = localStorage.getItem('foh_sim_active_stage_layout');
-    const customPreset = localStorage.getItem('foh_sim_custom_default_preset');
+    const activeLayout = safeStorage.getItem('foh_sim_active_stage_layout');
+    const customPreset = safeStorage.getItem('foh_sim_custom_default_preset');
     const saved = activeLayout || customPreset;
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -472,7 +474,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
           console: JSON.parse(JSON.stringify(state.sim.physical.console))
         };
         try {
-          localStorage.setItem('foh_sim_custom_default_preset', JSON.stringify(customPreset));
+          safeStorage.setItem('foh_sim_custom_default_preset', JSON.stringify(customPreset));
           saveActiveStageLayoutToStorage(state.sim);
         } catch (e) {
           console.warn('LocalStorage save failed', e);
@@ -709,7 +711,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
         if (mode === 'church') {
           try {
-            const saved = localStorage.getItem('foh_sim_custom_default_preset');
+            const saved = safeStorage.getItem('foh_sim_custom_default_preset');
             if (saved) {
               const parsed = JSON.parse(saved);
               if (parsed.stageItems) state.sim.physical.stageItems = parsed.stageItems;
@@ -725,6 +727,8 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
+        state.activeTrace = null;
+        state.selectedNodeId = null;
       }),
 
     addStageItem: (typeId, position) =>
@@ -793,7 +797,30 @@ export const useSimulationStore = create<SimulationStoreState>()(
     connectCable: (fromNode, fromPort, toNode, toPort, signalType) => {
       let allowed = false;
       set((state) => {
-        const validation = validateCableConnection(fromNode, fromPort, toNode, toPort, state.sim);
+        let effectiveFromNode = fromNode;
+        let effectiveFromPort = fromPort;
+        let effectiveToNode = toNode;
+        let effectiveToPort = toPort;
+
+        const fromDir = getPortDirection(fromNode, fromPort, state.sim);
+        const toDir = getPortDirection(toNode, toPort, state.sim);
+
+        // Auto-orient signal flow if connected from input to output
+        if (fromDir === 'in' && toDir === 'out') {
+          effectiveFromNode = toNode;
+          effectiveFromPort = toPort;
+          effectiveToNode = fromNode;
+          effectiveToPort = fromPort;
+        }
+
+        const validation = validateCableConnection(
+          effectiveFromNode,
+          effectiveFromPort,
+          effectiveToNode,
+          effectiveToPort,
+          state.sim
+        );
+
         if (!validation.allowed) {
           state.validationNotices = [...state.validationNotices, ...validation.notices];
           const firstErr = validation.notices[0];
@@ -808,16 +835,20 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
         // Avoid duplicate cables between exact same ports
         const exists = state.sim.physical.cables.some(
-          (c) => c.fromPort === fromPort && c.toPort === toPort && c.fromNode === fromNode && c.toNode === toNode
+          (c) =>
+            c.fromPort === effectiveFromPort &&
+            c.toPort === effectiveToPort &&
+            c.fromNode === effectiveFromNode &&
+            c.toNode === effectiveToNode
         );
         if (exists) return;
 
         const newCable: Cable = {
           id: `cable-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-          fromNode,
-          fromPort,
-          toNode,
-          toPort,
+          fromNode: effectiveFromNode,
+          fromPort: effectiveFromPort,
+          toNode: effectiveToNode,
+          toPort: effectiveToPort,
           signalType
         };
 
@@ -834,6 +865,16 @@ export const useSimulationStore = create<SimulationStoreState>()(
       });
       return allowed;
     },
+
+    updateCableSignalType: (cableId, signalType) =>
+      set((state) => {
+        const cable = state.sim.physical.cables.find((c) => c.id === cableId);
+        if (!cable) return;
+        cable.signalType = signalType;
+        state.signalPresence = computeSignalPresence(state.sim);
+        state.validationNotices = validateSystemState(state.sim);
+        saveActiveStageLayoutToStorage(state.sim);
+      }),
 
     removeCable: (cableId) =>
       set((state) => {
@@ -853,18 +894,34 @@ export const useSimulationStore = create<SimulationStoreState>()(
     // Tracing is purely click-activated to prevent hover flickering/shakiness
     setHoverTrace: () => {},
 
-    setLockedTrace: (socketId, nodeId) =>
+    setLockedTrace: (socketId, nodeId, cableId) =>
       set((state) => {
-        if (!socketId && !nodeId) {
+        if (!socketId && !nodeId && !cableId) {
           state.activeTrace = null;
           return;
         }
 
-        const cable = state.sim.physical.cables.find(
-          (c) =>
-            (socketId && (c.fromPort === socketId || c.toPort === socketId)) ||
-            (!socketId && nodeId && (c.fromNode === nodeId || c.toNode === nodeId))
-        );
+        let cable = cableId
+          ? state.sim.physical.cables.find((c) => c.id === cableId)
+          : null;
+
+        if (!cable) {
+          cable = state.sim.physical.cables.find((c) => {
+            if (socketId && nodeId) {
+              return (
+                (c.fromNode === nodeId && c.fromPort === socketId) ||
+                (c.toNode === nodeId && c.toPort === socketId)
+              );
+            }
+            if (socketId) {
+              return c.fromPort === socketId || c.toPort === socketId;
+            }
+            if (nodeId) {
+              return c.fromNode === nodeId || c.toNode === nodeId;
+            }
+            return false;
+          });
+        }
 
         // If clicking the same already-locked trace, unlock and clear it
         if (
@@ -880,8 +937,16 @@ export const useSimulationStore = create<SimulationStoreState>()(
         if (cable) {
           state.activeTrace = {
             cableId: cable.id,
-            socketId: socketId || (cable.toNode === 'stagebox-ar2412' || cable.toNode === 'console-sq5' ? cable.toPort : cable.fromPort),
-            nodeId: nodeId || (cable.fromNode === 'stagebox-ar2412' || cable.fromNode === 'console-sq5' ? cable.toNode : cable.fromNode),
+            socketId:
+              socketId ||
+              (cable.toNode === 'stagebox-ar2412' || cable.toNode === 'console-sq5'
+                ? cable.toPort
+                : cable.fromPort),
+            nodeId:
+              nodeId ||
+              (cable.fromNode === 'stagebox-ar2412' || cable.fromNode === 'console-sq5'
+                ? cable.toNode
+                : cable.fromNode),
             isLocked: true
           };
         } else {

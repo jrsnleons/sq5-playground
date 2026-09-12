@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { EdgeProps, getBezierPath } from '@xyflow/react';
+import { EdgeProps, getBezierPath, useReactFlow } from '@xyflow/react';
 import { useSimulationStore } from '../../../store/simulationStore';
 import { SignalType } from '@foh-sim/simulation-core';
 
@@ -14,6 +14,7 @@ export const BezierCableEdge: React.FC<EdgeProps> = memo(({
   selected,
   data
 }) => {
+  const { setEdges } = useReactFlow();
   const removeCable = useSimulationStore((s) => s.removeCable);
   const hasSignal = useSimulationStore((s) => s.signalPresence.cableHasSignal[id]);
   const activeTrace = useSimulationStore((s) => s.activeTrace);
@@ -67,8 +68,14 @@ export const BezierCableEdge: React.FC<EdgeProps> = memo(({
   const handleEdgeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedNodeId(null);
+    setEdges((eds) =>
+      eds.map((edge) => ({
+        ...edge,
+        selected: edge.id === id
+      }))
+    );
     if (currentCable) {
-      setLockedTrace(currentCable.toPort, currentCable.toNode);
+      setLockedTrace(currentCable.toPort, currentCable.toNode, currentCable.id);
     }
   };
 

@@ -10,12 +10,14 @@ export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
   const activeTrace = useSimulationStore((s) => s.activeTrace);
   const setLockedTrace = useSimulationStore((s) => s.setLockedTrace);
 
-  const hasDsnakeCable = cables.some(
+  const dsnakeCable = cables.find(
     (c) =>
       (c.fromPort === 'ar-dsnake' && c.toPort === 'sq-slink') ||
       (c.toPort === 'ar-dsnake' && c.fromPort === 'sq-slink')
   );
-  const hasUsbCable = cables.some((c) => c.fromPort === 'sq-usb-b' || c.toPort === 'sq-usb-b');
+  const hasDsnakeCable = !!dsnakeCable;
+  const usbCable = cables.find((c) => c.fromPort === 'sq-usb-b' || c.toPort === 'sq-usb-b');
+  const hasUsbCable = !!usbCable;
 
   const isNodeTraced =
     activeTrace?.nodeId === 'console-sq5' ||
@@ -103,7 +105,7 @@ export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
                     key={socketId}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (connectedCable) setLockedTrace(socketId, 'console-sq5');
+                      if (connectedCable) setLockedTrace(socketId, 'console-sq5', connectedCable.id);
                     }}
                     className={`flex flex-col items-center group relative ${
                       connectedCable ? 'cursor-pointer' : ''
@@ -182,7 +184,7 @@ export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
                     key={socketId}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (connectedCable) setLockedTrace(socketId, 'console-sq5');
+                      if (connectedCable) setLockedTrace(socketId, 'console-sq5', connectedCable.id);
                     }}
                     className={`flex flex-col items-center group relative ${
                       connectedCable ? 'cursor-pointer' : ''
@@ -247,7 +249,7 @@ export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
           <div
             onClick={(e) => {
               e.stopPropagation();
-              if (hasDsnakeCable) setLockedTrace('sq-slink', 'console-sq5');
+              if (dsnakeCable) setLockedTrace('sq-slink', 'console-sq5', dsnakeCable.id);
             }}
             className={`bg-[#0c0c0e] p-2 rounded-lg border transition-all ${
               activeTrace?.socketId === 'sq-slink'
@@ -292,7 +294,7 @@ export const SQ5RearNode: React.FC<NodeProps> = memo(({ selected }) => {
           <div
             onClick={(e) => {
               e.stopPropagation();
-              if (hasUsbCable) setLockedTrace('sq-usb-b', 'console-sq5');
+              if (usbCable) setLockedTrace('sq-usb-b', 'console-sq5', usbCable.id);
             }}
             className={`bg-[#0c0c0e] p-2 rounded-lg border transition-all ${
               activeTrace?.socketId === 'sq-usb-b'

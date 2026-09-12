@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useSimulationStore } from '../../../store/simulationStore';
 import { useReactFlow } from '@xyflow/react';
+import { SignalType } from '@foh-sim/simulation-core';
 import {
   ArrowDown,
   Trash2,
@@ -13,6 +14,7 @@ export const CableTraceBadge: React.FC = () => {
   const clearTrace = useSimulationStore((s) => s.clearTrace);
   const setSelectedNodeId = useSimulationStore((s) => s.setSelectedNodeId);
   const removeCable = useSimulationStore((s) => s.removeCable);
+  const updateCableSignalType = useSimulationStore((s) => s.updateCableSignalType);
   const sim = useSimulationStore((s) => s.sim);
   const signalPresence = useSimulationStore((s) => s.signalPresence);
 
@@ -200,18 +202,39 @@ export const CableTraceBadge: React.FC = () => {
             </div>
           </div>
 
-          {/* Wire Flow Indicator */}
-          <div className="flex items-center justify-between py-1 px-2 bg-white/[0.03] rounded border border-white/[0.06]">
-            <div className="flex items-center space-x-2 text-[10px]">
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: cableColor }}
-              />
-              <span className="text-neutral-300 uppercase tracking-wider text-[9px]">
-                {cable.signalType || 'standard'} wire
-              </span>
+          {/* Wire Flow Indicator & Signal Type Selector */}
+          <div className="py-1.5 px-2 bg-white/[0.03] rounded border border-white/[0.06] space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-[10px]">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                  style={{ backgroundColor: cableColor }}
+                />
+                <span className="text-neutral-300 uppercase tracking-wider text-[9px] font-semibold">
+                  {cable.signalType || 'standard'} wire
+                </span>
+              </div>
+              <ArrowDown className="w-3.5 h-3.5 text-neutral-400" />
             </div>
-            <ArrowDown className="w-3.5 h-3.5 text-neutral-400" />
+
+            <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
+              <span className="text-[9px] text-neutral-400">Change Wire:</span>
+              <select
+                value={cable.signalType}
+                onChange={(e) => updateCableSignalType(cable.id, e.target.value as SignalType)}
+                className="bg-neutral-900 border border-white/20 rounded px-1.5 py-0.5 text-[9px] text-neutral-200 font-mono focus:outline-none cursor-pointer"
+              >
+                <option value="mic">Mic (Analog)</option>
+                <option value="instrument">Instrument (1/4" TRS)</option>
+                <option value="speaker">Speaker</option>
+                <option value="iem">IEM</option>
+                <option value="click">Click</option>
+                <option value="comms">Comms</option>
+                <option value="usb">USB Digital</option>
+                <option value="video">Video (HDMI)</option>
+                <option value="dsnake">dSNAKE Cat5e</option>
+              </select>
+            </div>
           </div>
 
           {/* Destination Box */}

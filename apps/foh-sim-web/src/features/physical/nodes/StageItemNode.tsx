@@ -19,6 +19,7 @@ import {
 
 export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) => {
   const setSelectedNodeId = useSimulationStore((s) => s.setSelectedNodeId);
+  const clearTrace = useSimulationStore((s) => s.clearTrace);
   const removeStageItem = useSimulationStore((s) => s.removeStageItem);
   const activeTrace = useSimulationStore((s) => s.activeTrace);
   const setLockedTrace = useSimulationStore((s) => s.setLockedTrace);
@@ -109,12 +110,22 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
   const customInputs = stageItem.customPorts?.filter((p) => p.direction === 'in') || [];
   const customOutputs = stageItem.customPorts?.filter((p) => p.direction === 'out' || p.direction === 'thru') || [];
 
+  const handleSocketClick = (e: React.MouseEvent, portId: string) => {
+    const connectedCable = cables.find(
+      (c) => (c.fromNode === id && c.fromPort === portId) || (c.toNode === id && c.toPort === portId)
+    );
+    if (connectedCable) {
+      e.stopPropagation();
+      setSelectedNodeId(null);
+      setLockedTrace(portId, id, connectedCable.id);
+    }
+  };
+
   return (
     <div
       onClick={() => {
         setSelectedNodeId(id);
-        const nodeCable = cables.find((c) => c.fromNode === id || c.toNode === id);
-        if (nodeCable) setLockedTrace(null, id);
+        clearTrace();
       }}
       className={`min-w-[175px] max-w-[225px] bg-[#161619] border rounded-xl shadow-[0_8px_24px_-4px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.18)] p-2.5 text-neutral-100 font-sans cursor-pointer transition-all ${getBorderColor()}`}
     >
@@ -148,7 +159,11 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
         {isCustom ? (
           <div className="flex flex-col space-y-1">
             {customInputs.map((port) => (
-              <div key={port.id} className="flex items-center space-x-1">
+              <div
+                key={port.id}
+                onClick={(e) => handleSocketClick(e, port.id)}
+                className={`flex items-center space-x-1 ${isPortConnected(port.id) ? 'cursor-pointer' : ''}`}
+              >
                 <Handle
                   type="target"
                   position={Position.Left}
@@ -161,7 +176,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
           </div>
         ) : isWavesPC ? (
           <div className="flex flex-col space-y-1">
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'usb-1')}
+              className={`flex items-center space-x-1 ${isPortConnected('usb-1') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -173,7 +191,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
           </div>
         ) : isBehringerInterface ? (
           <div className="flex flex-col space-y-1">
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'in-1')}
+              className={`flex items-center space-x-1 ${isPortConnected('in-1') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -182,7 +203,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               />
               <span className="text-[9px] text-sky-300 font-mono">IN 1 (L)</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'in-2')}
+              className={`flex items-center space-x-1 ${isPortConnected('in-2') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -194,7 +218,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
           </div>
         ) : isStreamPC ? (
           <div className="flex flex-col space-y-1">
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'usb-in')}
+              className={`flex items-center space-x-1 ${isPortConnected('usb-in') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -203,7 +230,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               />
               <span className="text-[9px] text-amber-300 font-mono">USB AUD</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'usb-cam')}
+              className={`flex items-center space-x-1 ${isPortConnected('usb-cam') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -215,7 +245,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
           </div>
         ) : isOseeSwitcher ? (
           <div className="flex flex-col space-y-1">
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'in-1')}
+              className={`flex items-center space-x-1 ${isPortConnected('in-1') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -224,7 +257,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               />
               <span className="text-[9px] text-sky-300 font-mono">AUD L (7)</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'in-2')}
+              className={`flex items-center space-x-1 ${isPortConnected('in-2') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -233,7 +269,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               />
               <span className="text-[9px] text-sky-300 font-mono">AUD R (8)</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'hdmi-in-1')}
+              className={`flex items-center space-x-1 ${isPortConnected('hdmi-in-1') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -242,7 +281,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               />
               <span className="text-[9px] text-indigo-300 font-mono">CAM 1</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'hdmi-in-2')}
+              className={`flex items-center space-x-1 ${isPortConnected('hdmi-in-2') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -254,7 +296,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
           </div>
         ) : isStreamMonitor ? (
           <div className="flex flex-col space-y-1">
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'in-1')}
+              className={`flex items-center space-x-1 ${isPortConnected('in-1') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -263,7 +308,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               />
               <span className="text-[9px] text-teal-300 font-mono">MON L (9)</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'in-2')}
+              className={`flex items-center space-x-1 ${isPortConnected('in-2') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -272,7 +320,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               />
               <span className="text-[9px] text-teal-300 font-mono">MON R (10)</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'hdmi-in')}
+              className={`flex items-center space-x-1 ${isPortConnected('hdmi-in') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -285,7 +336,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
         ) : isWirelessDualRx ? (
           // Dual Wireless Receiver RF Inputs
           <div className="flex flex-col space-y-1">
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'in-1')}
+              className={`flex items-center space-x-1 ${isPortConnected('in-1') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -294,7 +348,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               />
               <span className="text-[9px] text-purple-300">RF A</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'in-2')}
+              className={`flex items-center space-x-1 ${isPortConnected('in-2') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -306,7 +363,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
           </div>
         ) : (isDI || isSpeaker || isIEM) ? (
           <div className="flex flex-col space-y-1">
-            <div className="flex items-center space-x-1">
+            <div
+              onClick={(e) => handleSocketClick(e, 'in-1')}
+              className={`flex items-center space-x-1 ${isPortConnected('in-1') ? 'cursor-pointer' : ''}`}
+            >
               <Handle
                 type="target"
                 position={Position.Left}
@@ -316,7 +376,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               <span className="text-[9px] text-amber-300">{isStereo ? 'IN L' : 'IN'}</span>
             </div>
             {isStereo && isDI && (
-              <div className="flex items-center space-x-1">
+              <div
+                onClick={(e) => handleSocketClick(e, 'in-2')}
+                className={`flex items-center space-x-1 ${isPortConnected('in-2') ? 'cursor-pointer' : ''}`}
+              >
                 <Handle
                   type="target"
                   position={Position.Left}
@@ -336,7 +399,11 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
           {isCustom ? (
             <div className="flex flex-col space-y-1 items-end">
               {customOutputs.map((port) => (
-                <div key={port.id} className="flex items-center space-x-1">
+                <div
+                  key={port.id}
+                  onClick={(e) => handleSocketClick(e, port.id)}
+                  className={`flex items-center space-x-1 ${isPortConnected(port.id) ? 'cursor-pointer' : ''}`}
+                >
                   <span className="text-[8px] text-slate-300">{port.label || port.id}</span>
                   <Handle
                     type="source"
@@ -355,7 +422,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
             </div>
           ) : isBehringerInterface ? (
             <div className="flex flex-col space-y-1 items-end">
-              <div className="flex items-center space-x-1">
+              <div
+                onClick={(e) => handleSocketClick(e, 'usb-out')}
+                className={`flex items-center space-x-1 ${isPortConnected('usb-out') ? 'cursor-pointer' : ''}`}
+              >
                 <span className="text-[9px] text-amber-300 font-mono">USB OUT</span>
                 <Handle
                   type="source"
@@ -367,7 +437,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
             </div>
           ) : isStreamPC ? (
             <div className="flex flex-col space-y-1 items-end">
-              <div className="flex items-center space-x-1">
+              <div
+                onClick={(e) => handleSocketClick(e, 'hdmi-out')}
+                className={`flex items-center space-x-1 ${isPortConnected('hdmi-out') ? 'cursor-pointer' : ''}`}
+              >
                 <span className="text-[9px] text-indigo-300 font-mono">HDMI OUT</span>
                 <Handle
                   type="source"
@@ -379,7 +452,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
             </div>
           ) : isOseeSwitcher ? (
             <div className="flex flex-col space-y-1 items-end">
-              <div className="flex items-center space-x-1">
+              <div
+                onClick={(e) => handleSocketClick(e, 'pgm-out')}
+                className={`flex items-center space-x-1 ${isPortConnected('pgm-out') ? 'cursor-pointer' : ''}`}
+              >
                 <span className="text-[9px] text-indigo-300 font-mono">PGM HDMI</span>
                 <Handle
                   type="source"
@@ -388,7 +464,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
                   className={getHandleClass('hdmi', 'pgm-out')}
                 />
               </div>
-              <div className="flex items-center space-x-1">
+              <div
+                onClick={(e) => handleSocketClick(e, 'usb-out')}
+                className={`flex items-center space-x-1 ${isPortConnected('usb-out') ? 'cursor-pointer' : ''}`}
+              >
                 <span className="text-[9px] text-amber-300 font-mono">UVC USB</span>
                 <Handle
                   type="source"
@@ -408,7 +487,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
             <>
               {/* DI Thru Jack */}
               {isDI && (
-                <div className="flex items-center space-x-1">
+                <div
+                  onClick={(e) => handleSocketClick(e, 'thru-1')}
+                  className={`flex items-center space-x-1 ${isPortConnected('thru-1') ? 'cursor-pointer' : ''}`}
+                >
                   <span className="text-[9px] text-slate-400">THRU</span>
                   <Handle
                     type="source"
@@ -421,7 +503,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
 
               {/* Speaker Thru / Daisy Chain Jack */}
               {isSpeaker && (
-                <div className="flex items-center space-x-1">
+                <div
+                  onClick={(e) => handleSocketClick(e, 'thru-1')}
+                  className={`flex items-center space-x-1 ${isPortConnected('thru-1') ? 'cursor-pointer' : ''}`}
+                >
                   <span className="text-[9px] text-teal-300">THRU</span>
                   <Handle
                     type="source"
@@ -435,7 +520,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               {/* Audio Outputs */}
               {!isSpeaker && !isIEM && (
                 <div className="flex flex-col space-y-1 items-end">
-                  <div className="flex items-center space-x-1">
+                  <div
+                    onClick={(e) => handleSocketClick(e, 'out-1')}
+                    className={`flex items-center space-x-1 ${isPortConnected('out-1') ? 'cursor-pointer' : ''}`}
+                  >
                     <span className="text-[9px] text-sky-400">
                       {isWirelessDualRx ? 'CH A' : isStereo ? 'OUT L' : 'OUT'}
                     </span>
@@ -447,7 +535,10 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
                     />
                   </div>
                   {isStereo && (
-                    <div className="flex items-center space-x-1">
+                    <div
+                      onClick={(e) => handleSocketClick(e, 'out-2')}
+                      className={`flex items-center space-x-1 ${isPortConnected('out-2') ? 'cursor-pointer' : ''}`}
+                    >
                       <span className="text-[9px] text-sky-400">
                         {isWirelessDualRx ? 'CH B' : 'OUT R'}
                       </span>
