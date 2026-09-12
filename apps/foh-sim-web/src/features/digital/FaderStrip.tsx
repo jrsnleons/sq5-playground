@@ -16,6 +16,7 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
     setChannelFader,
     toggleChannelMute,
     toggleChannelPAFL,
+    toggleChannelMainLR,
     setChannelSend,
     toggleSendPreFade
   } = useSimulationStore();
@@ -33,6 +34,7 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
   };
 
   const faderVal = isSendsOnFaders ? currentSend.levelDb : channel.faderLevel;
+  const isOn = isSendsOnFaders ? currentSend.assigned : channel.mainLRAssigned;
 
   // Check if muted via DCA bitmask
   let isDcaMuted = false;
@@ -94,14 +96,18 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
     }
   };
 
-  const handleMuteOrAssignClick = () => {
+  const handleToggleOn = () => {
     if (isGuest) return;
     if (isSendsOnFaders) {
-      // Toggle assignment in this mix
       setChannelSend(channel.id, activeMixId, currentSend.levelDb, !currentSend.assigned);
     } else {
-      toggleChannelMute(channel.id);
+      toggleChannelMainLR(channel.id);
     }
+  };
+
+  const handleMuteClick = () => {
+    if (isGuest) return;
+    toggleChannelMute(channel.id);
   };
 
   return (
@@ -201,31 +207,58 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
         {faderVal <= -85 ? '-∞' : `${faderVal > 0 ? '+' : ''}${faderVal.toFixed(1)} dB`}
       </div>
 
-      {/* Mute / Mix Assignment Button */}
+      {/* Action Buttons: ON, MUTE & Scribble Strip */}
       <div className="space-y-1">
+        {/* ON Button (Assign to Main LR or active Mix) */}
         <button
-          onClick={handleMuteOrAssignClick}
+          onClick={handleToggleOn}
           disabled={isGuest}
-          aria-label={isSendsOnFaders ? `Toggle Mix Assignment for ${channel.name}` : `Mute ${channel.name}`}
-          className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-colors ${
-            isGuest ? 'cursor-not-allowed opacity-60' : ''
-          } ${
+          aria-pressed={isOn}
+          aria-label={
+            isSendsOnFaders
+              ? `Toggle Mix Assignment for ${channel.name}`
+              : `Toggle Main LR Assignment for ${channel.name}`
+          }
+          title={
             isSendsOnFaders
               ? currentSend.assigned
+                ? 'Send assigned to mix (Click to turn off)'
+                : 'Send not assigned to mix (Click to turn on)'
+              : channel.mainLRAssigned
+              ? 'Outputting to Main LR (Click to turn off)'
+              : 'Not outputting to Main LR (Click to turn on)'
+          }
+          className={`w-full py-1 text-[10px] font-bold font-mono rounded transition-colors ${
+            isGuest ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+          } ${
+            isOn
+              ? isSendsOnFaders
                 ? 'bg-amber-400 text-black font-semibold'
-                : 'bg-zinc-900 text-zinc-500 border border-white/[0.06]'
-              : channel.mute
+                : 'bg-emerald-500 text-black font-semibold'
+              : 'bg-zinc-900 text-zinc-500 border border-white/[0.06] hover:bg-zinc-800 hover:text-zinc-300'
+          }`}
+        >
+          {isOn ? 'ON' : 'OFF'}
+        </button>
+
+        {/* MUTE Button */}
+        <button
+          onClick={handleMuteClick}
+          disabled={isGuest}
+          aria-label={`Mute ${channel.name}`}
+          className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-colors ${
+            isGuest ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+          } ${
+            channel.mute
               ? 'bg-red-600 text-white font-semibold'
               : isDcaMuted
               ? 'bg-red-950/60 text-red-300 border border-red-800'
               : 'bg-zinc-900 text-zinc-300 border border-white/[0.06] hover:bg-zinc-800 hover:text-white'
           }`}
         >
-          {isSendsOnFaders
-            ? currentSend.assigned
-              ? 'ASSIGNED'
-              : 'OFF'
-            : isDcaMuted && !channel.mute
+          {channel.mute
+            ? 'MUTE'
+            : isDcaMuted
             ? 'DCA MUTE'
             : 'MUTE'}
         </button>

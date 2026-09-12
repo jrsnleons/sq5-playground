@@ -7,7 +7,6 @@ import { ProcessingScreen } from './screens/ProcessingScreen';
 import { MetersScreen } from './screens/MetersScreen';
 import { RoutingScreen } from './screens/RoutingScreen';
 import { FXScreen } from './screens/FXScreen';
-import { ScenesScreen } from './screens/ScenesScreen';
 import { MixerConfigScreen } from './screens/MixerConfigScreen';
 import { HelpScreen } from './screens/HelpScreen';
 import {
@@ -17,7 +16,6 @@ import {
   BarChart2,
   Share2,
   Sparkles,
-  Bookmark,
   Settings,
   HelpCircle,
   Volume2,
@@ -83,12 +81,6 @@ export const DigitalConsoleView: React.FC = () => {
       label: 'FX Racks',
       icon: Sparkles,
       description: '4 stereo studio FX processors (Reverbs, Delays, Chorus)'
-    },
-    {
-      id: 'scenes',
-      label: 'Scenes',
-      icon: Bookmark,
-      description: 'Console snapshot deck and church worship presets'
     },
     {
       id: 'setup',
@@ -182,7 +174,6 @@ export const DigitalConsoleView: React.FC = () => {
         {activeScreen === 'meters' && <MetersScreen />}
         {activeScreen === 'routing' && <RoutingScreen />}
         {activeScreen === 'fx' && <FXScreen />}
-        {activeScreen === 'scenes' && <ScenesScreen />}
         {activeScreen === 'setup' && <MixerConfigScreen />}
         {activeScreen === 'utility' && <HelpScreen />}
 
@@ -314,7 +305,7 @@ export const DigitalConsoleView: React.FC = () => {
                   <span>
                     <strong className="text-white">SENDS ON FADER:</strong> Mixing for{' '}
                     <span className="text-amber-300 font-semibold">{selectedMixObj?.name}</span>. Faders
-                    control send levels; MUTE toggles assignment.
+                    control send levels; ON toggles assignment.
                   </span>
                 </div>
                 <button

@@ -24,6 +24,7 @@ export interface UserProfile {
   displayName: string;
   role: UserRole;
   createdAt?: string;
+  photoUrl?: string;
 }
 
 export interface PracticeSimulation {

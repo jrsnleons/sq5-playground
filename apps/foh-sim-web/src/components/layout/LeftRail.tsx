@@ -5,6 +5,7 @@ import {
   Sliders,
   Package,
   Bookmark,
+  BookOpen,
   Settings
 } from 'lucide-react';
 
@@ -16,6 +17,7 @@ export const LeftRail: React.FC = () => {
     { id: 'console', label: 'Console', icon: Sliders, roles: ['guest', 'member', 'admin'] },
     { id: 'inventory', label: 'Inventory', icon: Package, roles: ['member', 'admin'] },
     { id: 'scenes', label: 'Scenes', icon: Bookmark, roles: ['guest', 'member', 'admin'] },
+    { id: 'docs', label: 'Docs', icon: BookOpen, roles: ['member', 'admin'] },
     { id: 'setup', label: 'Settings', icon: Settings, roles: ['member', 'admin'] }
   ] as const;
 

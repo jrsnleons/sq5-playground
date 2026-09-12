@@ -42,17 +42,32 @@ Serving on the church sound team can feel intimidating when learning on a live S
   - Live socket validation prevents unsafe connections (e.g., feeding phantom power into active line outs or looping monitor lines).
 
 - **Digital Console Surface (SQ-5 Workflow)**:
-  - 16+1 Fader strips with chromatic LED signal/peak meters, channel selects, mutes, and PAFL solo monitoring.
-  - Sends-on-Faders for 12 auxiliary mixes with per-channel Pre/Post toggles.
+  - 16+1 Fader strips with chromatic LED signal/peak meters, channel selects (SEL), and PAFL solo monitoring.
+  - Dedicated illuminated **ON** buttons on each channel strip and master strip:
+    - In **Main LR** mode, the ON button toggles whether the channel is outputting directly to the FOH PA stereo mix (`mainLRAssigned`).
+    - In **Sends-on-Faders** mode, the ON button toggles channel assignment to the selected monitor or group mix.
+  - Independent **MUTE** controls with DCA bitmask flashing and mute group integration.
+  - Sends-on-Faders for 12 auxiliary/group mixes with per-channel Pre/Post tap point toggles.
   - 4-band Parametric EQ (PEQ) with interactive filter curve editing.
   - 28-Band Graphic EQ (GEQ) fader flip mode for practicing monitor feedback elimination.
-  - DCA groups (1–8) with bitmask mute flashing and master trims.
+  - DCA groups (1 to 8) with bitmask mute flashing and master trims.
   - Safety alert system: Warns volunteers if click tracks or talkback mics are accidentally routed to the house speakers.
+
+- **Team, Account & Profile Management**:
+  - Profile photo uploads with client-side 256x256 image processing and two-letter name initials fallback (e.g. John Doe to "JD").
+  - Centralized **Account Settings** tab for updating display names, profile avatars, changing account passwords, and logging out.
+  - Minimalist, clutter-free **Account Sign In** modal dialog.
+  - **Admin Management** dashboard with searchable accounts table, registered timestamps, role switching (Member / Admin), and on-demand account creation modal.
+  - Master church rig preset management restricted to administrators.
 
 - **Interactive Training Challenges & Practice Missions**:
   - Pre-loaded practice scenarios for trainees (*Stage Patching 101*, *IEM Independence*, *GEQ Feedback Ringing*, *Drum DCA Grouping*).
   - Floating briefing card on canvas with live task checklists.
   - Admin Challenge Studio: Audio leads can configure custom console setups and author step-by-step challenges for trainees.
+
+- **Ministry Documentation & Course Hub**:
+  - Structured training modules and markdown documentation for onboarding new church sound volunteers.
+  - Built-in markdown course viewer and editor supporting syllabus organization and lesson authoring.
 
 - **Local-First Architecture + Optional Cloud Sync**:
   - 0ms audio and fader latency using local browser state (`localStorage` + `Zustand`).
@@ -95,11 +110,11 @@ npm install
 ```bash
 npm run dev
 ```
-Open **`http://localhost:5173`** in your browser. The training playground will launch immediately in local mode—no database or external services required.
+Open **`http://localhost:5173`** in your browser. The training playground will launch immediately in local mode (no database or external services required).
 
 ### 4. Run Automated Tests & Type Checks
 ```bash
-npm run test:run     # Runs all 28 Vitest unit & integration tests
+npm run test:run     # Runs all 33 Vitest unit & integration tests
 npm run typecheck    # Verifies TypeScript safety across all workspaces
 ```
 

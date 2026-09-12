@@ -62,12 +62,16 @@ const PhysicalCanvasContent: React.FC = () => {
         id: 'stagebox-ar2412',
         type: 'ar2412',
         position: stageBoxPosition,
+        initialWidth: 680,
+        initialHeight: 280,
         data: { label: 'AR2412 Stage Box' }
       },
       {
         id: 'console-sq5',
         type: 'sq5rear',
         position: consolePosition,
+        initialWidth: 700,
+        initialHeight: 320,
         data: { label: 'SQ-5 Console' }
       }
     ];
@@ -77,6 +81,8 @@ const PhysicalCanvasContent: React.FC = () => {
         id: item.id,
         type: 'stageItem',
         position: item.position,
+        initialWidth: 200,
+        initialHeight: 120,
         data: { item }
       });
     }
@@ -108,12 +114,16 @@ const PhysicalCanvasContent: React.FC = () => {
           id: 'stagebox-ar2412',
           type: 'ar2412',
           position: stageBoxPosition,
+          initialWidth: 680,
+          initialHeight: 280,
           data: { label: 'AR2412 Stage Box' }
         },
         {
           id: 'console-sq5',
           type: 'sq5rear',
           position: consolePosition,
+          initialWidth: 700,
+          initialHeight: 320,
           data: { label: 'SQ-5 Console' }
         }
       ];
@@ -124,6 +134,8 @@ const PhysicalCanvasContent: React.FC = () => {
           id: item.id,
           type: 'stageItem',
           position: existing?.position || item.position,
+          initialWidth: 200,
+          initialHeight: 120,
           data: { item }
         });
       }
@@ -301,7 +313,6 @@ const PhysicalCanvasContent: React.FC = () => {
         fitViewOptions={{ padding: 0.25 }}
         minZoom={0.2}
         maxZoom={2.5}
-        onlyRenderVisibleElements={true}
         elementsSelectable={true}
         selectionMode={SelectionMode.Partial}
         selectionKeyCode={!isGuest ? 'Shift' : undefined}
@@ -330,12 +341,17 @@ const PhysicalCanvasContent: React.FC = () => {
         <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="#333338" />
         <MiniMap
           nodeColor={(node) => {
-            if (node.type === 'ar2412') return '#ffffff';
-            if (node.type === 'sq5rear') return '#e5e5e5';
-            return '#a3a3a3';
+            if (node.type === 'ar2412') return '#38bdf8';
+            if (node.type === 'sq5rear') return '#c084fc';
+            return '#fbbf24';
           }}
-          maskColor="rgba(0, 0, 0, 0.85)"
-          className="!bottom-4 !right-4 !bg-[#141417] !border-white/[0.12]"
+          nodeStrokeColor="#ffffff"
+          nodeStrokeWidth={1.5}
+          nodeBorderRadius={3}
+          maskColor="rgba(0, 0, 0, 0.6)"
+          maskStrokeColor="rgba(255, 255, 255, 0.35)"
+          maskStrokeWidth={1}
+          className="!bottom-4 !right-4 !bg-[#141417] !border-white/[0.15] shadow-2xl rounded-lg overflow-hidden"
         />
       </ReactFlow>
 

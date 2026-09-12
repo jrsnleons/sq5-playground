@@ -8,6 +8,7 @@ create table if not exists public.profiles (
   email text not null,
   display_name text,
   role text not null default 'member' check (role in ('admin', 'member')),
+  avatar_url text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -293,4 +294,186 @@ create policy "Admins can delete equipment inventory"
       where profiles.id = auth.uid() and profiles.role = 'admin'
     )
   );
+
+-- ==============================================================================
+-- 8. Documentation System & Member Learning Tracker
+-- Courses -> Chapters -> Lessons hierarchy.
+-- Members can view. Only Admins can create/edit/delete.
+-- Member progress tracks completed lessons and where the member left off.
+-- ==============================================================================
+
+-- 8.1 Courses Table
+create table if not exists public.courses (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  order_index integer not null default 0,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.courses enable row level security;
+
+-- Authenticated members and admins can view courses
+create policy "Authenticated users can view courses"
+  on public.courses for select
+  using (auth.role() = 'authenticated');
+
+-- Only Admins can insert courses
+create policy "Admins can insert courses"
+  on public.courses for insert
+  with check (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+-- Only Admins can update courses
+create policy "Admins can update courses"
+  on public.courses for update
+  using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+-- Only Admins can delete courses
+create policy "Admins can delete courses"
+  on public.courses for delete
+  using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+-- 8.2 Chapters Table
+create table if not exists public.chapters (
+  id uuid primary key default gen_random_uuid(),
+  course_id uuid not null references public.courses(id) on delete cascade,
+  title text not null,
+  description text,
+  order_index integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_chapters_course_id on public.chapters(course_id);
+
+alter table public.chapters enable row level security;
+
+create policy "Authenticated users can view chapters"
+  on public.chapters for select
+  using (auth.role() = 'authenticated');
+
+create policy "Admins can insert chapters"
+  on public.chapters for insert
+  with check (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+create policy "Admins can update chapters"
+  on public.chapters for update
+  using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete chapters"
+  on public.chapters for delete
+  using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+-- 8.3 Lessons Table
+create table if not exists public.lessons (
+  id uuid primary key default gen_random_uuid(),
+  chapter_id uuid not null references public.chapters(id) on delete cascade,
+  title text not null,
+  content text not null default '',
+  order_index integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_lessons_chapter_id on public.lessons(chapter_id);
+
+alter table public.lessons enable row level security;
+
+create policy "Authenticated users can view lessons"
+  on public.lessons for select
+  using (auth.role() = 'authenticated');
+
+create policy "Admins can insert lessons"
+  on public.lessons for insert
+  with check (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+create policy "Admins can update lessons"
+  on public.lessons for update
+  using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete lessons"
+  on public.lessons for delete
+  using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+-- 8.4 Member Lesson Progress Table
+create table if not exists public.member_lesson_progress (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  course_id uuid not null references public.courses(id) on delete cascade,
+  lesson_id uuid not null references public.lessons(id) on delete cascade,
+  is_completed boolean not null default false,
+  last_viewed_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(user_id, lesson_id)
+);
+
+create index if not exists idx_member_progress_user on public.member_lesson_progress(user_id);
+create index if not exists idx_member_progress_course on public.member_lesson_progress(course_id);
+
+alter table public.member_lesson_progress enable row level security;
+
+create policy "Users can view their own progress"
+  on public.member_lesson_progress for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert their own progress"
+  on public.member_lesson_progress for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own progress"
+  on public.member_lesson_progress for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete their own progress"
+  on public.member_lesson_progress for delete
+  using (auth.uid() = user_id);
+
 

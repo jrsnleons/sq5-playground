@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSimulationStore } from '../../../store/simulationStore';
 import {
   Settings,
@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ShieldCheck,
   User,
-  UserPlus,
   Trash2,
   Lock,
   Mail,
@@ -15,12 +14,16 @@ import {
   RefreshCw,
   AlertCircle,
   Loader2,
-  ShieldAlert,
   ArrowRightLeft,
   RotateCcw,
   Church,
   Sparkles,
-  FolderOpen
+  FolderOpen,
+  Upload,
+  Plus,
+  LogOut,
+  X,
+  Search
 } from 'lucide-react';
 import { ConfirmDialogModal } from '../../../components/modals/ConfirmDialogModal';
 import { UserProfile } from '../../../services/supabase';
@@ -39,24 +42,36 @@ export const SetupScreen: React.FC = () => {
     adminCreateUser,
     adminUpdateUserRole,
     adminDeleteUser,
-    changePassword
+    changePassword,
+    settingsSubTab,
+    setSettingsSubTab,
+    updateUserProfile,
+    signOut
   } = useSimulationStore();
 
-  const [activeTab, setActiveTab] = useState<'admin' | 'presets' | 'account'>(
-    userRole === 'admin' ? 'admin' : 'presets'
-  );
+  const activeTab = settingsSubTab;
+  const setActiveTab = setSettingsSubTab;
 
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [resetNotice, setResetNotice] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Admin User Creation Form State
+  // Admin Search & Account Modal State
+  const [accountSearch, setAccountSearch] = useState('');
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'member'>('member');
   const [createLoading, setCreateLoading] = useState(false);
   const [createMessage, setCreateMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Account Profile Photo & Name State
+  const [nameInput, setNameInput] = useState(currentUser?.displayName || '');
+  const [nameUpdating, setNameUpdating] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [photoUpdating, setPhotoUpdating] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Password Change Form State
   const [passwordChangeNew, setPasswordChangeNew] = useState('');
@@ -74,16 +89,112 @@ export const SetupScreen: React.FC = () => {
     }
   }, [userRole, fetchTeamProfiles]);
 
+  useEffect(() => {
+    if (currentUser?.displayName) {
+      setNameInput(currentUser.displayName);
+    }
+  }, [currentUser?.displayName]);
+
   // Adjust active tab if role changes
   useEffect(() => {
     if (userRole !== 'admin' && activeTab === 'admin') {
-      setActiveTab('presets');
+      setActiveTab('account');
     }
-  }, [userRole, activeTab]);
+  }, [userRole, activeTab, setActiveTab]);
+
+  const getInitials = (name?: string, email?: string): string => {
+    const trimmed = (name || '').trim();
+    if (trimmed) {
+      const parts = trimmed.split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    return (email || 'U').charAt(0).toUpperCase();
+  };
+
+  const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setProfileMessage({ text: 'Please select an image file (JPG, PNG).', type: 'error' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileMessage({ text: 'Image file size must be less than 5MB.', type: 'error' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = async () => {
+        try {
+          setPhotoUpdating(true);
+          const canvas = document.createElement('canvas');
+          const size = 256;
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            const minDim = Math.min(img.width, img.height);
+            const sx = (img.width - minDim) / 2;
+            const sy = (img.height - minDim) / 2;
+            ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            await updateUserProfile({ photoUrl: dataUrl });
+            setProfileMessage({ text: 'Profile photo updated.', type: 'success' });
+            setTimeout(() => setProfileMessage(null), 3000);
+          }
+        } catch (err: any) {
+          setProfileMessage({ text: err.message || 'Failed to update photo.', type: 'error' });
+        } finally {
+          setPhotoUpdating(false);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = async () => {
+    setPhotoUpdating(true);
+    try {
+      await updateUserProfile({ photoUrl: null });
+      setProfileMessage({ text: 'Profile photo removed.', type: 'success' });
+      setTimeout(() => setProfileMessage(null), 3000);
+    } catch (err: any) {
+      setProfileMessage({ text: err.message || 'Failed to remove photo.', type: 'error' });
+    } finally {
+      setPhotoUpdating(false);
+    }
+  };
+
+  const handleSaveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = nameInput.trim();
+    if (!trimmed) {
+      setProfileMessage({ text: 'Name cannot be empty.', type: 'error' });
+      return;
+    }
+    setNameUpdating(true);
+    try {
+      await updateUserProfile({ displayName: trimmed });
+      setProfileMessage({ text: 'Name updated successfully.', type: 'success' });
+      setTimeout(() => setProfileMessage(null), 3000);
+    } catch (err: any) {
+      setProfileMessage({ text: err.message || 'Failed to update name.', type: 'error' });
+    } finally {
+      setNameUpdating(false);
+    }
+  };
 
   const handleSavePreset = () => {
     saveStageAsDefaultPreset();
-    setSaveNotice('Current stage layout, cables, custom items, and digital patch successfully saved as Default Preset!');
+    setSaveNotice('Current stage layout, cables, custom items, and digital patch saved as Default Preset.');
     setTimeout(() => setSaveNotice(null), 4000);
   };
 
@@ -100,85 +211,64 @@ export const SetupScreen: React.FC = () => {
     setTimeout(() => setResetNotice(null), 4000);
   };
 
-  // Handle Admin User Creation
   const handleAdminCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateMessage(null);
-
-    const trimmedEmail = newEmail.trim();
-    const trimmedName = newDisplayName.trim() || trimmedEmail.split('@')[0];
-
-    if (!trimmedEmail || !newPassword) {
-      setCreateMessage({ text: 'Please provide both an email address and initial password.', type: 'error' });
+    if (!newEmail || !newPassword || !newDisplayName) {
+      setCreateMessage({ text: 'Please fill in all required fields.', type: 'error' });
       return;
     }
     if (newPassword.length < 6) {
       setCreateMessage({ text: 'Password must be at least 6 characters.', type: 'error' });
       return;
     }
-
     setCreateLoading(true);
     try {
       await adminCreateUser({
-        email: trimmedEmail,
+        email: newEmail.trim(),
         password: newPassword,
-        displayName: trimmedName,
+        displayName: newDisplayName.trim(),
         role: newRole
       });
-
-      setCreateMessage({
-        text: `Successfully created ${newRole.toUpperCase()} account for ${trimmedName} (${trimmedEmail}).`,
-        type: 'success'
-      });
+      setCreateMessage({ text: `Account created for ${newDisplayName.trim()}.`, type: 'success' });
       setNewEmail('');
       setNewPassword('');
       setNewDisplayName('');
       setNewRole('member');
+      setTimeout(() => {
+        setShowAddAccountModal(false);
+        setCreateMessage(null);
+      }, 1500);
     } catch (err: any) {
-      setCreateMessage({
-        text: err.message || 'Failed to create user account.',
-        type: 'error'
-      });
+      setCreateMessage({ text: err.message || 'Failed to create user account.', type: 'error' });
     } finally {
       setCreateLoading(false);
     }
   };
 
-  // Handle Password Change
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordChangeMessage(null);
-
-    if (!passwordChangeNew || !passwordChangeConfirm) {
-      setPasswordChangeMessage({ text: 'Please fill in both password fields.', type: 'error' });
-      return;
-    }
     if (passwordChangeNew.length < 6) {
       setPasswordChangeMessage({ text: 'Password must be at least 6 characters.', type: 'error' });
       return;
     }
     if (passwordChangeNew !== passwordChangeConfirm) {
-      setPasswordChangeMessage({ text: 'Passwords do not match. Please re-enter.', type: 'error' });
+      setPasswordChangeMessage({ text: 'Passwords do not match.', type: 'error' });
       return;
     }
-
     setPasswordChangeLoading(true);
     try {
       await changePassword(passwordChangeNew);
-      setPasswordChangeMessage({ text: 'Your password has been updated successfully!', type: 'success' });
+      setPasswordChangeMessage({ text: 'Password updated successfully.', type: 'success' });
       setPasswordChangeNew('');
       setPasswordChangeConfirm('');
     } catch (err: any) {
-      setPasswordChangeMessage({
-        text: err.message || 'Failed to update password. Please try again.',
-        type: 'error'
-      });
+      setPasswordChangeMessage({ text: err.message || 'Failed to update password.', type: 'error' });
     } finally {
       setPasswordChangeLoading(false);
     }
   };
-
-  // Handle Role Toggle
   const handleToggleRole = async (user: UserProfile) => {
     if (user.id === currentUser?.id) return;
     const nextRole = user.role === 'admin' ? 'member' : 'admin';
@@ -240,7 +330,7 @@ export const SetupScreen: React.FC = () => {
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              ADMIN &amp; TEAM
+              ADMIN
             </button>
           )}
 
@@ -263,7 +353,7 @@ export const SetupScreen: React.FC = () => {
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
-            ACCOUNT &amp; SECURITY
+            ACCOUNT SETTINGS
           </button>
         </div>
       </div>
@@ -279,322 +369,324 @@ export const SetupScreen: React.FC = () => {
       {/* Main Content Viewport */}
       <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-neutral-800">
         {/* ==================================================================== */}
-        {/* 1. ADMIN DASHBOARD & USER MANAGEMENT TAB                              */}
+        {/* 1. ADMIN MANAGEMENT TAB                                             */}
         {/* ==================================================================== */}
         {activeTab === 'admin' && userRole === 'admin' && (
-          <div className="space-y-6 max-w-5xl mx-auto font-mono text-xs">
-            {/* Admin Header Card */}
-            <div className="p-5 bg-[#0A0A0A] rounded-xl border border-white/[0.08] flex items-center justify-between shadow-sm">
-              <div className="flex items-center space-x-3">
-                <div className="w-9 h-9 rounded-lg bg-neutral-900 border border-white/[0.08] flex items-center justify-center text-neutral-300">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
-                    Admin Dashboard &amp; Team Management
-                  </h3>
-                  <p className="text-xs text-neutral-400 mt-0.5">
-                    Create volunteer team logins with emails &amp; passwords, assign administrative privileges, and manage presets.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => fetchTeamProfiles()}
-                disabled={teamProfilesLoading}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs transition-colors border border-white/[0.08]"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${teamProfilesLoading ? 'animate-spin' : ''}`} />
-                <span>Refresh Accounts</span>
-              </button>
+          <div className="space-y-4 max-w-5xl mx-auto font-mono text-xs">
+            {/* Header: Admin Management only (no subtext) */}
+            <div className="flex items-center justify-between pb-1">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
+                Admin Management
+              </h3>
             </div>
 
-            {/* Form: Add New Account with Email & Password */}
-            <div className="p-5 bg-[#0A0A0A] rounded-xl border border-white/[0.08] space-y-4 shadow-sm">
-              <div className="flex items-center space-x-2 border-b border-white/[0.08] pb-3">
-                <UserPlus className="w-4 h-4 text-neutral-400" />
-                <span className="font-semibold text-white text-xs uppercase tracking-wide">
-                  Add Team Account (Email &amp; Password)
-                </span>
-              </div>
-
-              {createMessage && (
-                <div
-                  className={`p-3 rounded-lg border text-xs flex items-center space-x-2 ${
-                    createMessage.type === 'success'
-                      ? 'bg-emerald-950/40 border-emerald-900/50 text-emerald-200'
-                      : 'bg-rose-950/40 border-rose-900/50 text-rose-200'
-                  }`}
-                >
-                  {createMessage.type === 'success' ? (
-                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                  )}
-                  <span>{createMessage.text}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleAdminCreateUser} className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-neutral-400 mb-1">
-                      Full Name / Church Team Role
-                    </label>
-                    <div className="relative">
-                      <UserCheck className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
-                      <input
-                        type="text"
-                        required
-                        value={newDisplayName}
-                        onChange={(e) => setNewDisplayName(e.target.value)}
-                        placeholder="e.g. David Miller (Sound Tech)"
-                        className="w-full bg-black border border-white/[0.08] rounded-md pl-9 pr-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] text-neutral-400 mb-1">
-                      Account Permission Level
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setNewRole('member')}
-                        className={`py-2 px-3 rounded-md border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
-                          newRole === 'member'
-                            ? 'bg-neutral-800 border-white/30 text-white shadow-sm'
-                            : 'bg-black border-white/[0.08] text-neutral-400 hover:border-white/20'
-                        }`}
-                      >
-                        <User className="w-3.5 h-3.5 text-neutral-400" />
-                        <span>Team Member</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setNewRole('admin')}
-                        className={`py-2 px-3 rounded-md border text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 ${
-                          newRole === 'admin'
-                            ? 'bg-neutral-800 border-white/30 text-white shadow-sm'
-                            : 'bg-black border-white/[0.08] text-neutral-400 hover:border-white/20'
-                        }`}
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5 text-neutral-400" />
-                        <span>Administrator</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-neutral-400 mb-1">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
-                      <input
-                        type="email"
-                        required
-                        value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value)}
-                        placeholder="volunteer@church.org"
-                        className="w-full bg-black border border-white/[0.08] rounded-md pl-9 pr-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] text-neutral-400 mb-1">
-                      Initial Password (min. 6 characters)
-                    </label>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
-                      <input
-                        type="password"
-                        required
-                        minLength={6}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full bg-black border border-white/[0.08] rounded-md pl-9 pr-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-1">
-                  <button
-                    type="submit"
-                    disabled={createLoading}
-                    className="px-4 py-2 rounded-md bg-white hover:bg-neutral-200 text-black font-semibold transition-all flex items-center space-x-2 disabled:opacity-50 cursor-pointer"
-                  >
-                    {createLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Creating User...</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4" />
-                        <span>Create &amp; Provision Account</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-            {/* Table: Registered Team Accounts */}
-            <div className="p-5 bg-[#0A0A0A] rounded-xl border border-white/[0.08] space-y-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+            {/* Accounts Table Card */}
+            <div className="bg-[#0A0A0A] rounded-xl border border-white/[0.08] overflow-hidden shadow-sm">
+              <div className="p-4 border-b border-white/[0.08] flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center space-x-2">
-                  <User className="w-4 h-4 text-neutral-400" />
                   <span className="font-semibold text-white text-xs uppercase tracking-wide">
-                    Registered Team Accounts ({teamProfiles.length})
+                    Accounts
+                  </span>
+                  <span className="text-[10px] text-neutral-400 font-mono px-2 py-0.5 rounded bg-white/[0.05] border border-white/[0.08]">
+                    {teamProfiles.length}
                   </span>
                 </div>
-                <span className="text-[10px] text-neutral-500">
-                  Backed by Supabase PostgreSQL `profiles`
-                </span>
+
+                <div className="flex items-center space-x-2">
+                  {/* Search Filter */}
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-2.5 top-2" />
+                    <input
+                      type="text"
+                      value={accountSearch}
+                      onChange={(e) => setAccountSearch(e.target.value)}
+                      placeholder="Filter accounts..."
+                      className="bg-black border border-white/[0.08] focus:border-white/30 rounded-md pl-8 pr-2.5 py-1 text-xs text-white placeholder:text-neutral-600 focus:outline-none w-44 font-sans"
+                    />
+                  </div>
+
+                  {/* Refresh Button: Icon-only */}
+                  <button
+                    onClick={() => fetchTeamProfiles()}
+                    disabled={teamProfilesLoading}
+                    title="Refresh accounts"
+                    aria-label="Refresh accounts"
+                    className="p-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/[0.08] transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${teamProfilesLoading ? 'animate-spin' : ''}`} />
+                  </button>
+
+                  {/* Add Account Modal Trigger */}
+                  <button
+                    onClick={() => {
+                      setCreateMessage(null);
+                      setShowAddAccountModal(true);
+                    }}
+                    className="px-3 py-1.5 rounded-md bg-white hover:bg-neutral-200 text-black font-semibold text-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Account</span>
+                  </button>
+                </div>
               </div>
 
-              {teamProfiles.length === 0 ? (
-                <div className="p-6 text-center text-neutral-500 text-xs">
-                  No accounts registered yet. Use the form above to add your sound volunteers.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-white/[0.08] text-[10px] text-neutral-400 uppercase">
-                        <th className="py-2 px-3 font-semibold">Team Member</th>
-                        <th className="py-2 px-3 font-semibold">Email</th>
-                        <th className="py-2 px-3 font-semibold">Role</th>
-                        <th className="py-2 px-3 font-semibold">Registered</th>
-                        <th className="py-2 px-3 text-right font-semibold">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/[0.04]">
-                      {teamProfiles.map((user) => {
-                        const isSelf = user.id === currentUser?.id;
-                        return (
-                          <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
-                            <td className="py-3 px-3">
-                              <div className="flex items-center space-x-2.5">
-                                <div className="p-1.5 rounded-md bg-neutral-900 border border-white/[0.08] shrink-0">
-                                  {user.role === 'admin' ? (
-                                    <ShieldCheck className="w-3.5 h-3.5 text-neutral-300" />
-                                  ) : (
-                                    <User className="w-3.5 h-3.5 text-neutral-400" />
-                                  )}
+              {/* Table */}
+              {(() => {
+                const filtered = teamProfiles.filter((user) => {
+                  if (!accountSearch.trim()) return true;
+                  const q = accountSearch.toLowerCase();
+                  return (
+                    user.displayName?.toLowerCase().includes(q) ||
+                    user.email?.toLowerCase().includes(q) ||
+                    user.role?.toLowerCase().includes(q)
+                  );
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="p-8 text-center text-neutral-500 text-xs">
+                      {accountSearch ? 'No accounts match your filter.' : 'No accounts registered yet.'}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-white/[0.08] text-[10px] text-neutral-400 uppercase bg-black/40">
+                          <th className="py-2.5 px-4 font-semibold">User</th>
+                          <th className="py-2.5 px-4 font-semibold">Email</th>
+                          <th className="py-2.5 px-4 font-semibold">Role</th>
+                          <th className="py-2.5 px-4 font-semibold">Registered</th>
+                          <th className="py-2.5 px-4 text-right font-semibold">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/[0.04]">
+                        {filtered.map((user) => {
+                          const isSelf = user.id === currentUser?.id;
+                          return (
+                            <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="flex items-center space-x-2.5">
+                                  <div className="w-7 h-7 rounded-full bg-neutral-900 border border-white/[0.1] flex items-center justify-center overflow-hidden shrink-0 text-[10px] font-bold text-white">
+                                    {user.photoUrl ? (
+                                      <img
+                                        src={user.photoUrl}
+                                        alt={user.displayName}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <span>{getInitials(user.displayName, user.email)}</span>
+                                    )}
+                                  </div>
+                                  <span className="font-semibold text-white text-xs">
+                                    {user.displayName}
+                                    {isSelf && (
+                                      <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-normal">
+                                        YOU
+                                      </span>
+                                    )}
+                                  </span>
                                 </div>
-                                <span className="font-semibold text-white text-xs">
-                                  {user.displayName}
-                                  {isSelf && (
-                                    <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 font-normal">
-                                      YOU
-                                    </span>
-                                  )}
+                              </td>
+                              <td className="py-3 px-4 text-neutral-300 font-mono text-[11px]">{user.email}</td>
+                              <td className="py-3 px-4">
+                                <span
+                                  className={`text-[9px] uppercase px-2 py-0.5 rounded font-semibold border ${
+                                    user.role === 'admin'
+                                      ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                                      : 'bg-neutral-900 text-neutral-300 border-white/[0.08]'
+                                  }`}
+                                >
+                                  {user.role === 'admin' ? 'Administrator' : 'Team Member'}
                                 </span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-3 text-neutral-300">{user.email}</td>
-                            <td className="py-3 px-3">
-                              <span className="text-[9px] uppercase px-2 py-0.5 rounded font-semibold border bg-neutral-900 text-neutral-300 border-white/[0.08]">
-                                {user.role === 'admin' ? 'Administrator' : 'Team Member'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3 text-neutral-400 text-[10px]">
-                              {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Active'}
-                            </td>
-                            <td className="py-3 px-3 text-right">
-                              <div className="flex items-center justify-end space-x-2">
-                                <button
-                                  type="button"
-                                  disabled={isSelf || actionLoading}
-                                  onClick={() => handleToggleRole(user)}
-                                  title={isSelf ? 'Cannot modify your own role' : `Switch to ${user.role === 'admin' ? 'Member' : 'Admin'}`}
-                                  className={`px-2.5 py-1 rounded-md text-[10px] font-medium border transition-colors flex items-center space-x-1 ${
-                                    isSelf
-                                      ? 'opacity-30 cursor-not-allowed bg-neutral-900 border-white/[0.08] text-neutral-500'
-                                      : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border-white/[0.08]'
-                                  }`}
-                                >
-                                  <ArrowRightLeft className="w-3 h-3" />
-                                  <span>{user.role === 'admin' ? 'Make Member' : 'Make Admin'}</span>
-                                </button>
+                              </td>
+                              <td className="py-3 px-4 text-neutral-400 text-[10px]">
+                                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Active'}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex items-center justify-end space-x-2">
+                                  <button
+                                    type="button"
+                                    disabled={isSelf || actionLoading}
+                                    onClick={() => handleToggleRole(user)}
+                                    title={isSelf ? 'Cannot modify your own role' : `Switch to ${user.role === 'admin' ? 'Member' : 'Admin'}`}
+                                    className={`px-2.5 py-1 rounded-md text-[10px] font-medium border transition-colors flex items-center space-x-1 ${
+                                      isSelf
+                                        ? 'opacity-30 cursor-not-allowed bg-neutral-900 border-white/[0.08] text-neutral-500'
+                                        : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border-white/[0.08] cursor-pointer'
+                                    }`}
+                                  >
+                                    <ArrowRightLeft className="w-3 h-3" />
+                                    <span>{user.role === 'admin' ? 'Make Member' : 'Make Admin'}</span>
+                                  </button>
 
-                                <button
-                                  type="button"
-                                  disabled={isSelf || actionLoading}
-                                  onClick={() => setUserToDelete(user)}
-                                  title={isSelf ? 'Cannot delete your own account' : 'Delete user account'}
-                                  className={`p-1 rounded-md text-neutral-400 hover:text-rose-300 hover:bg-rose-950/30 transition-colors ${
-                                    isSelf ? 'opacity-30 cursor-not-allowed' : ''
-                                  }`}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* Default Rig Presets */}
-            <div className="p-5 bg-[#0A0A0A] rounded-xl border border-white/[0.08] space-y-3 shadow-sm">
-              <span className="text-xs font-semibold text-neutral-200 uppercase block tracking-wide">
-                Save Current Canvas as Default Rig Preset
-              </span>
-              <p className="text-neutral-400 text-[11px]">
-                Captures stage placement, cable routing, custom hardware definitions, and digital I/O patch. Clicking "Reset to Church Rig" will now restore this customized configuration.
-              </p>
-
-              <button
-                onClick={handleSavePreset}
-                className="flex items-center space-x-2 px-4 py-2 rounded-md bg-white hover:bg-neutral-200 text-black font-semibold transition-all"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save Current Stage as Default Preset</span>
-              </button>
+                                  <button
+                                    type="button"
+                                    disabled={isSelf || actionLoading}
+                                    onClick={() => setUserToDelete(user)}
+                                    title={isSelf ? 'Cannot delete your own account' : 'Delete user account'}
+                                    className={`p-1.5 rounded-md text-neutral-400 hover:text-rose-300 hover:bg-rose-950/30 transition-colors ${
+                                      isSelf ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'
+                                    }`}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
 
         {/* ==================================================================== */}
-        {/* 2. ACCOUNT & SECURITY (CHANGE PASSWORD) TAB                           */}
+        {/* 2. ACCOUNT SETTINGS TAB                                              */}
         {/* ==================================================================== */}
         {activeTab === 'account' && (
           <div className="space-y-6 max-w-2xl mx-auto font-mono text-xs">
-            {/* User Profile Card */}
-            <div className="p-5 bg-[#0A0A0A] rounded-xl border border-white/[0.08] space-y-4 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2.5 rounded-lg bg-neutral-900 border border-white/[0.08]">
-                    {userRole === 'admin' ? (
-                      <ShieldCheck className="w-5 h-5 text-neutral-300" />
-                    ) : (
-                      <User className="w-5 h-5 text-neutral-300" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">
-                      {currentUser?.displayName || 'Sound Tech'}
-                    </h3>
-                    <p className="text-xs text-neutral-400 mt-0.5">{currentUser?.email || 'Logged In Account'}</p>
-                  </div>
-                </div>
+            {/* Status Feedback Message */}
+            {profileMessage && (
+              <div
+                className={`p-3 rounded-xl border text-xs flex items-center space-x-2 ${
+                  profileMessage.type === 'success'
+                    ? 'bg-emerald-950/40 border-emerald-900/50 text-emerald-200'
+                    : 'bg-rose-950/40 border-rose-900/50 text-rose-200'
+                }`}
+              >
+                {profileMessage.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                )}
+                <span>{profileMessage.text}</span>
+              </div>
+            )}
 
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded border bg-neutral-900 text-neutral-300 border-white/[0.08]">
+            {/* Profile Information & Photo Card */}
+            <div className="p-6 bg-[#0A0A0A] rounded-xl border border-white/[0.08] space-y-5 shadow-sm">
+              <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
+                    Profile Information
+                  </h3>
+                  <span className="text-[11px] text-neutral-400 font-sans">
+                    Update your avatar and display name.
+                  </span>
+                </div>
+                <span className="text-[10px] uppercase font-semibold px-2.5 py-0.5 rounded border bg-neutral-900 text-neutral-300 border-white/[0.08]">
                   {userRole === 'admin' ? 'Administrator' : 'Team Member'}
                 </span>
               </div>
+
+              {/* Avatar Section */}
+              <div className="flex items-center space-x-4 pt-1">
+                <div className="relative group">
+                  <div className="w-16 h-16 rounded-full bg-neutral-900 border-2 border-white/20 flex items-center justify-center overflow-hidden text-base font-bold text-white shadow-inner">
+                    {currentUser?.photoUrl ? (
+                      <img
+                        src={currentUser.photoUrl}
+                        alt={currentUser.displayName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{getInitials(currentUser?.displayName, currentUser?.email)}</span>
+                    )}
+                  </div>
+                  {photoUpdating && (
+                    <div className="absolute inset-0 bg-black/70 rounded-full flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handlePhotoSelected}
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={photoUpdating}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-md bg-white hover:bg-neutral-200 text-black font-semibold text-xs transition-all flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{currentUser?.photoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                    </button>
+                    {currentUser?.photoUrl && (
+                      <button
+                        type="button"
+                        disabled={photoUpdating}
+                        onClick={handleRemovePhoto}
+                        className="px-3 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-rose-300 border border-white/[0.08] text-xs transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-neutral-500 font-sans">
+                    JPG, PNG, or WebP. Max 5MB.
+                  </p>
+                </div>
+              </div>
+
+              {/* Name & Email Form */}
+              <form onSubmit={handleSaveName} className="space-y-4 pt-2">
+                <div>
+                  <label className="block text-[11px] text-neutral-400 mb-1">
+                    Display Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    placeholder="Enter full name"
+                    className="w-full bg-black border border-white/[0.08] rounded-md px-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600 font-sans"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-neutral-400 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    disabled
+                    value={currentUser?.email || ''}
+                    className="w-full bg-neutral-900/60 border border-white/[0.05] rounded-md px-3 py-2 text-xs text-neutral-400 cursor-not-allowed font-mono"
+                  />
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={nameUpdating || nameInput.trim() === currentUser?.displayName}
+                    className="px-4 py-2 rounded-md bg-white hover:bg-neutral-200 text-black font-semibold transition-all flex items-center space-x-2 disabled:opacity-50 cursor-pointer"
+                  >
+                    {nameUpdating ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <span>Save Name</span>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
 
             {/* Change Password Card */}
@@ -602,13 +694,9 @@ export const SetupScreen: React.FC = () => {
               <div className="flex items-center space-x-2 border-b border-white/[0.08] pb-3">
                 <KeyRound className="w-4 h-4 text-neutral-400" />
                 <span className="font-semibold text-white text-xs uppercase tracking-wide">
-                  Change Your Password
+                  Change Password
                 </span>
               </div>
-
-              <p className="text-neutral-400 text-xs leading-relaxed">
-                Update your account password. Once updated, your new password will take effect immediately across all sessions.
-              </p>
 
               {passwordChangeMessage && (
                 <div
@@ -630,7 +718,7 @@ export const SetupScreen: React.FC = () => {
               <form onSubmit={handleChangePassword} className="space-y-4 pt-1">
                 <div>
                   <label className="block text-[11px] text-neutral-400 mb-1">
-                    New Password (min. 6 characters)
+                    New Password
                   </label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
@@ -640,15 +728,15 @@ export const SetupScreen: React.FC = () => {
                       minLength={6}
                       value={passwordChangeNew}
                       onChange={(e) => setPasswordChangeNew(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-black border border-white/[0.08] rounded-md pl-9 pr-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600"
+                      placeholder="Minimum 6 characters"
+                      className="w-full bg-black border border-white/[0.08] rounded-md pl-9 pr-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600 font-sans"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-[11px] text-neutral-400 mb-1">
-                    Confirm New Password
+                    Confirm Password
                   </label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
@@ -658,8 +746,8 @@ export const SetupScreen: React.FC = () => {
                       minLength={6}
                       value={passwordChangeConfirm}
                       onChange={(e) => setPasswordChangeConfirm(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-black border border-white/[0.08] rounded-md pl-9 pr-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600"
+                      placeholder="Repeat new password"
+                      className="w-full bg-black border border-white/[0.08] rounded-md pl-9 pr-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600 font-sans"
                     />
                   </div>
                 </div>
@@ -673,7 +761,7 @@ export const SetupScreen: React.FC = () => {
                     {passwordChangeLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Updating Password...</span>
+                        <span>Updating...</span>
                       </>
                     ) : (
                       <>
@@ -684,6 +772,26 @@ export const SetupScreen: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </div>
+
+            {/* Session / Logout Card */}
+            <div className="p-6 bg-[#0A0A0A] rounded-xl border border-white/[0.08] flex items-center justify-between shadow-sm">
+              <div>
+                <h4 className="text-sm font-semibold text-white uppercase tracking-wide">
+                  Sign Out
+                </h4>
+                <p className="text-[11px] text-neutral-400 font-sans mt-0.5">
+                  End your current session on this device.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="px-4 py-2 rounded-md bg-neutral-900 hover:bg-rose-950/40 border border-white/[0.08] hover:border-rose-900/40 text-neutral-300 hover:text-rose-300 text-xs font-semibold transition-all flex items-center space-x-2 cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Log Out</span>
+              </button>
             </div>
           </div>
         )}
@@ -804,23 +912,23 @@ export const SetupScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* Admin Save Preset Action */}
+              {/* Admin Save Current Canvas as Default Rig */}
               {userRole === 'admin' && (
-                <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between">
+                <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between gap-4">
                   <div>
-                    <span className="text-xs font-semibold text-neutral-200 block font-mono">
-                      Master Church Preset Management
+                    <span className="text-xs font-semibold text-white block font-mono">
+                      Save Current Canvas as Default Rig
                     </span>
                     <span className="text-[11px] text-neutral-400">
-                      Save current stage equipment, cables, and console patch as the master default for all users.
+                      Overwrite the church starting template with the current stage layout, patch cables, and console routing.
                     </span>
                   </div>
                   <button
                     onClick={handleSavePreset}
-                    className="px-3.5 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-white/[0.08] text-xs font-mono font-medium text-neutral-200 hover:text-white transition-all flex items-center space-x-1.5 cursor-pointer shrink-0"
+                    className="px-3.5 py-1.5 rounded-md bg-white hover:bg-neutral-200 text-black text-xs font-mono font-semibold transition-all flex items-center space-x-1.5 cursor-pointer shrink-0"
                   >
-                    <Save className="w-3.5 h-3.5 text-neutral-400" />
-                    <span>Save as Default Preset</span>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Current Rig</span>
                   </button>
                 </div>
               )}
@@ -861,6 +969,148 @@ export const SetupScreen: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Add Account Modal */}
+      {showAddAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-[#0A0A0A] border border-white/[0.12] rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+              <h3 className="text-sm font-semibold text-white uppercase font-mono tracking-wide">
+                Add Account
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddAccountModal(false);
+                  setCreateMessage(null);
+                }}
+                className="p-1 text-neutral-400 hover:text-white rounded-md hover:bg-white/[0.05] transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {createMessage && (
+              <div
+                className={`p-3 rounded-lg border text-xs font-mono flex items-center space-x-2 ${
+                  createMessage.type === 'success'
+                    ? 'bg-emerald-950/40 border-emerald-900/50 text-emerald-200'
+                    : 'bg-rose-950/40 border-rose-900/50 text-rose-200'
+                }`}
+              >
+                {createMessage.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                )}
+                <span>{createMessage.text}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleAdminCreateUser} className="space-y-4 font-mono text-xs">
+              <div>
+                <label className="block text-[11px] text-neutral-400 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newDisplayName}
+                  onChange={(e) => setNewDisplayName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                  className="w-full bg-black border border-white/[0.08] rounded-md px-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600 font-sans"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-neutral-400 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="name@church.org"
+                  className="w-full bg-black border border-white/[0.08] rounded-md px-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600 font-sans"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-neutral-400 mb-1">
+                  Initial Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Minimum 6 characters"
+                  className="w-full bg-black border border-white/[0.08] rounded-md px-3 py-2 text-xs text-white focus:border-white/30 focus:outline-none placeholder:text-neutral-600 font-sans"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-neutral-400 mb-1">
+                  Account Role
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewRole('member')}
+                    className={`py-2 px-3 rounded-md border text-center transition-all cursor-pointer ${
+                      newRole === 'member'
+                        ? 'bg-neutral-800 border-white/30 text-white font-semibold'
+                        : 'bg-black border-white/[0.08] text-neutral-400 hover:text-neutral-200'
+                    }`}
+                  >
+                    Member
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewRole('admin')}
+                    className={`py-2 px-3 rounded-md border text-center transition-all cursor-pointer ${
+                      newRole === 'admin'
+                        ? 'bg-neutral-800 border-white/30 text-white font-semibold'
+                        : 'bg-black border-white/[0.08] text-neutral-400 hover:text-neutral-200'
+                    }`}
+                  >
+                    Admin
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-white/[0.08]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddAccountModal(false);
+                    setCreateMessage(null);
+                  }}
+                  className="px-4 py-2 rounded-md bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/[0.08] text-xs font-semibold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  className="px-4 py-2 rounded-md bg-white hover:bg-neutral-200 text-black font-semibold text-xs transition-all flex items-center space-x-2 disabled:opacity-50 cursor-pointer"
+                >
+                  {createLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <span>Create</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Delete User Confirmation Modal */}
       <ConfirmDialogModal

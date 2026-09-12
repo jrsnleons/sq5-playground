@@ -21,6 +21,7 @@ import { simulationService } from '../services/simulationService';
 import { sceneService } from '../services/sceneService';
 import { inventoryService } from '../services/inventoryService';
 import { userService, CreateUserInput } from '../services/userService';
+import { docsService, Course, Chapter, Lesson, MemberLessonProgress } from '../services/docsService';
 import {
   UserProfile,
   UserRole,
@@ -44,7 +45,9 @@ interface SimulationStoreState {
   signalPresence: SignalPresenceMap;
   validationNotices: ValidationNotice[];
   selectedNodeId: string | null;
-  activeTab: 'stage' | 'console' | 'inventory' | 'scenes' | 'setup' | 'help';
+  activeTab: 'stage' | 'console' | 'inventory' | 'scenes' | 'setup' | 'help' | 'docs';
+  settingsSubTab: 'admin' | 'presets' | 'account';
+  setSettingsSubTab: (tab: 'admin' | 'presets' | 'account') => void;
   showEntryModal: boolean;
   noticesModalOpen: boolean;
   toastNotice: { id: string; message: string; type: 'error' | 'warning' | 'info' } | null;
@@ -80,10 +83,35 @@ interface SimulationStoreState {
   saveStageAsDefaultPreset: () => void;
 
   // Actions
-  setActiveTab: (tab: 'stage' | 'console' | 'inventory' | 'scenes' | 'setup' | 'help') => void;
+  setActiveTab: (tab: 'stage' | 'console' | 'inventory' | 'scenes' | 'setup' | 'help' | 'docs') => void;
   setSelectedNodeId: (id: string | null) => void;
   setNoticesModalOpen: (open: boolean) => void;
   setShowEntryModal: (show: boolean) => void;
+
+  // Documentation & Member Learning Progress
+  courses: Course[];
+  chapters: Chapter[];
+  lessons: Lesson[];
+  activeCourseId: string | null;
+  activeChapterId: string | null;
+  activeLessonId: string | null;
+  memberProgress: Record<string, MemberLessonProgress>;
+  docsLoading: boolean;
+  fetchDocs: () => Promise<void>;
+  setActiveCourseId: (courseId: string | null) => void;
+  setActiveChapterId: (chapterId: string | null) => void;
+  setActiveLessonId: (lessonId: string | null) => void;
+  createCourse: (data: { title: string; description?: string }) => Promise<Course>;
+  updateCourse: (id: string, updates: Partial<Course>) => Promise<Course>;
+  deleteCourse: (id: string) => Promise<void>;
+  createChapter: (data: { courseId: string; title: string; description?: string }) => Promise<Chapter>;
+  updateChapter: (id: string, updates: Partial<Chapter>) => Promise<Chapter>;
+  deleteChapter: (id: string) => Promise<void>;
+  createLesson: (data: { chapterId: string; title: string; content?: string }) => Promise<Lesson>;
+  updateLesson: (id: string, updates: Partial<Lesson>) => Promise<Lesson>;
+  deleteLesson: (id: string) => Promise<void>;
+  markLessonViewed: (courseId: string, lessonId: string) => Promise<void>;
+  toggleLessonCompletion: (courseId: string, lessonId: string, isCompleted: boolean) => Promise<void>;
 
   // Auth & Roles (Admin / Member / Guest)
   currentUser: UserProfile | null;
@@ -91,6 +119,7 @@ interface SimulationStoreState {
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
   setUserProfile: (profile: UserProfile | null) => void;
+  updateUserProfile: (updates: { displayName?: string; photoUrl?: string | null }) => Promise<void>;
   signOut: () => void;
 
   // Team Users & Password Management
@@ -407,6 +436,12 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.activeTab = tab;
       }),
 
+    settingsSubTab: 'account',
+    setSettingsSubTab: (tab) =>
+      set((state) => {
+        state.settingsSubTab = tab;
+      }),
+
     setSelectedNodeId: (id) =>
       set((state) => {
         state.selectedNodeId = id;
@@ -436,6 +471,21 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.userRole = profile?.role || 'guest';
         localCache.saveUserProfile(profile);
       }),
+    updateUserProfile: async (updates) => {
+      const current = get().currentUser;
+      if (!current) return;
+      const updatedProfile: UserProfile = {
+        ...current,
+        displayName: updates.displayName !== undefined ? updates.displayName.trim() : current.displayName,
+        photoUrl: updates.photoUrl !== undefined ? (updates.photoUrl || undefined) : current.photoUrl
+      };
+      set((state) => {
+        state.currentUser = updatedProfile;
+        localCache.saveUserProfile(updatedProfile);
+        state.teamProfiles = state.teamProfiles.map((p) => (p.id === current.id ? updatedProfile : p));
+      });
+      await userService.updateUserProfile(current.id, updates);
+    },
     signOut: () =>
       set((state) => {
         state.currentUser = null;
@@ -1417,6 +1467,196 @@ export const useSimulationStore = create<SimulationStoreState>()(
       const res = await sceneService.deleteScene(sceneId, isOfficial);
       await get().fetchScenes();
       return res;
+    },
+
+    // Documentation State & Actions
+    courses: [],
+    chapters: [],
+    lessons: [],
+    activeCourseId: null,
+    activeChapterId: null,
+    activeLessonId: null,
+    memberProgress: {},
+    docsLoading: false,
+
+    fetchDocs: async () => {
+      set((state) => {
+        state.docsLoading = true;
+      });
+      try {
+        const [fetchedCourses, fetchedChapters, fetchedLessons] = await Promise.all([
+          docsService.fetchCourses(),
+          docsService.fetchChapters(),
+          docsService.fetchLessons()
+        ]);
+
+        const currentUser = get().currentUser;
+        const progressMap: Record<string, MemberLessonProgress> = {};
+        if (currentUser?.id) {
+          const progressList = await docsService.fetchUserProgress(currentUser.id);
+          for (const item of progressList) {
+            progressMap[item.lessonId] = item;
+          }
+        }
+
+        set((state) => {
+          state.courses = fetchedCourses;
+          state.chapters = fetchedChapters;
+          state.lessons = fetchedLessons;
+          state.memberProgress = progressMap;
+          state.docsLoading = false;
+
+          // If activeCourseId is not set or not in fetchedCourses, set to first course
+          if (!state.activeCourseId && fetchedCourses.length > 0) {
+            state.activeCourseId = fetchedCourses[0].id;
+          } else if (state.activeCourseId && !fetchedCourses.some((c) => c.id === state.activeCourseId)) {
+            state.activeCourseId = fetchedCourses[0]?.id || null;
+            state.activeChapterId = null;
+            state.activeLessonId = null;
+          }
+        });
+      } catch (err) {
+        console.warn('fetchDocs error:', err);
+        set((state) => {
+          state.docsLoading = false;
+        });
+      }
+    },
+
+    setActiveCourseId: (courseId) =>
+      set((state) => {
+        state.activeCourseId = courseId;
+        state.activeChapterId = null;
+        state.activeLessonId = null;
+      }),
+
+    setActiveChapterId: (chapterId) =>
+      set((state) => {
+        state.activeChapterId = chapterId;
+      }),
+
+    setActiveLessonId: (lessonId) =>
+      set((state) => {
+        state.activeLessonId = lessonId;
+      }),
+
+    createCourse: async (data) => {
+      const user = get().currentUser;
+      const created = await docsService.createCourse({
+        title: data.title,
+        description: data.description,
+        orderIndex: get().courses.length,
+        createdBy: user?.id
+      });
+      await get().fetchDocs();
+      set((state) => {
+        state.activeCourseId = created.id;
+      });
+      return created;
+    },
+
+    updateCourse: async (id, updates) => {
+      const updated = await docsService.updateCourse(id, updates);
+      await get().fetchDocs();
+      return updated;
+    },
+
+    deleteCourse: async (id) => {
+      await docsService.deleteCourse(id);
+      await get().fetchDocs();
+      set((state) => {
+        if (state.activeCourseId === id) {
+          state.activeCourseId = state.courses[0]?.id || null;
+          state.activeChapterId = null;
+          state.activeLessonId = null;
+        }
+      });
+    },
+
+    createChapter: async (data) => {
+      const existingChapters = get().chapters.filter((c) => c.courseId === data.courseId);
+      const created = await docsService.createChapter({
+        courseId: data.courseId,
+        title: data.title,
+        description: data.description,
+        orderIndex: existingChapters.length
+      });
+      await get().fetchDocs();
+      return created;
+    },
+
+    updateChapter: async (id, updates) => {
+      const updated = await docsService.updateChapter(id, updates);
+      await get().fetchDocs();
+      return updated;
+    },
+
+    deleteChapter: async (id) => {
+      await docsService.deleteChapter(id);
+      await get().fetchDocs();
+      set((state) => {
+        if (state.activeChapterId === id) {
+          state.activeChapterId = null;
+          state.activeLessonId = null;
+        }
+      });
+    },
+
+    createLesson: async (data) => {
+      const existingLessons = get().lessons.filter((l) => l.chapterId === data.chapterId);
+      const created = await docsService.createLesson({
+        chapterId: data.chapterId,
+        title: data.title,
+        content: data.content || '',
+        orderIndex: existingLessons.length
+      });
+      await get().fetchDocs();
+      set((state) => {
+        state.activeLessonId = created.id;
+      });
+      return created;
+    },
+
+    updateLesson: async (id, updates) => {
+      const updated = await docsService.updateLesson(id, updates);
+      await get().fetchDocs();
+      return updated;
+    },
+
+    deleteLesson: async (id) => {
+      await docsService.deleteLesson(id);
+      await get().fetchDocs();
+      set((state) => {
+        if (state.activeLessonId === id) {
+          state.activeLessonId = null;
+        }
+      });
+    },
+
+    markLessonViewed: async (courseId, lessonId) => {
+      const user = get().currentUser;
+      if (!user?.id) return;
+      try {
+        const record = await docsService.recordLessonView(user.id, courseId, lessonId);
+        set((state) => {
+          state.memberProgress[lessonId] = record;
+        });
+      } catch (err) {
+        console.warn('Failed to record lesson view:', err);
+      }
+    },
+
+    toggleLessonCompletion: async (courseId, lessonId, isCompleted) => {
+      const user = get().currentUser;
+      if (!user?.id) return;
+      try {
+        const record = await docsService.toggleLessonCompletion(user.id, courseId, lessonId, isCompleted);
+        set((state) => {
+          state.memberProgress[lessonId] = record;
+        });
+      } catch (err) {
+        console.warn('Failed to toggle lesson completion:', err);
+      }
     }
   }))
 );

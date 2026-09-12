@@ -37,6 +37,9 @@ const SetupScreen = lazy(() =>
 const HelpScreen = lazy(() =>
   import('./features/digital/screens/HelpScreen').then((m) => ({ default: m.HelpScreen }))
 );
+const DocumentationScreen = lazy(() =>
+  import('./features/docs/DocumentationScreen').then((m) => ({ default: m.DocumentationScreen }))
+);
 
 const ViewLoadingFallback = () => (
   <div className="w-full h-full flex flex-col items-center justify-center bg-black text-zinc-400 space-y-2">
@@ -55,13 +58,15 @@ export const App: React.FC = () => {
     setSyncStatus,
     setUserProfile,
     fetchInventory,
-    fetchScenes
+    fetchScenes,
+    fetchDocs
   } = useSimulationStore();
 
   useEffect(() => {
-    // Initial fetch of equipment inventory and official scenes
+    // Initial fetch of equipment inventory, official scenes, and documentation
     fetchInventory().catch(console.warn);
     fetchScenes().catch(console.warn);
+    fetchDocs().catch(console.warn);
 
     // Guard tab access based on active role
     if (userRole === 'guest' && activeTab !== 'stage' && activeTab !== 'console' && activeTab !== 'scenes') {
@@ -108,7 +113,8 @@ export const App: React.FC = () => {
               id: session.user.id,
               email: session.user.email || '',
               displayName: profile?.display_name || session.user.email?.split('@')[0] || 'Member',
-              role
+              role,
+              photoUrl: profile?.avatar_url || undefined
             });
             setSyncStatus('synced');
           } catch (err) {
@@ -160,6 +166,11 @@ export const App: React.FC = () => {
             {activeTab === 'scenes' && (
               <div className="h-full p-4 overflow-hidden">
                 <ScenesScreen />
+              </div>
+            )}
+            {activeTab === 'docs' && userRole !== 'guest' && (
+              <div className="h-full overflow-hidden">
+                <DocumentationScreen />
               </div>
             )}
             {activeTab === 'setup' && userRole !== 'guest' && (

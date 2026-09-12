@@ -39,7 +39,8 @@ export const userService = {
           email: d.email,
           displayName: d.display_name || d.email.split('@')[0],
           role: (d.role as UserRole) || 'member',
-          createdAt: d.created_at
+          createdAt: d.created_at,
+          photoUrl: d.avatar_url || undefined
         }));
 
         this.saveCachedTeamProfiles(profiles);
@@ -187,6 +188,39 @@ export const userService = {
     });
 
     if (error) throw error;
+  },
+
+  /**
+   * Update display name and/or avatar URL for a user
+   */
+  async updateUserProfile(userId: string, updates: { displayName?: string; photoUrl?: string | null }): Promise<void> {
+    if (isSupabaseConfigured() && supabase) {
+      const payload: Record<string, any> = { updated_at: new Date().toISOString() };
+      if (updates.displayName !== undefined) payload.display_name = updates.displayName.trim();
+      if (updates.photoUrl !== undefined) payload.avatar_url = updates.photoUrl;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(payload)
+        .eq('id', userId);
+
+      if (error) {
+        console.warn('Supabase profile update error:', error.message);
+      }
+    }
+
+    const cached = this.getCachedTeamProfiles();
+    const updated = cached.map((u) => {
+      if (u.id === userId) {
+        return {
+          ...u,
+          ...(updates.displayName !== undefined ? { displayName: updates.displayName.trim() } : {}),
+          ...(updates.photoUrl !== undefined ? { photoUrl: updates.photoUrl || undefined } : {})
+        };
+      }
+      return u;
+    });
+    this.saveCachedTeamProfiles(updated);
   },
 
   getCachedTeamProfiles(): UserProfile[] {

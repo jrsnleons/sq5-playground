@@ -10,7 +10,8 @@ export const MasterStrip: React.FC = () => {
     setMainLRFader,
     toggleMainLRMute,
     setMixFader,
-    toggleMixMute
+    toggleMixMute,
+    toggleMixMainLR
   } = useSimulationStore();
 
   const isGuest = userRole === 'guest';
@@ -21,6 +22,12 @@ export const MasterStrip: React.FC = () => {
   const title = isSendsOnFaders ? activeMix?.name || 'MIX' : 'MAIN LR';
   const faderVal = isSendsOnFaders ? (activeMix?.faderLevel ?? 0) : sim.digital.mainLR.faderLevel;
   const isMuted = isSendsOnFaders ? (activeMix?.mute ?? false) : sim.digital.mainLR.mute;
+
+  const isMasterOn = isSendsOnFaders
+    ? activeMix?.mode === 'group'
+      ? activeMix.mainLRAssigned
+      : !activeMix?.mute
+    : !sim.digital.mainLR.mute;
 
   let isDcaMuted = false;
   if (isSendsOnFaders && activeMix && (activeMix.dcaGroupMask ?? 0) > 0) {
@@ -47,6 +54,19 @@ export const MasterStrip: React.FC = () => {
       setMixFader(activeMixId, val);
     } else {
       setMainLRFader(val);
+    }
+  };
+
+  const handleToggleOn = () => {
+    if (isGuest) return;
+    if (isSendsOnFaders) {
+      if (activeMix?.mode === 'group') {
+        toggleMixMainLR(activeMixId);
+      } else {
+        toggleMixMute(activeMixId);
+      }
+    } else {
+      toggleMainLRMute();
     }
   };
 
@@ -125,14 +145,43 @@ export const MasterStrip: React.FC = () => {
         {faderVal <= -85 ? '-inf' : `${faderVal > 0 ? '+' : ''}${faderVal.toFixed(1)} dB`}
       </div>
 
-      {/* Mute Button */}
+      {/* Action Buttons: ON, MUTE & Scribble Strip */}
       <div className="space-y-1">
+        {/* Master ON Button */}
+        <button
+          onClick={handleToggleOn}
+          disabled={isGuest}
+          aria-pressed={isMasterOn}
+          aria-label={`Toggle ${title} Output`}
+          title={
+            isSendsOnFaders && activeMix?.mode === 'group'
+              ? activeMix.mainLRAssigned
+                ? 'Group routed to Main LR (Click to turn off)'
+                : 'Group not routed to Main LR (Click to turn on)'
+              : isMasterOn
+              ? 'Master output active (Click to mute)'
+              : 'Master output muted (Click to unmute)'
+          }
+          className={`w-full py-1 text-[10px] font-bold font-mono rounded transition-colors ${
+            isGuest ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+          } ${
+            isMasterOn
+              ? isSendsOnFaders
+                ? 'bg-amber-400 text-black font-semibold'
+                : 'bg-emerald-500 text-black font-semibold'
+              : 'bg-zinc-900 text-zinc-500 border border-white/[0.06] hover:bg-zinc-800 hover:text-zinc-300'
+          }`}
+        >
+          {isMasterOn ? 'ON' : 'OFF'}
+        </button>
+
+        {/* Master Mute Button */}
         <button
           onClick={handleToggleMute}
           disabled={isGuest}
           aria-label={`Mute ${title}`}
           className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-colors ${
-            isGuest ? 'cursor-not-allowed opacity-60' : ''
+            isGuest ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
           } ${
             isMuted || isDcaMuted
               ? isDcaMuted && !isMuted

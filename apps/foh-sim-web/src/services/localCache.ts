@@ -1,10 +1,15 @@
 import { PracticeSimulation, UserProfile, UserRole } from './supabase';
+import type { Course, Chapter, Lesson, MemberLessonProgress } from './docsService';
 
 const CACHE_KEYS = {
   PROFILE: 'foh_sim_cached_profile',
   SIMULATIONS: 'foh_sim_cached_simulations',
   CUSTOM_PRESET: 'foh_sim_custom_default_preset',
-  USER_ROLE: 'foh_sim_user_role'
+  USER_ROLE: 'foh_sim_user_role',
+  COURSES: 'foh_sim_cached_courses',
+  CHAPTERS: 'foh_sim_cached_chapters',
+  LESSONS: 'foh_sim_cached_lessons',
+  DOCS_PROGRESS: 'foh_sim_cached_docs_progress'
 };
 
 // Built-in starter practice simulations (available offline and without Supabase)
@@ -105,6 +110,53 @@ export const DEFAULT_OFFICIAL_SCENES: MemberScene[] = [
     scene_data: null
   }
 ];
+
+const memoryStore = new Map<string, string>();
+
+export const safeStorage = {
+  getItem(key: string): string | null {
+    try {
+      if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+        return window.localStorage.getItem(key);
+      }
+    } catch {
+      // fallback to memory
+    }
+    return memoryStore.get(key) || null;
+  },
+  setItem(key: string, value: string): void {
+    try {
+      if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+        window.localStorage.setItem(key, value);
+        return;
+      }
+    } catch {
+      // fallback to memory
+    }
+    memoryStore.set(key, value);
+  },
+  removeItem(key: string): void {
+    try {
+      if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+        window.localStorage.removeItem(key);
+        return;
+      }
+    } catch {
+      // fallback to memory
+    }
+    memoryStore.delete(key);
+  },
+  clear(): void {
+    try {
+      if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+        window.localStorage.clear();
+      }
+    } catch {
+      // fallback to memory
+    }
+    memoryStore.clear();
+  }
+};
 
 export const localCache = {
   getUserProfile(): UserProfile | null {
@@ -283,6 +335,188 @@ export const localCache = {
     const updated = list.filter((i) => i.id !== itemId);
     this.saveInventoryItems(updated);
     return updated;
+  },
+
+  // Documentation caching
+  getCourses(): Course[] {
+    try {
+      const data = safeStorage.getItem(CACHE_KEYS.COURSES);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to read cached courses', e);
+    }
+    return [];
+  },
+
+  saveCourses(courses: Course[]) {
+    try {
+      safeStorage.setItem(CACHE_KEYS.COURSES, JSON.stringify(courses));
+    } catch (e) {
+      console.warn('Failed to save courses to cache', e);
+    }
+  },
+
+  upsertCourse(course: Course) {
+    const list = this.getCourses();
+    const updated = [course, ...list.filter((c) => c.id !== course.id)];
+    this.saveCourses(updated);
+    return updated;
+  },
+
+  deleteCourse(id: string) {
+    const list = this.getCourses();
+    const updated = list.filter((c) => c.id !== id);
+    this.saveCourses(updated);
+    const chapters = this.getChapters();
+    const chapterIds = chapters.filter((ch) => ch.courseId === id).map((ch) => ch.id);
+    const updatedChapters = chapters.filter((ch) => ch.courseId !== id);
+    this.saveChapters(updatedChapters);
+    const lessons = this.getLessons();
+    const updatedLessons = lessons.filter((l) => !chapterIds.includes(l.chapterId));
+    this.saveLessons(updatedLessons);
+    return updated;
+  },
+
+  getChapters(courseId?: string): Chapter[] {
+    try {
+      const data = safeStorage.getItem(CACHE_KEYS.CHAPTERS);
+      if (data) {
+        const parsed: Chapter[] = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return courseId ? parsed.filter((ch) => ch.courseId === courseId) : parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to read cached chapters', e);
+    }
+    return [];
+  },
+
+  saveChapters(chapters: Chapter[]) {
+    try {
+      safeStorage.setItem(CACHE_KEYS.CHAPTERS, JSON.stringify(chapters));
+    } catch (e) {
+      console.warn('Failed to save chapters to cache', e);
+    }
+  },
+
+  upsertChapter(chapter: Chapter) {
+    const all = this.getChapters();
+    const updated = [chapter, ...all.filter((ch) => ch.id !== chapter.id)];
+    this.saveChapters(updated);
+    return updated;
+  },
+
+  deleteChapter(id: string) {
+    const all = this.getChapters();
+    const updated = all.filter((ch) => ch.id !== id);
+    this.saveChapters(updated);
+    const lessons = this.getLessons();
+    const updatedLessons = lessons.filter((l) => l.chapterId !== id);
+    this.saveLessons(updatedLessons);
+    return updated;
+  },
+
+  getLessons(chapterId?: string): Lesson[] {
+    try {
+      const data = safeStorage.getItem(CACHE_KEYS.LESSONS);
+      if (data) {
+        const parsed: Lesson[] = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return chapterId ? parsed.filter((l) => l.chapterId === chapterId) : parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to read cached lessons', e);
+    }
+    return [];
+  },
+
+  saveLessons(lessons: Lesson[]) {
+    try {
+      safeStorage.setItem(CACHE_KEYS.LESSONS, JSON.stringify(lessons));
+    } catch (e) {
+      console.warn('Failed to save lessons to cache', e);
+    }
+  },
+
+  upsertLesson(lesson: Lesson) {
+    const all = this.getLessons();
+    const updated = [lesson, ...all.filter((l) => l.id !== lesson.id)];
+    this.saveLessons(updated);
+    return updated;
+  },
+
+  deleteLesson(id: string) {
+    const all = this.getLessons();
+    const updated = all.filter((l) => l.id !== id);
+    this.saveLessons(updated);
+    return updated;
+  },
+
+  getMemberProgress(userId: string, courseId?: string): MemberLessonProgress[] {
+    try {
+      const data = safeStorage.getItem(`${CACHE_KEYS.DOCS_PROGRESS}_${userId}`);
+      if (data) {
+        const parsed: MemberLessonProgress[] = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          return courseId ? parsed.filter((p) => p.courseId === courseId) : parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to read cached member progress', e);
+    }
+    return [];
+  },
+
+  saveMemberProgress(userId: string, progressList: MemberLessonProgress[]) {
+    try {
+      safeStorage.setItem(`${CACHE_KEYS.DOCS_PROGRESS}_${userId}`, JSON.stringify(progressList));
+    } catch (e) {
+      console.warn('Failed to save member progress', e);
+    }
+  },
+
+  upsertMemberProgressRecord(userId: string, record: MemberLessonProgress) {
+    const all = this.getMemberProgress(userId);
+    const updated = [record, ...all.filter((p) => p.lessonId !== record.lessonId)];
+    this.saveMemberProgress(userId, updated);
+    return updated;
+  },
+
+  recordLessonView(userId: string, courseId: string, lessonId: string): MemberLessonProgress {
+    const now = new Date().toISOString();
+    const all = this.getMemberProgress(userId);
+    const existing = all.find((p) => p.lessonId === lessonId);
+    const record: MemberLessonProgress = {
+      id: existing ? existing.id : `prog-${userId}-${lessonId}`,
+      userId,
+      courseId,
+      lessonId,
+      isCompleted: existing ? existing.isCompleted : false,
+      lastViewedAt: now
+    };
+    this.upsertMemberProgressRecord(userId, record);
+    return record;
+  },
+
+  setLessonCompletion(userId: string, courseId: string, lessonId: string, isCompleted: boolean): MemberLessonProgress {
+    const now = new Date().toISOString();
+    const all = this.getMemberProgress(userId);
+    const existing = all.find((p) => p.lessonId === lessonId);
+    const record: MemberLessonProgress = {
+      id: existing ? existing.id : `prog-${userId}-${lessonId}`,
+      userId,
+      courseId,
+      lessonId,
+      isCompleted,
+      lastViewedAt: now
+    };
+    this.upsertMemberProgressRecord(userId, record);
+    return record;
   }
 };
 
