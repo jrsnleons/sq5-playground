@@ -1,25 +1,29 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSimulationStore } from '../../../store/simulationStore';
 import { useReactFlow } from '@xyflow/react';
 import {
-  Zap,
-  Radio,
-  ArrowRight,
-  Target,
+  ArrowDown,
   Trash2,
   X,
-  Lock,
   Compass
 } from 'lucide-react';
 
 export const CableTraceBadge: React.FC = () => {
   const activeTrace = useSimulationStore((s) => s.activeTrace);
   const clearTrace = useSimulationStore((s) => s.clearTrace);
+  const setSelectedNodeId = useSimulationStore((s) => s.setSelectedNodeId);
   const removeCable = useSimulationStore((s) => s.removeCable);
   const sim = useSimulationStore((s) => s.sim);
   const signalPresence = useSimulationStore((s) => s.signalPresence);
 
   const { setCenter, getNode } = useReactFlow();
+
+  // Clear node inspector if cable trace opens so they don't collide on the right side
+  useEffect(() => {
+    if (activeTrace?.cableId) {
+      setSelectedNodeId(null);
+    }
+  }, [activeTrace?.cableId, setSelectedNodeId]);
 
   if (!activeTrace || !activeTrace.cableId) {
     return null;
@@ -65,6 +69,32 @@ export const CableTraceBadge: React.FC = () => {
   const source = getSourceDetails();
   const target = getTargetDetails();
 
+  const getCableColor = (signalType?: string) => {
+    switch (signalType) {
+      case 'mic':
+        return '#38bdf8';
+      case 'instrument':
+        return '#fb923c';
+      case 'dsnake':
+        return '#34d399';
+      case 'iem':
+        return '#2dd4bf';
+      case 'click':
+      case 'comms':
+        return '#facc15';
+      case 'speaker':
+        return '#94a3b8';
+      case 'usb':
+        return '#fbbf24';
+      case 'video':
+        return '#818cf8';
+      default:
+        return '#64748b';
+    }
+  };
+
+  const cableColor = getCableColor(cable.signalType);
+
   // Find Digital Console Patch Mapping
   const getDigitalMapping = () => {
     // Check if target is an input socket
@@ -77,7 +107,7 @@ export const CableTraceBadge: React.FC = () => {
         return {
           type: 'INPUT',
           label: `CH ${ch.channelNumber}: ${ch.name}`,
-          details: `${ch.stereo ? 'Stereo Linked' : 'Mono'} | Fader: ${ch.faderLevel > -80 ? `${ch.faderLevel} dB` : '-∞'}`
+          details: `${ch.stereo ? 'Stereo Linked' : 'Mono'} | Fader: ${ch.faderLevel > -80 ? `${ch.faderLevel} dB` : '-inf'}`
         };
       }
     }
@@ -113,114 +143,119 @@ export const CableTraceBadge: React.FC = () => {
   };
 
   return (
-    <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-auto animate-in fade-in slide-in-from-top-2 select-none">
-      <div className="bg-slate-900/95 backdrop-blur-md border-2 border-sky-500/80 rounded-xl shadow-2xl p-3.5 text-slate-100 font-mono text-xs w-[480px] max-w-[90vw] space-y-2.5">
-        {/* Header Bar */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-          <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8] animate-pulse" />
-            <span className="font-bold text-sky-400 uppercase tracking-wide">
-              Physical Cable Trace
-            </span>
-            <span className="flex items-center space-x-1 text-[9px] px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800 font-bold">
-              <span>SELECTED</span>
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-2 text-[10px]">
-            <span
-              className={`px-2 py-0.5 rounded font-bold uppercase border ${
-                hasSignal
-                  ? 'bg-emerald-950 text-emerald-300 border-emerald-700 shadow-[0_0_6px_#10b981]'
-                  : 'bg-slate-800 text-slate-400 border-slate-700'
-              }`}
-            >
-              {hasSignal ? 'SIGNAL ACTIVE' : 'NO SIGNAL'}
-            </span>
-            <button
-              onClick={clearTrace}
-              title="Close trace (or press Escape)"
-              className="text-slate-400 hover:text-white p-0.5 rounded hover:bg-slate-800"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cable-trace-title"
+      className="absolute right-4 top-4 w-80 sm:w-88 bg-[#141417]/95 backdrop-blur-md border border-white/15 rounded-xl shadow-[0_16px_40px_-6px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.15)] z-20 overflow-hidden font-sans text-neutral-100 animate-in fade-in slide-in-from-right-4 duration-200 select-none"
+    >
+      {/* Header */}
+      <div className="p-3 border-b border-white/10 flex items-center justify-between bg-[#1c1c20]">
+        <div className="flex items-center space-x-2">
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+          <h2 id="cable-trace-title" className="font-semibold text-xs tracking-wider text-white uppercase font-mono">
+            Cable Trace
+          </h2>
+          <span
+            className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-mono font-medium border ${
+              hasSignal
+                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                : 'bg-white/[0.04] text-neutral-400 border-white/[0.08]'
+            }`}
+          >
+            {hasSignal ? 'LIVE SIGNAL' : 'IDLE'}
+          </span>
         </div>
 
-        {/* Physical Connection Route: Source -> Destination */}
-        <div className="grid grid-cols-11 gap-1 items-center bg-slate-950/80 p-2.5 rounded-lg border border-slate-800/80">
+        <button
+          onClick={clearTrace}
+          title="Close trace (Esc)"
+          className="p-1 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="p-3 space-y-3 font-mono text-xs max-h-[calc(100vh-140px)] overflow-y-auto">
+        {/* Physical Connection Route: Source -> Divider -> Destination */}
+        <div className="bg-black/60 rounded-lg border border-white/[0.08] p-3 space-y-2.5">
           {/* Source Box */}
-          <div className="col-span-5 space-y-0.5">
-            <div className="text-[9px] text-slate-400 flex items-center justify-between">
-              <span>SOURCE ({source.type})</span>
+          <div className="space-y-1">
+            <div className="text-[9px] text-neutral-400 flex items-center justify-between">
+              <span className="font-semibold uppercase tracking-wider text-neutral-400">SOURCE ({source.type})</span>
               <button
                 onClick={() => handleJumpTo(cable.fromNode)}
                 title="Pan camera to source device"
-                className="text-sky-400 hover:text-white flex items-center space-x-0.5 text-[8px] font-bold"
+                className="text-neutral-400 hover:text-white flex items-center space-x-1 text-[9px] font-mono hover:underline"
               >
-                <Compass className="w-2.5 h-2.5" />
+                <Compass className="w-3 h-3" />
                 <span>JUMP</span>
               </button>
             </div>
-            <div className="font-bold text-white truncate text-[11px]" title={source.name}>
+            <div className="font-semibold text-white text-xs truncate" title={source.name}>
               {source.name}
             </div>
-            <div className="text-[10px] text-sky-300 truncate">
-              Port: <span className="font-bold">{source.port}</span>
+            <div className="text-[10px] text-neutral-300">
+              Port: <span className="text-white font-medium">{source.port}</span>
             </div>
           </div>
 
-          {/* Arrow */}
-          <div className="col-span-1 flex items-center justify-center text-slate-500">
-            <ArrowRight className="w-4 h-4 text-sky-400" />
+          {/* Wire Flow Indicator */}
+          <div className="flex items-center justify-between py-1 px-2 bg-white/[0.03] rounded border border-white/[0.06]">
+            <div className="flex items-center space-x-2 text-[10px]">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: cableColor }}
+              />
+              <span className="text-neutral-300 uppercase tracking-wider text-[9px]">
+                {cable.signalType || 'standard'} wire
+              </span>
+            </div>
+            <ArrowDown className="w-3.5 h-3.5 text-neutral-400" />
           </div>
 
           {/* Destination Box */}
-          <div className="col-span-5 space-y-0.5">
-            <div className="text-[9px] text-slate-400 flex items-center justify-between">
-              <span>DESTINATION ({target.type})</span>
+          <div className="space-y-1">
+            <div className="text-[9px] text-neutral-400 flex items-center justify-between">
+              <span className="font-semibold uppercase tracking-wider text-neutral-400">DESTINATION ({target.type})</span>
               <button
                 onClick={() => handleJumpTo(cable.toNode)}
                 title="Pan camera to destination socket"
-                className="text-sky-400 hover:text-white flex items-center space-x-0.5 text-[8px] font-bold"
+                className="text-neutral-400 hover:text-white flex items-center space-x-1 text-[9px] font-mono hover:underline"
               >
-                <Compass className="w-2.5 h-2.5" />
+                <Compass className="w-3 h-3" />
                 <span>JUMP</span>
               </button>
             </div>
-            <div className="font-bold text-white truncate text-[11px]" title={target.name}>
+            <div className="font-semibold text-white text-xs truncate" title={target.name}>
               {target.name}
             </div>
-            <div className="text-[10px] text-teal-300 truncate">
-              Socket: <span className="font-bold">{target.port}</span>
+            <div className="text-[10px] text-neutral-300">
+              Socket: <span className="text-white font-medium">{target.port}</span>
             </div>
           </div>
         </div>
 
         {/* Digital Console Patching Context */}
         {digitalMapping && (
-          <div className="bg-sky-950/40 rounded-lg p-2 border border-sky-800/50 flex items-center justify-between text-[11px]">
-            <div className="truncate">
-              <span className="text-[9px] text-sky-400 block font-bold">
-                SQ-5 DIGITAL CONSOLE PATCH ({digitalMapping.type}):
-              </span>
-              <span className="font-bold text-white">{digitalMapping.label}</span>
-              <span className="text-slate-400 text-[10px] ml-2 font-normal">
-                {digitalMapping.details}
-              </span>
-            </div>
+          <div className="bg-black/50 rounded-lg p-2.5 border border-white/[0.08] text-[11px] space-y-1">
+            <span className="text-[9px] text-neutral-400 block font-mono uppercase tracking-wider font-semibold">
+              SQ-5 CONSOLE PATCH ({digitalMapping.type})
+            </span>
+            <div className="font-semibold text-white truncate">{digitalMapping.label}</div>
+            <div className="text-neutral-400 text-[10px] font-normal">{digitalMapping.details}</div>
           </div>
         )}
 
         {/* Bottom Actions Toolbar */}
-        <div className="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[10px]">
-          <span className="text-slate-500">
-            Click anywhere on canvas or press <kbd className="px-1 py-0.2 bg-slate-800 rounded border border-slate-700 text-slate-300">Esc</kbd> to exit trace
+        <div className="flex items-center justify-between pt-1 border-t border-white/[0.08] text-[10px]">
+          <span className="text-neutral-500 text-[9px]">
+            Press <kbd className="px-1 py-0.5 bg-white/[0.08] rounded border border-white/10 text-neutral-300">Esc</kbd> to exit
           </span>
 
           <button
             onClick={handleUnplug}
-            className="px-2 py-1 bg-rose-950/80 hover:bg-rose-900 text-rose-200 hover:text-white rounded border border-rose-700 flex items-center space-x-1 font-bold transition-colors"
+            className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-white rounded-lg border border-red-500/20 flex items-center space-x-1 font-mono transition-colors"
           >
             <Trash2 className="w-3 h-3" />
             <span>UNPLUG WIRE</span>

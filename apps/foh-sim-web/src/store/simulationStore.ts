@@ -1214,31 +1214,50 @@ export const useSimulationStore = create<SimulationStoreState>()(
         });
       }),
 
-    setDcaMembership: (channelId, dcaId, isMember) =>
+    setDcaMembership: (memberId, dcaId, isMember) =>
       set((state) => {
         if (state.userRole === 'guest') return;
-        const ch = state.sim.digital.channels.find((c) => c.id === channelId);
+        const bit = 1 << (dcaId - 1);
+        const ch = state.sim.digital.channels.find((c) => c.id === memberId);
         if (ch) {
-          const bit = 1 << (dcaId - 1);
           if (isMember) {
             ch.dcaGroupMask |= bit;
           } else {
             ch.dcaGroupMask &= ~bit;
           }
         }
+        const mix = state.sim.digital.mixes.find((m) => m.id === memberId);
+        if (mix) {
+          if (mix.dcaGroupMask === undefined) mix.dcaGroupMask = 0;
+          if (isMember) {
+            mix.dcaGroupMask |= bit;
+          } else {
+            mix.dcaGroupMask &= ~bit;
+          }
+        }
+        state.signalPresence = computeSignalPresence(state.sim);
       }),
 
-    setDcaAllMembers: (dcaId, channelIds) =>
+    setDcaAllMembers: (dcaId, memberIds) =>
       set((state) => {
         if (state.userRole === 'guest') return;
         const bit = 1 << (dcaId - 1);
         state.sim.digital.channels.forEach((ch) => {
-          if (channelIds.includes(ch.id)) {
+          if (memberIds.includes(ch.id)) {
             ch.dcaGroupMask |= bit;
           } else {
             ch.dcaGroupMask &= ~bit;
           }
         });
+        state.sim.digital.mixes.forEach((m) => {
+          if (m.dcaGroupMask === undefined) m.dcaGroupMask = 0;
+          if (memberIds.includes(m.id)) {
+            m.dcaGroupMask |= bit;
+          } else {
+            m.dcaGroupMask &= ~bit;
+          }
+        });
+        state.signalPresence = computeSignalPresence(state.sim);
       }),
 
     updateDcaName: (dcaId, name) =>

@@ -110,17 +110,17 @@ export const PhysicalPlugGraphic: React.FC<PhysicalPlugGraphicProps> = ({
           {/* Top Pin 1 */}
           <span
             style={{ backgroundColor: signalColor }}
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-0.5 rounded-full shadow-[0_0_2px_currentColor]"
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-0.5 rounded-full"
           />
           {/* Bottom Left Pin 2 */}
           <span
             style={{ backgroundColor: signalColor }}
-            className="absolute bottom-0 left-0 w-0.5 h-0.5 rounded-full shadow-[0_0_2px_currentColor]"
+            className="absolute bottom-0 left-0 w-0.5 h-0.5 rounded-full"
           />
           {/* Bottom Right Pin 3 */}
           <span
             style={{ backgroundColor: signalColor }}
-            className="absolute bottom-0 right-0 w-0.5 h-0.5 rounded-full shadow-[0_0_2px_currentColor]"
+            className="absolute bottom-0 right-0 w-0.5 h-0.5 rounded-full"
           />
         </div>
 

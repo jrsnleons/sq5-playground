@@ -87,20 +87,20 @@ export const StageItemPalette: React.FC = () => {
       >
         {/* Palette Body */}
         {isOpen && (
-          <div className="flex-1 bg-slate-900/95 backdrop-blur-md border-r border-slate-800 flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-3 border-b border-slate-800 flex items-center justify-between">
-              <span className="font-bold text-xs uppercase tracking-wider text-slate-200">
+          <div className="flex-1 bg-[#121215]/95 backdrop-blur-md border-r border-white/10 flex flex-col shadow-2xl overflow-hidden font-sans">
+            <div className="p-3 border-b border-white/10 flex items-center justify-between">
+              <span className="font-semibold text-xs uppercase tracking-wider text-neutral-200 font-mono">
                 Stage Palette
               </span>
-              <span className="text-[10px] text-slate-500 font-mono">Stock Limits Active</span>
+              <span className="text-[10px] text-neutral-400 font-mono">Stock Limits</span>
             </div>
 
             {/* Admin Add Custom Item Button */}
             {adminMode && (
-              <div className="p-2 border-b border-slate-800 bg-amber-950/30">
+              <div className="p-2 border-b border-white/10 bg-neutral-900/60">
                 <button
                   onClick={() => setIsCustomModalOpen(true)}
-                  className="w-full py-1.5 px-2 bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/50 rounded text-amber-300 text-xs font-mono font-bold flex items-center justify-center space-x-1.5 transition-all shadow"
+                  className="w-full py-1.5 px-2 bg-neutral-800 hover:bg-neutral-700 border border-white/10 rounded-md text-neutral-200 text-xs font-mono font-medium flex items-center justify-center space-x-1.5 transition-all"
                 >
                   <Cpu className="w-3.5 h-3.5" />
                   <span>+ New Custom Node</span>
@@ -109,15 +109,15 @@ export const StageItemPalette: React.FC = () => {
             )}
 
             {/* Category Tabs */}
-            <div className="flex overflow-x-auto p-1.5 gap-1 border-b border-slate-800/80 bg-slate-950/50 scrollbar-none">
+            <div className="flex overflow-x-auto p-1.5 gap-1 border-b border-white/10 bg-[#0d0d10] scrollbar-none">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`px-2 py-1 rounded text-[10px] whitespace-nowrap transition-colors ${
+                  className={`px-2 py-1 rounded text-[10px] font-mono whitespace-nowrap transition-colors ${
                     activeCategory === cat.id
-                      ? 'bg-sky-600 text-white font-medium'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                      ? 'bg-white/15 text-white font-semibold border border-white/20'
+                      : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.05]'
                   }`}
                 >
                   {cat.label}
@@ -139,48 +139,38 @@ export const StageItemPalette: React.FC = () => {
                     onClick={() => handleAddItem(item.id, available)}
                     className={`group p-2 rounded-lg border transition-all flex items-center justify-between ${
                       isOutOfStock
-                        ? 'bg-slate-950/40 border-slate-800 opacity-50 cursor-not-allowed'
-                        : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700/60 hover:border-sky-500 cursor-pointer'
+                        ? 'bg-black/40 border-white/[0.04] opacity-50 cursor-not-allowed'
+                        : 'bg-[#16161a] hover:bg-[#1f1f25] border-white/10 hover:border-white/30 cursor-pointer shadow-sm'
                     }`}
                   >
-                    <div className="overflow-hidden pr-2 flex-1">
-                      <div className="flex items-center space-x-1.5">
-                        <span
-                          className={`text-xs font-semibold truncate ${
-                            isOutOfStock ? 'text-slate-500' : 'text-slate-200 group-hover:text-sky-300'
-                          }`}
-                        >
-                          {item.displayName}
-                        </span>
-                        {item.isCustom && (
-                          <span className="text-[8px] px-1 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-800">
-                            Custom
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate flex items-center justify-between mt-0.5">
-                        <span className="truncate">{item.makeModel}</span>
-                        <span
-                          className={`font-mono text-[9px] font-bold ${
-                            isOutOfStock ? 'text-rose-400' : 'text-emerald-400'
-                          }`}
-                        >
-                          {isOutOfStock ? 'Depleted' : `${available}/${totalStock}`}
-                        </span>
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-xs text-white group-hover:text-amber-300 transition-colors">
+                        {item.displayName}
+                      </span>
+                      <span className="text-[10px] text-neutral-400 font-mono">
+                        {item.makeModel}
+                      </span>
                     </div>
 
-                    <button
-                      disabled={isOutOfStock}
-                      title={isOutOfStock ? 'Out of Stock in Inventory' : 'Place on stage'}
-                      className={`w-6 h-6 rounded flex items-center justify-center shrink-0 transition-colors ${
-                        isOutOfStock
-                          ? 'bg-slate-900 text-slate-600'
-                          : 'bg-slate-700 group-hover:bg-sky-600 text-slate-300 group-hover:text-white'
-                      }`}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                          available > 0
+                            ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/40'
+                            : 'bg-rose-950/60 text-rose-300 border border-rose-800/40'
+                        }`}
+                      >
+                        {available} left
+                      </span>
+                      <button
+                        disabled={isOutOfStock}
+                        className={`p-1 rounded text-white ${
+                          isOutOfStock ? 'opacity-20' : 'bg-white/10 hover:bg-white/20'
+                        }`}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -191,8 +181,8 @@ export const StageItemPalette: React.FC = () => {
         {/* Toggle Button Tab */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-6 h-12 self-center bg-slate-800 hover:bg-slate-700 border border-slate-700 border-l-0 rounded-r-lg flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors shadow-lg"
-          title={isOpen ? 'Collapse palette' : 'Expand palette'}
+          className="w-6 h-12 self-center bg-[#141417] hover:bg-neutral-800 border border-white/15 border-l-0 rounded-r-lg flex items-center justify-center text-neutral-300 hover:text-white transition-colors shadow-lg"
+          title={isOpen ? 'Collapse stage palette' : 'Expand stage palette'}
         >
           {isOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>

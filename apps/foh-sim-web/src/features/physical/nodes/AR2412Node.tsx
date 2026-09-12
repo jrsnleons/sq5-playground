@@ -26,42 +26,49 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
 
   return (
     <div
-      className={`w-[660px] bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 rounded-xl shadow-2xl p-3 text-slate-100 font-sans transition-all ${
+      className={`w-[680px] bg-[#161619] border rounded-xl shadow-[0_16px_40px_-6px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.18)] p-3 text-neutral-100 font-sans transition-all ${
         isNodeTraced
-          ? 'border-sky-400 shadow-[0_0_24px_rgba(56,189,248,0.35)] ring-2 ring-sky-400/40'
+          ? 'border-white ring-2 ring-white/50 z-30'
           : selected
-          ? 'border-sky-500 shadow-sky-500/20'
-          : 'border-slate-700'
+          ? 'border-white ring-2 ring-white/40'
+          : 'border-white/20 hover:border-white/35'
       }`}
     >
       {/* Faceplate Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-        <div className="flex items-center space-x-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-slate-500 shadow-inner" />
-          <span className="text-xs font-bold tracking-widest text-slate-300 uppercase font-mono">
+      <div className="flex items-center justify-between bg-[#1f1f24] -mx-3 -mt-3 px-3.5 py-2.5 rounded-t-xl border-b border-white/10 mb-3">
+        <div className="flex items-center space-x-2.5">
+          {/* Left Rack Screw Accent */}
+          <div className="w-2.5 h-2.5 rounded-full border border-neutral-600 bg-neutral-800 shadow-inner flex items-center justify-center">
+            <div className="w-1.5 h-0.5 bg-neutral-500 rotate-45" />
+          </div>
+          <span className="text-xs font-bold tracking-widest text-neutral-400 uppercase font-mono">
             ALLEN &amp; HEATH
           </span>
-          <span className="text-sm font-black tracking-wider text-sky-400 font-mono">
+          <span className="text-sm font-black tracking-wider text-white font-mono bg-white/10 px-2 py-0.5 rounded border border-white/15">
             AR2412
           </span>
-          <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+          <span className="text-[10px] font-medium text-neutral-300 bg-white/[0.06] border border-white/10 px-2 py-0.5 rounded font-mono">
             24 IN / 12 OUT AUDIORACK
           </span>
         </div>
 
-        {/* Status LEDs */}
+        {/* Status LEDs & Right Rack Screw */}
         <div className="flex items-center space-x-3 text-[10px] font-mono">
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1.5">
             <span
               className={`w-2 h-2 rounded-full ${
-                isConnected ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-rose-500 shadow-[0_0_6px_#f43f5e]'
+                isConnected ? 'bg-emerald-400' : 'bg-red-500'
               }`}
             />
-            <span className="text-slate-400">dSNAKE</span>
+            <span className="text-neutral-300 font-semibold">dSNAKE</span>
           </div>
-          <div className="flex items-center space-x-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-            <span className="text-slate-400">POWER</span>
+          <div className="flex items-center space-x-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-neutral-300 font-semibold">POWER</span>
+          </div>
+          {/* Right Rack Screw Accent */}
+          <div className="w-2.5 h-2.5 rounded-full border border-neutral-600 bg-neutral-800 shadow-inner flex items-center justify-center ml-1">
+            <div className="w-1.5 h-0.5 bg-neutral-500 -rotate-45" />
           </div>
         </div>
       </div>
@@ -72,11 +79,11 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
         <div className="flex-1 space-y-3">
           {/* Top Row: 24 Mic/Line Inputs */}
           <div>
-            <div className="text-[10px] uppercase font-mono text-slate-400 mb-1 flex items-center justify-between">
-              <span>Inputs 1–24 (XLR Female Mic/Line)</span>
-              <span className="text-sky-400">Remote Preamp 0–60dB</span>
+            <div className="text-[10px] uppercase font-mono text-neutral-400 mb-1 flex items-center justify-between">
+              <span className="font-semibold text-neutral-300">Inputs 1-24 (XLR Female Mic/Line)</span>
+              <span className="text-sky-400 font-mono">Remote Preamp 0-60dB</span>
             </div>
-            <div className="grid grid-cols-12 gap-1.5 p-2 bg-slate-950/80 rounded-lg border border-slate-800">
+            <div className="grid grid-cols-12 gap-1.5 p-2 bg-[#0c0c0e] rounded-lg border border-white/10">
               {Array.from({ length: 24 }, (_, i) => {
                 const portNum = i + 1;
                 const socketId = `ar-in-${portNum}`;
@@ -114,22 +121,22 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
                       id={socketId}
                       className={`!w-3.5 !h-3.5 !rounded-full !border-2 transition-all ${
                         isSocketTraced
-                          ? '!bg-white !border-sky-400 shadow-[0_0_12px_#38bdf8] z-30'
+                          ? '!bg-white !border-white z-30 ring-2 ring-white/40'
                           : connectedCable
-                          ? '!bg-sky-400 !border-slate-950 shadow-[0_0_6px_#38bdf8]'
-                          : '!bg-slate-800 !border-slate-600 hover:!border-slate-400'
+                          ? '!bg-white !border-black'
+                          : '!bg-[#222228] !border-neutral-500 hover:!border-white'
                       }`}
                     />
                     <div
-                      className={`w-6 h-6 rounded-full border flex items-center justify-center mt-1 shadow-inner transition-colors ${
+                      className={`w-6 h-6 rounded-full border flex items-center justify-center mt-1 transition-colors ${
                         isSocketTraced
-                          ? 'bg-sky-950 border-sky-400 shadow-[0_0_8px_#38bdf8]'
-                          : 'bg-slate-800 border-slate-700 group-hover:border-slate-500'
+                          ? 'bg-white/10 border-white'
+                          : 'bg-[#18181c] border-neutral-600 group-hover:border-neutral-300'
                       }`}
                     >
                       <span
                         className={`text-[9px] font-mono font-bold ${
-                          isSocketTraced ? 'text-white font-black' : 'text-slate-300'
+                          isSocketTraced ? 'text-white font-black' : 'text-neutral-200'
                         }`}
                       >
                         {portNum}
@@ -141,22 +148,20 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
             </div>
           </div>
 
-          {/* Bottom Row: 12 Line Outputs */}
+          {/* Bottom Row: 12 XLR Outputs */}
           <div>
-            <div className="text-[10px] uppercase font-mono text-slate-400 mb-1 flex items-center justify-between">
-              <span>Outputs 1–12 (XLR Male Line Out)</span>
-              <span className="text-teal-400">IEM &amp; PA Feeds</span>
+            <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 mb-1 border-b border-white/[0.08] pb-0.5">
+              <span className="font-semibold text-neutral-300">OUTPUTS (1-12)</span>
+              <span className="text-neutral-400">LINE LEVEL / AUX / PA</span>
             </div>
-            <div className="grid grid-cols-12 gap-1.5 p-2 bg-slate-950/80 rounded-lg border border-slate-800">
+            <div className="grid grid-cols-12 gap-1.5 p-2 bg-[#0c0c0e] rounded-lg border border-white/10">
               {Array.from({ length: 12 }, (_, i) => {
                 const portNum = i + 1;
                 const socketId = `ar-out-${portNum}`;
+                const isSocketTraced = activeTrace?.socketId === socketId;
                 const connectedCable = cables.find(
-                  (c) => c.fromPort === socketId || c.toPort === socketId
+                  (c) => c.toPort === socketId || c.fromPort === socketId
                 );
-                const isSocketTraced =
-                  activeTrace?.socketId === socketId ||
-                  (activeTrace?.cableId && connectedCable?.id === activeTrace.cableId);
 
                 return (
                   <div
@@ -165,20 +170,20 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
                       e.stopPropagation();
                       if (connectedCable) setLockedTrace(socketId, 'stagebox-ar2412');
                     }}
-                    className={`flex flex-col items-center group relative ${
+                    className={`flex flex-col items-center relative group p-0.5 rounded transition-all ${
                       connectedCable ? 'cursor-pointer' : ''
                     }`}
                   >
                     <div
-                      className={`w-6 h-6 rounded-full border flex items-center justify-center mb-1 shadow-inner transition-colors ${
+                      className={`w-6 h-6 rounded-full border flex items-center justify-center mb-1 transition-colors ${
                         isSocketTraced
-                          ? 'bg-teal-950 border-teal-400 shadow-[0_0_8px_#14b8a6]'
-                          : 'bg-slate-800 border-slate-700 group-hover:border-slate-500'
+                          ? 'bg-white/10 border-white'
+                          : 'bg-[#18181c] border-neutral-600 group-hover:border-neutral-300'
                       }`}
                     >
                       <span
                         className={`text-[9px] font-mono font-bold ${
-                          isSocketTraced ? 'text-white font-black' : 'text-slate-300'
+                          isSocketTraced ? 'text-white font-black' : 'text-neutral-200'
                         }`}
                       >
                         {portNum}
@@ -191,10 +196,10 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
                       id={socketId}
                       className={`!w-3.5 !h-3.5 !rounded-full !border-2 transition-all ${
                         isSocketTraced
-                          ? '!bg-white !border-teal-400 shadow-[0_0_12px_#2dd4bf] z-30'
+                          ? '!bg-white !border-white z-30 ring-2 ring-white/40'
                           : connectedCable
-                          ? '!bg-teal-400 !border-slate-950 shadow-[0_0_6px_#2dd4bf]'
-                          : '!bg-slate-800 !border-slate-600 hover:!border-slate-400'
+                          ? '!bg-white !border-black'
+                          : '!bg-[#222228] !border-neutral-500 hover:!border-white'
                       }`}
                     />
 
@@ -215,8 +220,8 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
         </div>
 
         {/* Right Section: EtherCon Network Ports */}
-        <div className="w-32 flex flex-col justify-between border-l border-slate-800 pl-3">
-          <div className="text-[10px] font-mono text-slate-400 uppercase">Network</div>
+        <div className="w-32 flex flex-col justify-between border-l border-white/10 pl-3">
+          <div className="text-[10px] font-mono text-neutral-300 uppercase font-semibold">Network</div>
 
           {/* dSNAKE Port */}
           <div
@@ -224,10 +229,10 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
               e.stopPropagation();
               if (hasDsnakeCable) setLockedTrace('ar-dsnake', 'stagebox-ar2412');
             }}
-            className={`flex flex-col items-center bg-slate-950/90 p-2 rounded-lg border transition-all ${
+            className={`flex flex-col items-center bg-[#0c0c0e] p-2 rounded-lg border transition-all ${
               activeTrace?.socketId === 'ar-dsnake'
-                ? 'border-emerald-400 shadow-[0_0_12px_#10b981]'
-                : 'border-slate-800'
+                ? 'border-emerald-400 ring-1 ring-emerald-400/40'
+                : 'border-white/10'
             } ${hasDsnakeCable ? 'cursor-pointer' : ''}`}
           >
             <span className="text-[10px] font-mono font-bold text-emerald-400 mb-1">dSNAKE</span>
@@ -240,7 +245,7 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
                   isTraced={true}
                 />
               )}
-              <div className="w-8 h-8 rounded-md bg-slate-800 border-2 border-emerald-600/80 flex items-center justify-center shadow-inner">
+              <div className="w-8 h-8 rounded-md bg-[#18181c] border border-emerald-500/50 flex items-center justify-center">
                 <Radio className="w-4 h-4 text-emerald-400" />
               </div>
               <Handle
@@ -249,33 +254,33 @@ export const AR2412Node: React.FC<NodeProps> = memo(({ selected }) => {
                 id="ar-dsnake"
                 className={`!w-4 !h-4 !rounded-sm !border-2 transition-all ${
                   hasDsnakeCable && isConnected
-                    ? '!bg-emerald-500 !border-slate-950 shadow-[0_0_8px_#10b981]'
-                    : '!bg-slate-800 !border-slate-600'
+                    ? '!bg-emerald-500 !border-black'
+                    : '!bg-[#222228] !border-neutral-500'
                 }`}
               />
             </div>
-            <span className="text-[9px] text-slate-500 mt-1">To SQ SLink</span>
+            <span className="text-[9px] text-neutral-400 mt-1 font-mono">To SQ SLink</span>
           </div>
 
           {/* Expander Port */}
-          <div className="flex flex-col items-center bg-slate-950/50 p-1.5 rounded border border-slate-800/80">
-            <span className="text-[9px] font-mono text-slate-400">EXPANDER</span>
+          <div className="flex flex-col items-center bg-[#0c0c0e] p-1.5 rounded border border-white/10">
+            <span className="text-[9px] font-mono text-neutral-400">EXPANDER</span>
             <Handle
               type="source"
               position={Position.Right}
               id="ar-expander"
-              className="!w-3 !h-3 !rounded-sm !bg-slate-700 !border !border-slate-900"
+              className="!w-3 !h-3 !rounded-sm !bg-neutral-700 !border !border-neutral-900"
             />
           </div>
 
           {/* Monitor Port */}
-          <div className="flex flex-col items-center bg-slate-950/50 p-1.5 rounded border border-slate-800/80">
-            <span className="text-[9px] font-mono text-slate-400">MONITOR</span>
+          <div className="flex flex-col items-center bg-[#0c0c0e] p-1.5 rounded border border-white/10">
+            <span className="text-[9px] font-mono text-neutral-400">MONITOR</span>
             <Handle
               type="source"
               position={Position.Right}
               id="ar-monitor"
-              className="!w-3 !h-3 !rounded-sm !bg-slate-700 !border !border-slate-900"
+              className="!w-3 !h-3 !rounded-sm !bg-neutral-700 !border !border-neutral-900"
             />
           </div>
         </div>

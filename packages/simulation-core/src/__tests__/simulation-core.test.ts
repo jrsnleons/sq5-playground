@@ -316,6 +316,32 @@ describe('FOH SQ-5 Simulator — Acceptance Criteria (AC-1 to AC-16)', () => {
     expect(presence.channelsWithSignal[kick.id]).toBe(false);
   });
 
+  it('Feature: Mix groups and auxes assigned to DCA groups cut presence on DCA mute', () => {
+    const state = createInitialState('church');
+    const drumGrp = state.digital.mixes.find((m) => m.id === 'mix-12')!; // GRP Drums
+
+    // Initial check: drumGrp has signal from drum channels and is unmuted
+    let presence = computeSignalPresence(state);
+    expect(presence.mixesWithSignal['mix-12']).toBe(true);
+
+    // Assign GRP Drums to DCA 1 (bitmask 1 << 0 = 1)
+    drumGrp.dcaGroupMask = 1;
+
+    // With DCA 1 unmuted, presence remains active
+    presence = computeSignalPresence(state);
+    expect(presence.mixesWithSignal['mix-12']).toBe(true);
+
+    // Muting DCA 1 cuts signal presence on GRP Drums
+    state.digital.dcas[0].mute = true;
+    presence = computeSignalPresence(state);
+    expect(presence.mixesWithSignal['mix-12']).toBe(false);
+
+    // Unmuting DCA 1 restores signal presence on GRP Drums
+    state.digital.dcas[0].mute = false;
+    presence = computeSignalPresence(state);
+    expect(presence.mixesWithSignal['mix-12']).toBe(true);
+  });
+
   it('Feature: Subgroups, triple-patched Stream Aux, and 2 Stereo Matrices for arrays', () => {
     const state = createInitialState('church');
 

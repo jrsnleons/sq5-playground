@@ -26,7 +26,7 @@ export const DEFAULT_STOCK_SIMULATIONS: PracticeSimulation[] = [
     description: 'Ensure musicians never lose their monitor mix when FOH mutes a vocal channel.',
     category: 'iem',
     difficulty: 'intermediate',
-    briefing: '### Objectives\n1. Navigate to **Console > Routing > Channel Routing (CH 2)**.\n2. Verify that **IEM AG (Aux 2)** and **IEM WL (Aux 3)** are set to **PRE-FADE**.\n3. Return to **Faders** and press **MUTE** on Channel 2 (Lead Vocal).\n4. Observe the channel LED ladder and IEM Aux send meters — notice that pre-fade sends continue flowing to the musicians even with FOH muted!',
+    briefing: '### Objectives\n1. Navigate to **Console > Routing > Channel Routing (CH 2)**.\n2. Verify that **IEM AG (Aux 2)** and **IEM WL (Aux 3)** are set to **PRE-FADE**.\n3. Return to **Faders** and press **MUTE** on Channel 2 (Lead Vocal).\n4. Observe the channel LED ladder and IEM Aux send meters: notice that pre-fade sends continue flowing to the musicians even with FOH muted!',
     startingRig: null,
     isPublished: true,
     authorName: 'FOH Systems Engineer'

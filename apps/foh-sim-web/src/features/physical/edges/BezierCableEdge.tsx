@@ -18,6 +18,7 @@ export const BezierCableEdge: React.FC<EdgeProps> = memo(({
   const hasSignal = useSimulationStore((s) => s.signalPresence.cableHasSignal[id]);
   const activeTrace = useSimulationStore((s) => s.activeTrace);
   const setLockedTrace = useSimulationStore((s) => s.setLockedTrace);
+  const setSelectedNodeId = useSimulationStore((s) => s.setSelectedNodeId);
   const cables = useSimulationStore((s) => s.sim.physical.cables);
   const currentCable = cables.find((c) => c.id === id);
   const signalType = (data?.signalType as SignalType) || 'generic';
@@ -65,6 +66,7 @@ export const BezierCableEdge: React.FC<EdgeProps> = memo(({
 
   const handleEdgeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setSelectedNodeId(null);
     if (currentCable) {
       setLockedTrace(currentCable.toPort, currentCable.toNode);
     }

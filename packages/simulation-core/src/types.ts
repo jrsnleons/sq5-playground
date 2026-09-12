@@ -156,6 +156,8 @@ export interface MixChannel {
   compressor: ProcessingCompressor;
   delayMs: number; // 0 to 682 ms
   mainLRAssigned: boolean;
+  dcaGroupMask?: number; // bitmask for DCA 1-8
+  muteGroupMask?: number; // bitmask for Mute Group 1-8
 }
 
 export interface MatrixChannel {

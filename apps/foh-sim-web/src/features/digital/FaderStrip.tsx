@@ -51,34 +51,34 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
     ? (signalPresence.rawInputsWithSignal?.[channel.linkedChannelId] ?? signalPresence.channelsWithSignal[channel.linkedChannelId])
     : hasSignalL;
 
-  const renderMeterBar = (signal: boolean, widthClass: string = 'w-2.5', label?: string) => (
+  const renderMeterBar = (signal: boolean, widthClass: string = 'w-2', label?: string) => (
     <div
-      className={`${widthClass} h-72 bg-slate-950 rounded-xs p-0.5 flex flex-col justify-between border border-slate-800`}
+      className={`${widthClass} h-72 bg-black rounded-xs p-0.5 flex flex-col justify-between border border-white/[0.08]`}
       title={label}
     >
       <div
         className={`w-full h-1.5 rounded-xs transition-opacity ${
-          signal && faderVal > 0 ? 'bg-rose-500 opacity-100 shadow-[0_0_4px_#f43f5e]' : 'bg-rose-950 opacity-40'
+          signal && faderVal > 0 ? 'bg-red-500 opacity-100' : 'bg-red-950/30 opacity-40'
         }`}
       />
       <div
         className={`w-full h-1.5 rounded-xs transition-opacity ${
-          signal && faderVal >= -6 ? 'bg-amber-400 opacity-100' : 'bg-amber-950 opacity-40'
+          signal && faderVal >= -6 ? 'bg-amber-400 opacity-100' : 'bg-amber-950/30 opacity-40'
         }`}
       />
       <div
         className={`w-full h-1.5 rounded-xs transition-opacity ${
-          signal && faderVal >= -18 ? 'bg-emerald-400 opacity-100' : 'bg-emerald-950 opacity-40'
+          signal && faderVal >= -18 ? 'bg-emerald-400 opacity-100' : 'bg-emerald-950/30 opacity-40'
         }`}
       />
       <div
         className={`w-full h-1.5 rounded-xs transition-opacity ${
-          signal ? 'bg-emerald-400 opacity-100' : 'bg-emerald-950 opacity-40'
+          signal ? 'bg-emerald-400 opacity-100' : 'bg-emerald-950/30 opacity-40'
         }`}
       />
       <div
         className={`w-full h-1.5 rounded-xs transition-opacity ${
-          signal ? 'bg-emerald-500 opacity-100 shadow-[0_0_4px_#10b981]' : 'bg-emerald-950 opacity-40'
+          signal ? 'bg-emerald-500 opacity-100' : 'bg-emerald-950/30 opacity-40'
         }`}
       />
     </div>
@@ -106,9 +106,9 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
 
   return (
     <div
-      className={`${channel.stereo ? 'w-22' : 'w-20'} bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-1.5 shrink-0 select-none transition-colors ${
-        isSelected ? 'bg-slate-850 ring-1 ring-sky-500/50' : ''
-      } ${isSendsOnFaders ? 'border-t-2 border-t-teal-500' : ''}`}
+      className={`${channel.stereo ? 'w-22' : 'w-20'} bg-[#0A0A0A] border-r border-white/[0.06] flex flex-col justify-between p-1.5 shrink-0 select-none transition-colors ${
+        isSelected ? 'bg-[#121212] ring-1 ring-white/20' : ''
+      } ${isSendsOnFaders ? 'border-t-2 border-t-amber-400' : ''}`}
     >
       {/* Top: PAFL & SEL Buttons */}
       <div className="space-y-1">
@@ -117,8 +117,8 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
           onClick={() => toggleChannelPAFL(channel.id)}
           className={`w-full py-1 text-[10px] font-bold font-mono rounded transition-colors ${
             channel.pafl
-              ? 'bg-amber-400 text-slate-950 shadow-[0_0_8px_#fbbf24]'
-              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+              ? 'bg-amber-400 text-black'
+              : 'bg-zinc-900 text-zinc-400 border border-white/[0.06] hover:bg-zinc-800 hover:text-white'
           }`}
         >
           PAFL
@@ -133,11 +133,11 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
               setSelectedChannel(channel.id);
             }
           }}
-          title={isSelected ? 'Already selected (Click again to view Processing)' : 'Select Channel'}
+          title={isSelected ? 'Selected (Click to view Processing)' : 'Select Channel'}
           className={`w-full py-1 text-[10px] font-bold font-mono rounded transition-colors ${
             isSelected
-              ? 'bg-sky-500 text-white shadow-[0_0_8px_#38bdf8]'
-              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+              ? 'bg-white text-black font-semibold'
+              : 'bg-zinc-900 text-zinc-400 border border-white/[0.06] hover:bg-zinc-800 hover:text-white'
           }`}
         >
           SEL
@@ -149,14 +149,14 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
         <div className="my-1">
           <button
             onClick={() => toggleSendPreFade(channel.id, activeMixId)}
-            className={`w-full py-0.5 text-[9px] font-mono font-bold rounded border transition-all ${
+            className={`w-full py-0.5 text-[9px] font-mono font-bold rounded border transition-colors ${
               currentSend.preFade
-                ? 'bg-amber-950 text-amber-300 border-amber-600 shadow-[0_0_4px_#f59e0b]'
-                : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200'
+                ? 'bg-amber-950/40 text-amber-300 border-amber-500/50'
+                : 'bg-black text-zinc-400 border-white/[0.08] hover:text-white'
             }`}
             title="Toggle Pre-Fade / Post-Fade send point"
           >
-            {currentSend.preFade ? 'PRE-FADE' : 'POST-FADE'}
+            {currentSend.preFade ? 'PRE' : 'POST'}
           </button>
         </div>
       )}
@@ -165,12 +165,12 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
       <div className="flex-1 flex justify-center items-center py-2 space-x-1.5">
         {/* Vertical LED Meter Bar (Dual L/R for stereo, single for mono) */}
         {channel.stereo ? (
-          <div className="flex items-center space-x-1" title="Stereo Left / Right LED Meters">
+          <div className="flex items-center space-x-1" title="Stereo Left / Right Meters">
             {renderMeterBar(hasSignalL, 'w-1.5', 'Left Meter')}
             {renderMeterBar(hasSignalR, 'w-1.5', 'Right Meter')}
           </div>
         ) : (
-          renderMeterBar(hasSignalL, 'w-2.5', 'Channel Meter')
+          renderMeterBar(hasSignalL, 'w-2', 'Channel Meter')
         )}
 
         {/* Fader Track & Knob */}
@@ -189,15 +189,15 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
             aria-valuemax={10}
             aria-valuenow={faderVal}
             aria-valuetext={faderVal <= -85 ? 'Minus Infinity dB' : `${faderVal.toFixed(1)} dB`}
-            className={`fader-slider fader-vertical focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none ${
-              isGuest ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
+            className={`fader-slider fader-vertical ${
+              isGuest ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
             }`}
           />
         </div>
       </div>
 
       {/* dB readout */}
-      <div className="text-center font-mono text-[10px] text-slate-300 py-0.5 bg-slate-950/80 rounded border border-slate-800/80 my-1">
+      <div className="text-center font-mono text-[10px] text-zinc-400 py-0.5 bg-black rounded border border-white/[0.06] my-1 tabular-nums">
         {faderVal <= -85 ? '-∞' : `${faderVal > 0 ? '+' : ''}${faderVal.toFixed(1)} dB`}
       </div>
 
@@ -207,24 +207,24 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
           onClick={handleMuteOrAssignClick}
           disabled={isGuest}
           aria-label={isSendsOnFaders ? `Toggle Mix Assignment for ${channel.name}` : `Mute ${channel.name}`}
-          className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-all focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none ${
+          className={`w-full py-1.5 text-[10px] font-bold font-mono rounded transition-colors ${
             isGuest ? 'cursor-not-allowed opacity-60' : ''
           } ${
             isSendsOnFaders
               ? currentSend.assigned
-                ? 'bg-teal-600 text-white shadow-[0_0_6px_#14b8a6]'
-                : 'bg-rose-950 text-rose-300 border border-rose-700'
+                ? 'bg-amber-400 text-black font-semibold'
+                : 'bg-zinc-900 text-zinc-500 border border-white/[0.06]'
               : channel.mute
-              ? 'bg-rose-600 text-white shadow-[0_0_8px_#e11d48]'
+              ? 'bg-red-600 text-white font-semibold'
               : isDcaMuted
-              ? 'bg-rose-950 text-rose-300 border border-rose-700 animate-pulse'
-              : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+              ? 'bg-red-950/60 text-red-300 border border-red-800'
+              : 'bg-zinc-900 text-zinc-300 border border-white/[0.06] hover:bg-zinc-800 hover:text-white'
           }`}
         >
           {isSendsOnFaders
             ? currentSend.assigned
-              ? 'ON (ASSIGN)'
-              : 'OFF (MUTED)'
+              ? 'ASSIGNED'
+              : 'OFF'
             : isDcaMuted && !channel.mute
             ? 'DCA MUTE'
             : 'MUTE'}
@@ -237,22 +237,27 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
             setSelectedChannel(channel.id);
             setActiveScreen('processing');
           }}
-          style={{ borderLeftColor: channel.color }}
-          className="p-1 rounded bg-slate-950 border border-slate-800 border-l-4 cursor-pointer hover:border-slate-700 transition-colors"
+          className="p-1.5 rounded bg-black border border-white/[0.08] cursor-pointer hover:border-white/20 transition-colors"
           title="Click to select, double-click to view channel processing"
         >
-          <div className="flex items-center justify-between text-[9px] font-mono text-slate-500">
-            <span>
-              {channel.stereo ? `CH ${channel.channelNumber}-${channel.channelNumber + 1}` : `CH ${channel.channelNumber}`}
-            </span>
+          <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500 mb-0.5">
+            <div className="flex items-center space-x-1">
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: channel.color || '#71717a' }}
+              />
+              <span>
+                {channel.stereo ? `CH ${channel.channelNumber}-${channel.channelNumber + 1}` : `CH ${channel.channelNumber}`}
+              </span>
+            </div>
             {channel.stereo && (
-              <span className="px-1 rounded bg-teal-950 text-teal-300 border border-teal-800 text-[8px] font-bold">
+              <span className="px-1 rounded bg-zinc-800 text-zinc-300 text-[8px] font-bold">
                 ST
               </span>
             )}
           </div>
           <div
-            className="text-[11px] font-bold text-slate-200 truncate"
+            className="text-[11px] font-medium text-zinc-200 truncate"
             title={channel.stereo ? `${channel.name} (Stereo Pair)` : channel.name}
           >
             {channel.stereo && channel.name.endsWith(' L') ? `${channel.name.replace(/ L$/, '')} L/R` : channel.name}
@@ -262,3 +267,4 @@ export const FaderStrip: React.FC<FaderStripProps> = ({ channel }) => {
     </div>
   );
 };
+

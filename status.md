@@ -1,9 +1,12 @@
-# Project — Build Status & Handoff
+# Project: Build Status & Handoff
 
-### Current Phase: Full System Implementation & Comprehensive Quality Verification Complete
-## Current Step: Header Streamlining, Profile Avatar, Sign-In Only Modal & Settings Presets Consolidation (Vitest: 28/28 Passing, Clean Build)
+### Current Phase: UI/UX Redesign for the Masses (Minimalist Dark Mode & Clutter Purge)
+## Current Step: Complete — Obsidian Precision UI/UX Deployed Across All Modules
 
 ## ✅ Completed Improvements & Enhancements
+- [x] **UI/UX Redesign (Option 1: Obsidian Precision):** Fully transformed entire application to pitch black (`#000000`) surfaces, card elevations (`#0A0A0A`), hairline borders (`border-white/[0.08]`), Apple-inspired segmented controls, and Next.js / Claude monochrome minimalism.
+- [x] **Anti-Slop & Clutter Purge:** Purged redundant technical glossary text from bottom status strip, removed all diffuse neon arcade glows (`shadow-[0_0_...`), eradicated all em dashes across the codebase (Anti-Slop R-02 compliance), and replaced neon accents with functional studio broadcast cues (red MUTE, amber live mix warning, broadcast green/yellow/red metering).
+- [x] **Full Screen & Modal Modernization:** Redesigned all views including Digital Console (Faders, Processing, Meters, Routing, FX, Setup, Scenes, IO Patch), Physical Stage Canvas, Inventory Screen & Modals, Auth Modal, Simulations Modal, Custom Node Editor, and Cable Trace HUD to Obsidian Precision.
 - [x] **P0 (Critical Audio Fidelity):** Dual signal presence in `signal-flow.ts` and `types.ts` (`rawInputsWithSignal`). Pre-fade IEM sends (`send.preFade === true`) tap raw unmuted input signal, ensuring musician IEM mixes never drop out when FOH mutes a channel.
 - [x] **P0 (Audio Fidelity):** Input metering in `FaderStrip.tsx` bound to `rawInputsWithSignal` so channel LED meter ladder displays live physical input signal even when channel is muted.
 - [x] **P1 (Console Surface):** Implemented functional 28-band GEQ motorized fader flip on `DigitalConsoleView.tsx` with Page 1 (31.5Hz–630Hz), Page 2 (800Hz–16kHz), ±12 dB faders, and Flat All utility.
@@ -20,9 +23,9 @@
 - [x] **P3 (Matrix Feeds):** Added interactive source selection ('main-lr' | 'mix'), stereo toggle, fader, and mute controls to Matrix cards in `RoutingScreen.tsx`.
 - [x] **P3 (Scratch Defaults):** Created generic default Mixes 1–12 and DCAs 1–8 for scratch mode in `factory.ts`.
 - [x] **P3 (DX & Typing):** Added `"typecheck": "tsc --noEmit"` across all packages, verified zero TS errors, and code-split routes via `React.lazy()` to eliminate bundle warnings.
-- [x] **P1 (Security & Auth):** Removed account simulator, demo role switchers, and mock auth fallbacks. Implemented authentic Supabase Authentication backed by PostgreSQL `public.profiles`, with automatic Admin assignment for the initial registrant and strict Guest lockouts for unauthenticated visitors.
-- [x] **P1 (User Management & Provisioning):** Added Admin Dashboard & Users tab in Settings (`SetupScreen.tsx`) to provision team accounts (Email + Initial Password + Display Name + Role) using ephemeral Supabase client (`persistSession: false`) to safeguard active admin session. Added PostgreSQL RPC function `admin_delete_user` and RLS policies on `profiles`. Added "Account & Password" tab in Settings for members to self-service change their password via `supabase.auth.updateUser({ password })`.
-- [x] **P1 (UI Polish & Header Clean-Up):** Streamlined top bar header by removing dSnake connection pill, Presets button, Reset button, and text sync badges. Added sleek circular profile avatar button with initials and role accent ring. Removed public registration from `AuthModal` (sign-in only). Restructured Settings by removing legacy `MIXER CONFIG (BUSES)` and `SURFACE & GEQ` tabs and consolidating starting presets and Reset Configuration into a dedicated `PRESETS & CONFIGURATION` tab.
+- [x] **P1 (Security & Auth):** Authentic Supabase Authentication backed by PostgreSQL `public.profiles`, with automatic Admin assignment for the initial registrant and strict Guest lockouts for unauthenticated visitors.
+- [x] **P1 (User Management & Provisioning):** Added Admin Dashboard & Team tab in Settings (`SetupScreen.tsx`) to provision team accounts (Email + Initial Password + Display Name + Role) using ephemeral Supabase client (`persistSession: false`) to safeguard active admin session. Added PostgreSQL RPC function `admin_delete_user` and RLS policies on `profiles`. Added "Account & Security" tab in Settings for members to self-service change their password via `supabase.auth.updateUser({ password })`.
+- [x] **P1 (Mixer Config Restoration & Settings Clean Separation):** Restored pure Allen & Heath SQ-5 mixer configuration screen (`MixerConfigScreen.tsx`) inside the Digital Console (`DigitalConsoleView.tsx` under `Mixer Config`), dedicated to Mix 1-12 Bus Configuration (Aux/Group, Stereo/Mono, Main LR sum), Channels 1-48 Stereo Pairing, Matrices 1-3, Global Aux Send Tap Point Defaults, and 28-Band GEQ Fader Flip. All administrative user provisioning, password management, and rig presets are strictly isolated in the global Settings screen (`SetupScreen.tsx`).
 
 
 ## 🗂️ File Tree

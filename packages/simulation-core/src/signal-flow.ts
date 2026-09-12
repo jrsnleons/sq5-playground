@@ -147,8 +147,32 @@ export function computeSignalPresence(state: SimulationState): SignalPresenceMap
 
   // 4. Compute Mix presence (Auxes & Subgroups)
   for (const mix of state.digital.mixes) {
+    let isMixMuted = mix.mute;
+
+    // Check DCA mute for Mix channel
+    if (!isMixMuted && (mix.dcaGroupMask ?? 0) > 0) {
+      for (const dca of state.digital.dcas) {
+        const maskBit = 1 << (dca.id - 1);
+        if (((mix.dcaGroupMask ?? 0) & maskBit) && dca.mute) {
+          isMixMuted = true;
+          break;
+        }
+      }
+    }
+
+    // Check Mute Group for Mix channel
+    if (!isMixMuted && (mix.muteGroupMask ?? 0) > 0) {
+      for (const mg of state.digital.muteGroups) {
+        const maskBit = 1 << (mg.id - 1);
+        if (((mix.muteGroupMask ?? 0) & maskBit) && mg.active) {
+          isMixMuted = true;
+          break;
+        }
+      }
+    }
+
     let mixHasSignal = false;
-    if (!mix.mute) {
+    if (!isMixMuted) {
       for (const channel of state.digital.channels) {
         const send = channel.sends[mix.id];
         if (send && send.assigned && send.levelDb > -80) {
@@ -179,7 +203,16 @@ export function computeSignalPresence(state: SimulationState): SignalPresenceMap
     // Also check Subgroups routed into Main LR
     if (!mainLRHasSignal) {
       for (const mix of state.digital.mixes) {
-        if (mix.mode === 'group' && mix.mainLRAssigned && !mix.mute && mixesWithSignal[mix.id] && mix.faderLevel > -80) {
+        let isMixMuted = mix.mute;
+        if (!isMixMuted && (mix.dcaGroupMask ?? 0) > 0) {
+          for (const dca of state.digital.dcas) {
+            if (((mix.dcaGroupMask ?? 0) & (1 << (dca.id - 1))) && dca.mute) {
+              isMixMuted = true;
+              break;
+            }
+          }
+        }
+        if (mix.mode === 'group' && mix.mainLRAssigned && !isMixMuted && mixesWithSignal[mix.id] && mix.faderLevel > -80) {
           mainLRHasSignal = true;
           break;
         }

@@ -8,6 +8,7 @@ export const NodeDetailModal: React.FC = () => {
   const {
     selectedNodeId,
     setSelectedNodeId,
+    clearTrace,
     sim,
     updateStageItemDetails,
     removeStageItem,
@@ -23,6 +24,12 @@ export const NodeDetailModal: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (selectedNodeId) {
+      clearTrace();
+    }
+  }, [selectedNodeId, clearTrace]);
 
   useEffect(() => {
     if (stageItem) {
@@ -83,22 +90,22 @@ export const NodeDetailModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="node-inspector-title"
-      className="absolute right-4 top-4 w-80 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-xl shadow-2xl z-20 overflow-hidden font-sans text-slate-100 animate-in fade-in slide-in-from-right-4 duration-200"
+      className="absolute right-4 top-4 w-80 bg-[#141417]/95 backdrop-blur-md border border-white/15 rounded-xl shadow-[0_16px_40px_-6px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.15)] z-20 overflow-hidden font-sans text-neutral-100 animate-in fade-in slide-in-from-right-4 duration-200"
     >
       {/* Header */}
-      <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+      <div className="p-3 border-b border-white/10 flex items-center justify-between bg-[#1c1c20]">
         <div className="flex items-center space-x-2">
-          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-800">
+          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-white/[0.08] text-neutral-200 border border-white/10 font-bold">
             {stageItem.category}
           </span>
-          <span id="node-inspector-title" className="text-xs font-bold text-slate-200">
+          <span id="node-inspector-title" className="text-xs font-bold text-white tracking-wide">
             Equipment Inspector
           </span>
         </div>
         <button
           onClick={() => setSelectedNodeId(null)}
           aria-label="Close inspector"
-          className="text-slate-400 hover:text-white p-1 rounded transition-colors focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:outline-none"
+          className="text-neutral-400 hover:text-white p-1 rounded-lg transition-colors focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none hover:bg-white/[0.05]"
         >
           <X className="w-4 h-4" />
         </button>
@@ -115,17 +122,17 @@ export const NodeDetailModal: React.FC = () => {
         />
 
         {customPhoto ? (
-          <div className="w-full h-32 bg-slate-950 rounded-lg border border-slate-800 relative overflow-hidden group">
+          <div className="w-full h-32 bg-black rounded-lg border border-white/[0.08] relative overflow-hidden group">
             <img
               src={customPhoto}
               alt={stageItem.name}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-slate-950/75 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+            <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded text-[10px] font-semibold flex items-center space-x-1 shadow"
+                className="px-2.5 py-1 bg-white hover:bg-neutral-200 text-black rounded-lg text-[10px] font-semibold flex items-center space-x-1 shadow"
               >
                 <Camera className="w-3 h-3" />
                 <span>Change</span>
@@ -133,7 +140,7 @@ export const NodeDetailModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => removeNodePhoto(stageItem.id)}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-semibold flex items-center space-x-1 border border-slate-700 shadow"
+                className="px-2.5 py-1 bg-white/[0.06] hover:bg-white/[0.1] text-neutral-300 rounded-lg text-[10px] font-medium flex items-center space-x-1 border border-white/[0.08]"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset</span>
@@ -141,20 +148,20 @@ export const NodeDetailModal: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="w-full h-32 bg-slate-950 rounded-lg border border-slate-800 flex flex-col items-center justify-center relative overflow-hidden group p-2">
-            <div className="w-10 h-10 rounded-full bg-slate-800/80 flex items-center justify-center border border-slate-700 text-sky-400 mb-1">
+          <div className="w-full h-32 bg-black rounded-lg border border-white/[0.08] flex flex-col items-center justify-center relative overflow-hidden group p-2">
+            <div className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center border border-white/[0.08] text-neutral-300 mb-1">
               <Plug className="w-5 h-5" />
             </div>
-            <span className="text-[10px] text-slate-400 font-mono text-center truncate max-w-[90%]">
+            <span className="text-[10px] text-neutral-400 font-mono text-center truncate max-w-[90%]">
               {catalogDef?.defaultPhotoAlt || 'Equipment Stock Photo'}
             </span>
-            <span className="text-[9px] text-slate-600 font-mono mb-1">
+            <span className="text-[9px] text-neutral-500 font-mono mb-1">
               {catalogDef?.makeModel || 'Hardware Unit'}
             </span>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 rounded text-[10px] font-mono border border-slate-700 flex items-center space-x-1 transition-colors"
+              className="px-2.5 py-1 bg-white/[0.06] hover:bg-white/[0.1] text-neutral-200 rounded-lg text-[10px] font-mono border border-white/[0.08] flex items-center space-x-1 transition-colors"
             >
               <Camera className="w-3 h-3" />
               <span>Upload Photo</span>
@@ -163,12 +170,12 @@ export const NodeDetailModal: React.FC = () => {
         )}
 
         {uploadError && (
-          <p className="text-[10px] text-rose-400 font-mono">{uploadError}</p>
+          <p className="text-[10px] text-red-400 font-mono">{uploadError}</p>
         )}
 
         {/* Editable Name */}
         <div>
-          <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+          <label className="text-[10px] uppercase font-mono text-neutral-400 block mb-1">
             Display Label
           </label>
           {isEditing ? (
@@ -177,21 +184,21 @@ export const NodeDetailModal: React.FC = () => {
                 type="text"
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
-                className="flex-1 bg-slate-950 border border-sky-500 rounded px-2 py-1 text-xs text-white focus:outline-none"
+                className="flex-1 bg-black border border-white/30 rounded-lg px-2 py-1 text-xs text-white focus:outline-none"
               />
               <button
                 onClick={handleSave}
-                className="p-1 rounded bg-sky-600 hover:bg-sky-500 text-white"
+                className="p-1 rounded-lg bg-white hover:bg-neutral-200 text-black"
               >
                 <Check className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-between bg-slate-950/60 p-2 rounded border border-slate-800">
-              <span className="font-semibold text-slate-200">{stageItem.name}</span>
+            <div className="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-white/[0.06]">
+              <span className="font-semibold text-neutral-200">{stageItem.name}</span>
               <button
                 onClick={() => setIsEditing(true)}
-                className="text-slate-400 hover:text-sky-400 p-1"
+                className="text-neutral-400 hover:text-white p-1"
               >
                 <Edit3 className="w-3.5 h-3.5" />
               </button>
@@ -201,11 +208,11 @@ export const NodeDetailModal: React.FC = () => {
 
         {/* Connections List */}
         <div>
-          <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+          <label className="text-[10px] uppercase font-mono text-neutral-400 block mb-1">
             Active Cable Connections ({connectedCables.length})
           </label>
           {connectedCables.length === 0 ? (
-            <div className="text-[11px] text-slate-500 italic p-2 bg-slate-950/30 rounded border border-slate-800">
+            <div className="text-[11px] text-neutral-500 italic p-2 bg-black/40 rounded-lg border border-white/[0.06]">
               No cables connected. Drag from the ports to patch.
             </div>
           ) : (
@@ -213,20 +220,20 @@ export const NodeDetailModal: React.FC = () => {
               {connectedCables.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center justify-between p-2 bg-slate-950/80 rounded border border-slate-800 font-mono text-[11px]"
+                  className="flex items-center justify-between p-2 bg-black/60 rounded-lg border border-white/[0.06] font-mono text-[11px]"
                 >
                   <div className="flex items-center space-x-1.5 truncate">
-                    <span className="text-sky-300 font-bold">{c.fromPort}</span>
-                    <span className="text-slate-500">──►</span>
-                    <span className="text-amber-300 font-bold">{c.toPort}</span>
-                    <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 font-mono uppercase">
+                    <span className="text-white font-medium">{c.fromPort}</span>
+                    <span className="text-neutral-500">→</span>
+                    <span className="text-white font-medium">{c.toPort}</span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-white/[0.06] text-neutral-400 font-mono uppercase">
                       {c.signalType}
                     </span>
                   </div>
                   <button
                     onClick={() => removeCable(c.id)}
                     title="Unplug / disconnect this cable"
-                    className="flex items-center space-x-1 px-2 py-1 rounded bg-rose-600/90 hover:bg-rose-500 text-white text-[10px] font-bold transition-colors ml-2 shrink-0 cursor-pointer shadow"
+                    className="flex items-center space-x-1 px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-[10px] font-mono font-medium transition-colors ml-2 shrink-0 cursor-pointer"
                   >
                     <Unlink className="w-3 h-3" />
                     <span>Unplug</span>
@@ -239,7 +246,7 @@ export const NodeDetailModal: React.FC = () => {
 
         {/* Operator Notes */}
         <div>
-          <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+          <label className="text-[10px] uppercase font-mono text-neutral-400 block mb-1">
             Sound Tech Notes
           </label>
           <textarea
@@ -247,16 +254,16 @@ export const NodeDetailModal: React.FC = () => {
             onChange={(e) => setNotesInput(e.target.value)}
             onBlur={handleSave}
             placeholder="e.g., Wireless channel 4, battery status, stage position..."
-            className="w-full h-16 bg-slate-950/80 border border-slate-800 rounded p-2 text-xs text-slate-300 focus:outline-none focus:border-slate-600 resize-none"
+            className="w-full h-16 bg-black/60 border border-white/[0.08] focus:border-white/40 rounded-lg p-2 text-xs text-neutral-200 focus:outline-none resize-none placeholder:text-neutral-600 font-sans"
           />
         </div>
 
         {/* Actions */}
-        <div className="pt-2 border-t border-slate-800 flex justify-between items-center">
+        <div className="pt-2 border-t border-white/[0.06] flex justify-between items-center">
           <button
             type="button"
             onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center space-x-1.5 text-xs text-rose-400 hover:text-rose-300 p-1 rounded transition-colors"
+            className="flex items-center space-x-1.5 text-xs text-red-400 hover:text-red-300 p-1 rounded-lg transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>Remove Gear</span>
@@ -264,7 +271,7 @@ export const NodeDetailModal: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedNodeId(null)}
-            className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs transition-colors"
+            className="px-3 py-1 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-neutral-200 rounded-lg text-xs font-mono transition-colors"
           >
             Done
           </button>

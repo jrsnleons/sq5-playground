@@ -65,29 +65,9 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
   };
 
   const getBorderColor = () => {
-    if (isItemTraced) return 'border-sky-400 ring-2 ring-sky-400/60 shadow-[0_0_18px_rgba(56,189,248,0.4)] z-30';
-    if (selected) return 'border-sky-400 ring-2 ring-sky-400/30';
-    switch (stageItem.category) {
-      case 'mic':
-        return 'border-sky-800/80';
-      case 'instrument':
-        return 'border-orange-800/80';
-      case 'di-box':
-        return 'border-amber-800/80';
-      case 'speaker':
-        return 'border-slate-700';
-      case 'iem':
-        return 'border-teal-800/80';
-      case 'click':
-      case 'comms':
-        return 'border-yellow-800/80';
-      case 'stream':
-        return 'border-cyan-800/80';
-      case 'processing':
-        return 'border-violet-800/80';
-      default:
-        return 'border-slate-700';
-    }
+    if (isItemTraced) return 'border-white ring-2 ring-white/50 z-30 shadow-[0_0_0_1px_rgba(255,255,255,0.4)]';
+    if (selected) return 'border-white ring-2 ring-white/40';
+    return 'border-white/20 hover:border-white/40';
   };
 
   const isDI = stageItem.category === 'di-box';
@@ -111,31 +91,17 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
   const getHandleClass = (connector: string, portId: string) => {
     const isConnected = isPortConnected(portId);
     if (!isConnected) {
-      return '!w-3 !h-3 !rounded-full !border-2 !bg-slate-800 !border-slate-600 hover:!border-slate-400 transition-all';
+      return '!w-3 !h-3 !rounded-full !border !bg-[#24242a] !border-neutral-400 hover:!border-white hover:!bg-neutral-600 transition-all';
     }
     switch (connector.toLowerCase()) {
-      case 'rf':
-      case 'rf-in':
-      case 'rf-out':
-        return '!w-3 !h-3 !rounded-full !border-2 !bg-purple-400 !border-slate-950 shadow-[0_0_6px_#c084fc] transition-all';
-      case 'trs':
-      case 'ts':
-      case 'instrument':
-        return '!w-3 !h-3 !rounded-full !border-2 !bg-amber-500 !border-slate-950 shadow-[0_0_6px_#f59e0b] transition-all';
       case 'ethercon':
-        return '!w-3 !h-3 !rounded-sm !border-2 !bg-emerald-500 !border-slate-950 shadow-[0_0_6px_#10b981] transition-all';
-      case 'thru':
-      case 'speaker':
-        return '!w-3 !h-3 !rounded-full !border-2 !bg-teal-400 !border-slate-950 shadow-[0_0_6px_#2dd4bf] transition-all';
       case 'usb':
-        return '!w-3 !h-3 !rounded-sm !border-2 !bg-amber-400 !border-slate-950 shadow-[0_0_6px_#fbbf24] transition-all';
       case 'hdmi':
       case 'hdmi-in':
       case 'hdmi-out':
-        return '!w-3 !h-3 !rounded-sm !border-2 !bg-indigo-400 !border-slate-950 shadow-[0_0_6px_#818cf8] transition-all';
-      case 'xlr':
+        return '!w-3 !h-3 !rounded-sm !border !bg-white !border-black transition-all';
       default:
-        return '!w-3 !h-3 !rounded-full !border-2 !bg-sky-400 !border-slate-950 shadow-[0_0_6px_#38bdf8] transition-all';
+        return '!w-3 !h-3 !rounded-full !border !bg-white !border-black transition-all';
     }
   };
 
@@ -150,13 +116,15 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
         const nodeCable = cables.find((c) => c.fromNode === id || c.toNode === id);
         if (nodeCable) setLockedTrace(null, id);
       }}
-      className={`min-w-[160px] max-w-[210px] bg-slate-900/95 backdrop-blur border rounded-lg shadow-xl px-2.5 py-1.5 text-slate-100 font-sans cursor-pointer transition-all ${getBorderColor()}`}
+      className={`min-w-[175px] max-w-[225px] bg-[#161619] border rounded-xl shadow-[0_8px_24px_-4px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.18)] p-2.5 text-neutral-100 font-sans cursor-pointer transition-all ${getBorderColor()}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between pb-1 border-b border-slate-800/80 mb-1">
-        <div className="flex items-center space-x-1.5 overflow-hidden">
-          {getCategoryIcon()}
-          <span className="text-xs font-semibold truncate text-slate-200" title={stageItem.name}>
+      <div className="flex items-center justify-between pb-1.5 border-b border-white/10 mb-2">
+        <div className="flex items-center space-x-2 overflow-hidden">
+          <div className="p-1 rounded bg-white/[0.06] border border-white/10 shrink-0">
+            {getCategoryIcon()}
+          </div>
+          <span className="text-xs font-semibold truncate text-white tracking-wide" title={stageItem.name}>
             {stageItem.name}
           </span>
         </div>
@@ -167,15 +135,15 @@ export const StageItemNode: React.FC<NodeProps> = memo(({ id, selected, data }) 
               removeStageItem(id);
             }}
             title="Delete item"
-            className="text-slate-500 hover:text-rose-400 p-0.5 rounded transition-colors ml-1"
+            className="text-neutral-400 hover:text-red-400 p-0.5 rounded transition-colors ml-1"
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
       {/* Ports Area */}
-      <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 py-0.5">
+      <div className="flex items-center justify-between text-[10px] font-mono text-neutral-300 py-0.5">
         {/* Left Side: Input Handles */}
         {isCustom ? (
           <div className="flex flex-col space-y-1">

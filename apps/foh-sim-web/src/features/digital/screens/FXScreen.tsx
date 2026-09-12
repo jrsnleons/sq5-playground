@@ -42,15 +42,15 @@ export const FXScreen: React.FC = () => {
   };
 
   return (
-    <div className="h-full bg-slate-950 p-6 overflow-y-auto select-none font-sans text-slate-100">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-6">
+    <div className="h-full bg-black p-6 overflow-y-auto select-none font-sans text-neutral-100">
+      <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 mb-6">
         <div className="flex items-center space-x-2">
-          <Sparkles className="w-5 h-5 text-amber-400" />
-          <h2 className="text-base font-bold text-white uppercase font-mono">
+          <Sparkles className="w-4 h-4 text-neutral-400" />
+          <h2 className="text-sm font-semibold text-white uppercase font-mono tracking-wide">
             8 Stereo RackExtra FX Engines
           </h2>
         </div>
-        <span className="text-xs text-slate-500 font-mono">SQ-5 V1.6.0 FX RACK</span>
+        <span className="text-xs text-neutral-500 font-mono">SQ-5 V1.6.0 FX RACK</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -60,19 +60,19 @@ export const FXScreen: React.FC = () => {
           return (
             <div
               key={fx.id}
-              className={`p-4 bg-slate-900 rounded-xl border transition-all shadow-lg space-y-3 ${
-                st.active ? 'border-slate-800 hover:border-amber-500/60' : 'border-slate-800/40 opacity-60'
+              className={`p-4 bg-[#0A0A0A] rounded-xl border transition-all space-y-3 ${
+                st.active ? 'border-white/[0.12] hover:border-white/30' : 'border-white/[0.04] opacity-50'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-bold text-amber-400">FX {fx.id}</span>
+                <span className="text-xs font-mono font-semibold text-neutral-400">FX {fx.id}</span>
                 <button
                   type="button"
                   onClick={() => updateParam(fx.id, 'active', !st.active)}
-                  className={`flex items-center space-x-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-colors ${
+                  className={`flex items-center space-x-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-medium border transition-colors ${
                     st.active
-                      ? 'bg-emerald-950 text-emerald-400 border-emerald-700'
-                      : 'bg-rose-950 text-rose-400 border-rose-700'
+                      ? 'bg-white/10 text-white border-white/20'
+                      : 'bg-neutral-900 text-neutral-500 border-white/[0.08]'
                   }`}
                 >
                   <Power className="w-2.5 h-2.5" />
@@ -80,15 +80,15 @@ export const FXScreen: React.FC = () => {
                 </button>
               </div>
 
-              <div className="font-bold text-slate-200 text-sm">{fx.name}</div>
+              <div className="font-semibold text-neutral-200 text-sm">{fx.name}</div>
 
               {/* Sliders */}
-              <div className="space-y-2 pt-1">
+              <div className="space-y-2.5 pt-1">
                 {/* Param 1 */}
                 <div>
-                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-0.5">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 mb-1">
                     <span>{fx.p1Label}</span>
-                    <span className="text-amber-300 font-bold">{st.param1}{fx.p1Unit}</span>
+                    <span className="text-white font-medium">{st.param1}{fx.p1Unit}</span>
                   </div>
                   <input
                     type="range"
@@ -98,15 +98,15 @@ export const FXScreen: React.FC = () => {
                     value={st.param1}
                     disabled={!st.active}
                     onChange={(e) => updateParam(fx.id, 'param1', parseFloat(e.target.value))}
-                    className="w-full accent-amber-500 cursor-pointer disabled:opacity-50"
+                    className="w-full accent-white cursor-pointer disabled:opacity-40"
                   />
                 </div>
 
                 {/* Param 2 */}
                 <div>
-                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-0.5">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 mb-1">
                     <span>{fx.p2Label}</span>
-                    <span className="text-amber-300 font-bold">{st.param2}{fx.p2Unit}</span>
+                    <span className="text-white font-medium">{st.param2}{fx.p2Unit}</span>
                   </div>
                   <input
                     type="range"
@@ -116,15 +116,15 @@ export const FXScreen: React.FC = () => {
                     value={st.param2}
                     disabled={!st.active}
                     onChange={(e) => updateParam(fx.id, 'param2', parseFloat(e.target.value))}
-                    className="w-full accent-amber-500 cursor-pointer disabled:opacity-50"
+                    className="w-full accent-white cursor-pointer disabled:opacity-40"
                   />
                 </div>
 
                 {/* Mix % */}
                 <div>
-                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-0.5">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400 mb-1">
                     <span>Wet Mix</span>
-                    <span className="text-slate-300 font-bold">{st.mix}%</span>
+                    <span className="text-neutral-300 font-medium">{st.mix}%</span>
                   </div>
                   <input
                     type="range"
@@ -134,14 +134,14 @@ export const FXScreen: React.FC = () => {
                     value={st.mix}
                     disabled={!st.active}
                     onChange={(e) => updateParam(fx.id, 'mix', parseInt(e.target.value, 10))}
-                    className="w-full accent-amber-500 cursor-pointer disabled:opacity-50"
+                    className="w-full accent-white cursor-pointer disabled:opacity-40"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px] text-slate-400 font-mono">
+              <div className="flex items-center justify-between pt-2 border-t border-white/[0.08] text-[10px] text-neutral-400 font-mono">
                 <span>Return: {fx.returnChan}</span>
-                <span className="text-slate-500">{fx.mode}</span>
+                <span className="text-neutral-500">{fx.mode}</span>
               </div>
             </div>
           );

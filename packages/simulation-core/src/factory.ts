@@ -213,7 +213,9 @@ export function createInitialMixes(presetType: 'church' | 'scratch' = 'church'):
         peq: createDefaultPEQ(),
         compressor: createDefaultCompressor(),
         delayMs: 0,
-        mainLRAssigned: false
+        mainLRAssigned: false,
+        dcaGroupMask: 0,
+        muteGroupMask: 0
       };
     });
   }
@@ -246,7 +248,9 @@ export function createInitialMixes(presetType: 'church' | 'scratch' = 'church'):
     peq: createDefaultPEQ(),
     compressor: createDefaultCompressor(),
     delayMs: 0,
-    mainLRAssigned: m.mainLRAssigned ?? false
+    mainLRAssigned: m.mainLRAssigned ?? false,
+    dcaGroupMask: 0,
+    muteGroupMask: 0
   }));
 }
 

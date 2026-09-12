@@ -8,7 +8,7 @@ import { MetersScreen } from './screens/MetersScreen';
 import { RoutingScreen } from './screens/RoutingScreen';
 import { FXScreen } from './screens/FXScreen';
 import { ScenesScreen } from './screens/ScenesScreen';
-import { SetupScreen } from './screens/SetupScreen';
+import { MixerConfigScreen } from './screens/MixerConfigScreen';
 import { HelpScreen } from './screens/HelpScreen';
 import {
   Sliders,
@@ -54,13 +54,48 @@ export const DigitalConsoleView: React.FC = () => {
 
   // SQ-MixPad Primary Navigation Tabs (processing and helpguide hidden for now as requested)
   const screenKeys = [
-    { id: 'faders', label: 'Faders', icon: Sliders },
-    { id: 'meters', label: 'Meters', icon: BarChart2 },
-    { id: 'routing', label: 'Routing', icon: Share2 },
-    { id: 'io', label: 'I/O Patch', icon: Network },
-    { id: 'fx', label: 'FX Racks', icon: Sparkles },
-    { id: 'scenes', label: 'Scenes', icon: Bookmark },
-    { id: 'setup', label: 'Mixer Config', icon: Settings }
+    {
+      id: 'faders',
+      label: 'Faders',
+      icon: Sliders,
+      description: 'Motorized channel faders, preamp gains, pans, and DCA strips'
+    },
+    {
+      id: 'meters',
+      label: 'Meters',
+      icon: BarChart2,
+      description: 'High-density 48-channel broadcast meter bridge and peak indicators'
+    },
+    {
+      id: 'routing',
+      label: 'Routing',
+      icon: Share2,
+      description: 'Mix bus sends, aux routing matrix, and DCA assignments'
+    },
+    {
+      id: 'io',
+      label: 'I/O Patch',
+      icon: Network,
+      description: 'Crosspoint digital patch matrix for stageboxes and console I/O'
+    },
+    {
+      id: 'fx',
+      label: 'FX Racks',
+      icon: Sparkles,
+      description: '4 stereo studio FX processors (Reverbs, Delays, Chorus)'
+    },
+    {
+      id: 'scenes',
+      label: 'Scenes',
+      icon: Bookmark,
+      description: 'Console snapshot deck and church worship presets'
+    },
+    {
+      id: 'setup',
+      label: 'Mixer Config',
+      icon: Settings,
+      description: 'Console utilities, routing modes, and preferences'
+    }
   ] as const;
 
   const selectedMixObj = sim.digital.mixes.find((m) => m.id === activeMixId);
@@ -76,10 +111,10 @@ export const DigitalConsoleView: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full bg-slate-950 flex flex-col overflow-hidden select-none">
+    <div className="w-full h-full bg-black flex flex-col overflow-hidden select-none">
       {/* SQ Top Navigation Bar */}
-      <nav className="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-20">
-        <div className="flex items-center space-x-1.5 overflow-x-auto py-1">
+      <nav className="h-11 bg-black border-b border-white/[0.08] px-3.5 flex items-center justify-between shrink-0 z-20">
+        <div className="flex items-center space-x-1 overflow-x-auto py-1">
           {screenKeys.map((k) => {
             const Icon = k.icon;
             const isActive =
@@ -90,13 +125,13 @@ export const DigitalConsoleView: React.FC = () => {
               <button
                 key={k.id}
                 onClick={() => setActiveScreen(k.id as any)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${
+                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-colors ${
                   isActive
-                    ? 'bg-sky-600 text-white shadow-[0_0_10px_#0284c7]'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    ? 'bg-white/10 text-white border border-white/10 font-semibold'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-zinc-400'}`} />
                 <span>{k.label}</span>
               </button>
             );
@@ -105,12 +140,12 @@ export const DigitalConsoleView: React.FC = () => {
 
         {/* Selected Mix Indicator */}
         <div className="hidden md:flex items-center space-x-2 font-mono text-xs">
-          <span className="text-slate-500">MIX KEY:</span>
+          <span className="text-zinc-500 text-[10px] uppercase">TARGET:</span>
           <span
-            className={`px-2.5 py-1 rounded font-bold border transition-all ${
+            className={`px-2 py-0.5 rounded text-xs font-mono font-medium border ${
               isSendsOnFader
-                ? 'bg-teal-950 text-teal-300 border-teal-700 shadow-[0_0_8px_#14b8a6]'
-                : 'bg-amber-950 text-amber-300 border-amber-700'
+                ? 'bg-amber-950/40 text-amber-300 border-amber-500/50'
+                : 'bg-zinc-900 text-zinc-200 border-white/10'
             }`}
           >
             {activeMixId === 'main-lr'
@@ -122,17 +157,17 @@ export const DigitalConsoleView: React.FC = () => {
 
       {/* Guest Read-Only Mode Banner */}
       {userRole === 'guest' && (
-        <div className="bg-amber-950/50 border-b border-amber-600/40 px-4 py-2 flex items-center justify-between text-xs font-mono shrink-0">
+        <div className="bg-zinc-900/90 border-b border-amber-500/30 px-4 py-1.5 flex items-center justify-between text-xs font-mono shrink-0">
           <div className="flex items-center space-x-2 text-amber-300">
             <Lock className="w-3.5 h-3.5 shrink-0" />
-            <span className="font-bold">READ-ONLY MODE:</span>
-            <span className="text-slate-300 font-sans hidden sm:inline">
-              You are exploring the console in preview mode. Faders, routing, patching, and renaming are locked.
+            <span className="font-bold">PREVIEW MODE:</span>
+            <span className="text-zinc-300 font-sans hidden sm:inline">
+              Faders, routing, patching, and renaming are locked. Sign in to mix live.
             </span>
           </div>
           <button
             onClick={() => setAuthModalOpen(true)}
-            className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-colors shadow"
+            className="px-2 py-0.5 rounded bg-white text-black font-semibold text-xs hover:bg-zinc-200 transition-colors"
           >
             Sign In to Mix
           </button>
@@ -148,53 +183,62 @@ export const DigitalConsoleView: React.FC = () => {
         {activeScreen === 'routing' && <RoutingScreen />}
         {activeScreen === 'fx' && <FXScreen />}
         {activeScreen === 'scenes' && <ScenesScreen />}
-        {activeScreen === 'setup' && <SetupScreen />}
+        {activeScreen === 'setup' && <MixerConfigScreen />}
         {activeScreen === 'utility' && <HelpScreen />}
 
         {/* Faders / Surface Screen (Default View) */}
         {(activeScreen === 'faders' || (activeScreen as string) === 'home') && (
-          <div className="w-full h-full flex flex-col bg-slate-950 overflow-hidden">
+          <div className="w-full h-full flex flex-col bg-black overflow-hidden">
             {/* Fader Navigation Sub-Bar: Mix Selection & Bank/Layers */}
-            <div className="h-11 bg-slate-900/90 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 space-x-2 overflow-x-auto">
+            <div className="h-10 bg-black border-b border-white/[0.08] px-3.5 flex items-center justify-between shrink-0 space-x-2 overflow-x-auto">
               {/* Sends on Fader Mix Selector Keys */}
-              <div className="flex items-center space-x-1 overflow-x-auto shrink-0 py-1">
-                <span className="text-[10px] font-mono text-slate-500 uppercase mr-1">
-                  MIX SELECT:
+              <div className="flex items-center space-x-1 overflow-x-auto shrink-0 py-0.5">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase mr-1">
+                  MIX:
                 </span>
 
                 {/* Main LR */}
                 <button
                   onClick={() => setSelectedMix('main-lr')}
-                  className={`px-3 py-1 rounded text-xs font-mono font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded text-xs font-mono font-medium transition-colors border ${
                     activeMixId === 'main-lr'
-                      ? 'bg-amber-500 text-slate-950 shadow-[0_0_8px_#f59e0b]'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
+                      ? 'bg-white text-black border-white'
+                      : 'bg-zinc-900 text-zinc-400 border-white/[0.06] hover:text-white'
                   }`}
                 >
-                  LR (MAIN)
+                  MAIN LR
                 </button>
 
                 {/* Mixes 1-12 (Auxes and Subgroups) */}
                 {sim.digital.mixes.map((mix) => {
                   const isGroup = mix.mode === 'group';
                   const isSelected = activeMixId === mix.id;
+                  let isMixDcaMuted = false;
+                  if ((mix.dcaGroupMask ?? 0) > 0) {
+                    for (const dca of sim.digital.dcas) {
+                      if (((mix.dcaGroupMask ?? 0) & (1 << (dca.id - 1))) && dca.mute) {
+                        isMixDcaMuted = true;
+                        break;
+                      }
+                    }
+                  }
 
                   return (
                     <button
                       key={mix.id}
                       onClick={() => setSelectedMix(mix.id)}
-                      title={`${mix.name} (${isGroup ? 'Subgroup' : 'Aux'}, ${mix.stereo ? 'Stereo' : 'Mono'})`}
-                      className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold transition-all whitespace-nowrap border ${
+                      className={`px-2 py-1 rounded text-[11px] font-mono font-medium transition-colors whitespace-nowrap border flex items-center space-x-1.5 ${
                         isSelected
-                          ? isGroup
-                            ? 'bg-indigo-500 text-white border-indigo-400 shadow-[0_0_8px_#6366f1]'
-                            : 'bg-teal-500 text-slate-950 border-teal-400 shadow-[0_0_8px_#14b8a6]'
-                          : isGroup
-                          ? 'bg-indigo-950/60 text-indigo-300 border-indigo-800 hover:text-white hover:bg-indigo-900/60'
-                          : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                          ? 'bg-amber-400 text-black border-amber-400 font-semibold'
+                          : isMixDcaMuted
+                          ? 'bg-red-950/40 text-red-300 border-red-500/40 hover:border-red-400'
+                          : 'bg-zinc-900 text-zinc-400 border-white/[0.06] hover:text-white hover:border-white/20'
                       }`}
                     >
-                      {isGroup ? `[GRP] ${mix.name.replace(/^GRP\s*/, '')}` : mix.name}
+                      {isMixDcaMuted && !isSelected && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                      )}
+                      <span>{isGroup ? `[GRP] ${mix.name.replace(/^GRP\s*/, '')}` : mix.name}</span>
                     </button>
                   );
                 })}
@@ -203,31 +247,31 @@ export const DigitalConsoleView: React.FC = () => {
               {/* Surface Bank Navigation & GEQ Flip Controls */}
               <div className="flex items-center space-x-2 shrink-0 font-mono text-[11px]">
                 {/* Bank Quick Jumps */}
-                <div className="hidden xl:flex items-center space-x-1 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                  <span className="text-slate-500 text-[10px]">JUMP:</span>
+                <div className="hidden xl:flex items-center space-x-1 bg-zinc-950 px-2 py-0.5 rounded border border-white/[0.06]">
+                  <span className="text-zinc-500 text-[10px]">BANK:</span>
                   <button
                     onClick={() => { scrollToBank(1); setLayer('A'); }}
-                    className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px]"
+                    className="px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[10px]"
                   >
-                    1–16
+                    1-16
                   </button>
                   <button
                     onClick={() => { scrollToBank(17); setLayer('B'); }}
-                    className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px]"
+                    className="px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[10px]"
                   >
-                    17–32
+                    17-32
                   </button>
                   <button
                     onClick={() => { scrollToBank(33); setLayer('C'); }}
-                    className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px]"
+                    className="px-1.5 py-0.5 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[10px]"
                   >
-                    33–48
+                    33-48
                   </button>
                 </div>
 
                 {/* Layer Keys A-F */}
-                <div className="flex items-center space-x-0.5 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
-                  <span className="text-slate-500 text-[10px] mr-1 hidden sm:inline">LAYER:</span>
+                <div className="flex items-center space-x-0.5 bg-zinc-950 px-1 py-0.5 rounded border border-white/[0.06]">
+                  <span className="text-zinc-500 text-[10px] mr-1 hidden sm:inline">LAYER:</span>
                   {(['A', 'B', 'C', 'D', 'E', 'F'] as const).map((layer) => (
                     <button
                       key={layer}
@@ -237,10 +281,10 @@ export const DigitalConsoleView: React.FC = () => {
                         if (layer === 'B') scrollToBank(17);
                         if (layer === 'C') scrollToBank(33);
                       }}
-                      className={`w-5 h-5 rounded text-[10px] font-bold transition-all ${
+                      className={`w-5 h-5 rounded text-[10px] font-bold transition-colors ${
                         sim.digital.session.layer === layer
-                          ? 'bg-sky-500 text-white shadow-[0_0_6px_#38bdf8]'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                          ? 'bg-white text-black'
+                          : 'text-zinc-500 hover:text-white hover:bg-zinc-800'
                       }`}
                     >
                       {layer}
@@ -251,11 +295,10 @@ export const DigitalConsoleView: React.FC = () => {
                 {/* GEQ Flip Action Key */}
                 <button
                   onClick={() => cycleGeqFlip()}
-                  title="Toggle Motorized GEQ Fader Flip (1/3-Octave ISO Graphic Equalizer on Faders)"
-                  className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono border transition-all ${
+                  className={`px-2.5 py-1 rounded text-[10px] font-bold font-mono border transition-colors ${
                     sim.digital.session.geqFlipActive
-                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-[0_0_10px_#f59e0b]'
-                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
+                      ? 'bg-amber-400 text-black border-amber-400'
+                      : 'bg-zinc-900 text-zinc-300 border-white/[0.08] hover:text-white hover:bg-zinc-800'
                   }`}
                 >
                   GEQ FLIP {sim.digital.session.geqFlipActive ? `(P${sim.digital.session.geqFlipPage})` : ''}
@@ -265,18 +308,18 @@ export const DigitalConsoleView: React.FC = () => {
 
             {/* Sends on Fader Notice Banner */}
             {isSendsOnFader && !sim.digital.session.geqFlipActive && (
-              <div className="h-7 bg-teal-950/80 border-b border-teal-800 px-4 flex items-center justify-between text-[11px] font-mono text-teal-200 shrink-0">
+              <div className="h-7 bg-zinc-900 border-b border-white/[0.08] px-4 flex items-center justify-between text-[11px] font-mono text-zinc-300 shrink-0">
                 <div className="flex items-center space-x-2">
-                  <Volume2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                  <Volume2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   <span>
-                    <strong>SENDS ON FADER ACTIVE:</strong> Mixing sends for{' '}
-                    <span className="text-white font-bold">{selectedMixObj?.name}</span>. Faders
-                    control send levels. MUTE buttons toggle channel assignment (ON/OFF) in this mix.
+                    <strong className="text-white">SENDS ON FADER:</strong> Mixing for{' '}
+                    <span className="text-amber-300 font-semibold">{selectedMixObj?.name}</span>. Faders
+                    control send levels; MUTE toggles assignment.
                   </span>
                 </div>
                 <button
                   onClick={() => setSelectedMix('main-lr')}
-                  className="text-[10px] px-2 py-0.5 rounded bg-teal-800 hover:bg-teal-700 text-white font-bold transition-colors"
+                  className="text-[10px] px-2 py-0.5 rounded bg-white text-black font-semibold hover:bg-zinc-200 transition-colors"
                 >
                   RETURN TO MAIN LR
                 </button>
@@ -285,34 +328,34 @@ export const DigitalConsoleView: React.FC = () => {
 
             {/* GEQ Fader Flip Banner */}
             {sim.digital.session.geqFlipActive && (
-              <div className="h-8 bg-amber-950/90 border-b border-amber-700/80 px-4 flex items-center justify-between text-xs font-mono text-amber-200 shrink-0">
+              <div className="h-8 bg-zinc-900 border-b border-white/[0.08] px-4 flex items-center justify-between text-xs font-mono text-zinc-200 shrink-0">
                 <div className="flex items-center space-x-3">
-                  <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-[10px]">
+                  <span className="px-2 py-0.5 rounded bg-amber-400 text-black font-bold text-[10px]">
                     GEQ FLIP ACTIVE
                   </span>
-                  <span className="font-bold text-white">
-                    28-Band Graphic Equalizer for &ldquo;{geqTargetMix.name}&rdquo; (±12 dB)
+                  <span className="font-medium text-zinc-100">
+                    28-Band Equalizer for &ldquo;{geqTargetMix.name}&rdquo; (±12 dB)
                   </span>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   {/* Page Toggles */}
-                  <div className="flex items-center space-x-1 bg-slate-950 px-2 py-0.5 rounded border border-amber-800/80">
+                  <div className="flex items-center space-x-1 bg-black px-1.5 py-0.5 rounded border border-white/[0.08]">
                     <button
                       onClick={() => setGeqFlipPage(1)}
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        geqPage === 1 ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                        geqPage === 1 ? 'bg-amber-400 text-black' : 'text-zinc-400 hover:text-white'
                       }`}
                     >
-                      BANDS 1–14 (31.5Hz–630Hz)
+                      BANDS 1-14 (31.5Hz-630Hz)
                     </button>
                     <button
                       onClick={() => setGeqFlipPage(2)}
                       className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        geqPage === 2 ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                        geqPage === 2 ? 'bg-amber-400 text-black' : 'text-zinc-400 hover:text-white'
                       }`}
                     >
-                      BANDS 15–28 (800Hz–16kHz)
+                      BANDS 15-28 (800Hz-16kHz)
                     </button>
                   </div>
 
@@ -320,7 +363,7 @@ export const DigitalConsoleView: React.FC = () => {
                   <button
                     onClick={() => resetAllMixGeq(geqTargetMix.id)}
                     title="Flatten all 28 GEQ bands to 0 dB"
-                    className="flex items-center space-x-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold border border-slate-700"
+                    className="flex items-center space-x-1 px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[10px] font-medium border border-white/[0.08]"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span>FLAT ALL</span>
@@ -329,9 +372,9 @@ export const DigitalConsoleView: React.FC = () => {
                   {/* Exit GEQ Flip */}
                   <button
                     onClick={() => setGeqFlipPage(0)}
-                    className="px-2.5 py-1 rounded bg-amber-700 hover:bg-amber-600 text-white font-bold text-[10px] transition-colors"
+                    className="px-2 py-1 rounded bg-white text-black font-semibold text-[10px] hover:bg-zinc-200 transition-colors"
                   >
-                    EXIT GEQ FLIP
+                    EXIT GEQ
                   </button>
                 </div>
               </div>
@@ -341,7 +384,7 @@ export const DigitalConsoleView: React.FC = () => {
             <div className="flex-1 flex overflow-hidden">
               {sim.digital.session.geqFlipActive ? (
                 /* GEQ 14-Fader Active Surface */
-                <div className="flex-1 flex justify-center items-stretch overflow-x-auto p-4 bg-slate-950">
+                <div className="flex-1 flex justify-center items-stretch overflow-x-auto p-4 bg-black">
                   <div className="flex space-x-3 items-stretch">
                     {geqBands.map((freqLabel, i) => {
                       const bandIdx = geqBandStartIndex + i;
@@ -350,27 +393,27 @@ export const DigitalConsoleView: React.FC = () => {
                       return (
                         <div
                           key={bandIdx}
-                          className="w-16 bg-slate-900 border border-slate-800 rounded-lg p-2 flex flex-col justify-between items-center shadow-lg group hover:border-amber-500/60 transition-colors"
+                          className="w-16 bg-[#0A0A0A] border border-white/[0.06] rounded-lg p-2 flex flex-col justify-between items-center group hover:border-amber-400/50 transition-colors"
                         >
                           {/* Frequency Tag */}
                           <div className="text-center">
                             <span className="text-[10px] font-mono font-bold text-amber-400 block">
                               {freqLabel}Hz
                             </span>
-                            <span className="text-[9px] font-mono text-slate-500">
+                            <span className="text-[9px] font-mono text-zinc-500">
                               Band {bandIdx + 1}
                             </span>
                           </div>
 
                           {/* Gain Readout */}
-                          <div className="text-center font-mono text-[10px] font-bold text-slate-200 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800 w-full">
+                          <div className="text-center font-mono text-[10px] font-semibold text-zinc-200 bg-black px-1.5 py-0.5 rounded border border-white/[0.06] w-full">
                             {gainDb > 0 ? `+${gainDb.toFixed(1)}` : `${gainDb.toFixed(1)}`} dB
                           </div>
 
                           {/* Vertical Fader Track */}
                           <div className="h-64 flex items-center justify-center relative py-2">
                             {/* 0 dB Center Mark */}
-                            <div className="absolute w-6 h-[1px] bg-slate-600 top-1/2 pointer-events-none" />
+                            <div className="absolute w-6 h-[1px] bg-zinc-700 top-1/2 pointer-events-none" />
 
                             <input
                               type="range"
@@ -381,7 +424,7 @@ export const DigitalConsoleView: React.FC = () => {
                               onChange={(e) => setMixGeqBand(geqTargetMix.id, bandIdx, parseFloat(e.target.value))}
                               aria-label={`GEQ ${freqLabel}Hz band`}
                               aria-valuenow={gainDb}
-                              className="fader-slider fader-vertical cursor-pointer accent-amber-500"
+                              className="fader-slider fader-vertical cursor-pointer"
                             />
                           </div>
 
@@ -390,7 +433,7 @@ export const DigitalConsoleView: React.FC = () => {
                             type="button"
                             onClick={() => resetMixGeqBand(geqTargetMix.id, bandIdx)}
                             title="Reset this band to 0 dB"
-                            className="w-full py-1 text-[9px] font-mono font-bold rounded bg-slate-800 hover:bg-amber-600 hover:text-slate-950 text-slate-400 transition-colors border border-slate-700"
+                            className="w-full py-0.5 text-[9px] font-mono font-medium rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors border border-white/[0.06]"
                           >
                             0 dB
                           </button>
@@ -403,7 +446,7 @@ export const DigitalConsoleView: React.FC = () => {
                 /* Continuous 48-Channel Fader Surface Ribbon */
                 <div
                   ref={fadersContainerRef}
-                  className="flex-1 flex overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-950"
+                  className="flex-1 flex overflow-x-auto overflow-y-hidden scroll-smooth bg-black"
                 >
                   {sim.digital.channels
                     .filter((channel) => !channel.isStereoSlave)
@@ -414,7 +457,7 @@ export const DigitalConsoleView: React.FC = () => {
               )}
 
               {/* Context-Sensitive Master Strip on Far Right */}
-              <div className="shrink-0 border-l-2 border-slate-800 shadow-2xl z-10">
+              <div className="shrink-0 border-l border-white/[0.08] z-10 bg-black">
                 <MasterStrip />
               </div>
             </div>

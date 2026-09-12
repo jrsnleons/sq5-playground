@@ -2,7 +2,6 @@ import React, { Suspense, lazy, useEffect } from 'react';
 import { useSimulationStore } from './store/simulationStore';
 import { TopBar } from './components/layout/TopBar';
 import { LeftRail } from './components/layout/LeftRail';
-import { BottomStatusStrip } from './components/layout/BottomStatusStrip';
 import { NoticesModal } from './components/modals/NoticesModal';
 import { EntryModeModal } from './components/modals/EntryModeModal';
 import { SimulationBriefingBanner } from './components/layout/SimulationBriefingBanner';
@@ -40,9 +39,9 @@ const HelpScreen = lazy(() =>
 );
 
 const ViewLoadingFallback = () => (
-  <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-400 space-y-2">
-    <Loader2 className="w-6 h-6 animate-spin text-sky-400" />
-    <span className="text-xs font-mono tracking-wider">LOADING MODULE...</span>
+  <div className="w-full h-full flex flex-col items-center justify-center bg-black text-zinc-400 space-y-2">
+    <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+    <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase">Loading Module</span>
   </div>
 );
 
@@ -140,7 +139,7 @@ export const App: React.FC = () => {
   }, [toastNotice, setToastNotice]);
 
   return (
-    <div className="w-screen h-screen flex flex-col bg-slate-950 overflow-hidden select-none font-sans">
+    <div className="w-screen h-screen flex flex-col bg-black overflow-hidden select-none font-sans text-zinc-100">
       {/* Mobile Display Restriction Screen */}
       <MobileBlockScreen />
 
@@ -151,7 +150,7 @@ export const App: React.FC = () => {
       <div className="flex-1 flex overflow-hidden relative">
         <LeftRail />
 
-        <main className="flex-1 h-full overflow-hidden relative bg-slate-950">
+        <main className="flex-1 h-full overflow-hidden relative bg-black">
           {/* SimulationBriefingBanner hidden for now as challenges are hidden */}
 
           <Suspense fallback={<ViewLoadingFallback />}>
@@ -177,37 +176,34 @@ export const App: React.FC = () => {
         </main>
       </div>
 
-      {/* Bottom Status Strip */}
-      <BottomStatusStrip />
-
       {/* Global Toast Notification */}
       {toastNotice && (
         <div
           role="alert"
           aria-live="assertive"
-          className="fixed bottom-10 right-6 z-50 max-w-sm bg-slate-900 border border-slate-700 shadow-2xl rounded-xl p-3.5 flex items-start space-x-3 text-xs text-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-200"
+          className="fixed bottom-6 right-6 z-50 max-w-sm bg-zinc-900 border border-white/10 shadow-xl rounded-lg p-3 flex items-start space-x-3 text-xs text-zinc-200 animate-in fade-in slide-in-from-bottom-3 duration-150"
         >
           <div className="mt-0.5 shrink-0">
             {toastNotice.type === 'error' ? (
-              <AlertCircle className="w-4 h-4 text-rose-400" />
+              <AlertCircle className="w-4 h-4 text-red-400" />
             ) : toastNotice.type === 'warning' ? (
               <AlertTriangle className="w-4 h-4 text-amber-400" />
             ) : (
-              <Info className="w-4 h-4 text-sky-400" />
+              <Info className="w-4 h-4 text-zinc-300" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-white font-mono uppercase text-[10px] tracking-wide">
-              {toastNotice.type === 'error' ? 'Connection Blocked' : 'System Notice'}
+            <p className="font-semibold text-zinc-100 font-mono uppercase text-[10px] tracking-wide">
+              {toastNotice.type === 'error' ? 'Connection Blocked' : 'Notice'}
             </p>
-            <p className="text-slate-300 text-[11px] mt-0.5 leading-snug">
+            <p className="text-zinc-300 text-[11px] mt-0.5 leading-snug">
               {toastNotice.message}
             </p>
           </div>
           <button
             onClick={() => setToastNotice(null)}
             aria-label="Dismiss notification"
-            className="text-slate-400 hover:text-white p-0.5 rounded transition-colors shrink-0"
+            className="text-zinc-500 hover:text-zinc-100 p-0.5 rounded transition-colors shrink-0"
           >
             <X className="w-3.5 h-3.5" />
           </button>

@@ -76,29 +76,29 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 select-none">
-      <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 select-none">
+      <div className="w-full max-w-xl bg-[#0A0A0A] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="h-13 bg-slate-950 border-b border-slate-800 px-5 flex items-center justify-between shrink-0">
+        <div className="h-13 bg-black/40 border-b border-white/[0.06] px-5 py-3.5 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2">
-            <Cpu className="w-5 h-5 text-sky-400" />
-            <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wide">
+            <Cpu className="w-4 h-4 text-white" />
+            <h2 className="text-xs font-semibold text-white font-mono uppercase tracking-wider">
               Create Custom Stage Node (Admin)
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded transition-colors"
+            className="text-neutral-400 hover:text-white p-1 rounded-lg transition-colors focus-visible:ring-1 focus-visible:ring-white focus-visible:outline-none hover:bg-white/[0.05]"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 font-mono text-xs text-slate-200">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 font-mono text-xs text-neutral-200">
           {error && (
-            <div className="p-2.5 rounded bg-rose-950/80 border border-rose-800 text-rose-200 flex items-center space-x-2">
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 flex items-center space-x-2">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -106,7 +106,7 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
           {/* Basic Details Grid */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] text-slate-400 uppercase mb-1">
+              <label className="block text-[10px] text-neutral-400 uppercase mb-1">
                 Node Name *
               </label>
               <input
@@ -117,18 +117,18 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
                   setName(e.target.value);
                   setError(null);
                 }}
-                className="w-full px-3 py-1.5 bg-slate-950 rounded border border-slate-800 text-slate-200 focus:outline-none focus:border-sky-500"
+                className="w-full px-3 py-1.5 bg-black rounded-lg border border-white/[0.08] text-white focus:outline-none focus:border-white/40 placeholder:text-neutral-600"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] text-slate-400 uppercase mb-1">
+              <label className="block text-[10px] text-neutral-400 uppercase mb-1">
                 Category
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as any)}
-                className="w-full px-3 py-1.5 bg-slate-950 rounded border border-slate-800 text-slate-200 focus:outline-none focus:border-sky-500"
+                className="w-full px-3 py-1.5 bg-black rounded-lg border border-white/[0.08] text-neutral-200 focus:outline-none focus:border-white/40"
               >
                 <option value="di-box">Direct Box (DI)</option>
                 <option value="mic">Microphone</option>
@@ -141,7 +141,7 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-[10px] text-slate-400 uppercase mb-1">
+              <label className="block text-[10px] text-neutral-400 uppercase mb-1">
                 Make &amp; Model
               </label>
               <input
@@ -149,12 +149,12 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
                 placeholder="e.g. Radial / Behringer / Custom"
                 value={makeModel}
                 onChange={(e) => setMakeModel(e.target.value)}
-                className="w-full px-3 py-1.5 bg-slate-950 rounded border border-slate-800 text-slate-200 focus:outline-none focus:border-sky-500"
+                className="w-full px-3 py-1.5 bg-black rounded-lg border border-white/[0.08] text-white focus:outline-none focus:border-white/40 placeholder:text-neutral-600"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] text-slate-400 uppercase mb-1">
+              <label className="block text-[10px] text-neutral-400 uppercase mb-1">
                 Initial Inventory Stock
               </label>
               <input
@@ -163,20 +163,20 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
                 max="99"
                 value={totalStock}
                 onChange={(e) => setTotalStock(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                className="w-full px-3 py-1.5 bg-slate-950 rounded border border-slate-800 text-slate-200 focus:outline-none focus:border-sky-500"
+                className="w-full px-3 py-1.5 bg-black rounded-lg border border-white/[0.08] text-white focus:outline-none focus:border-white/40"
               />
             </div>
           </div>
 
           {/* Configurable Ports Section */}
-          <div className="pt-2 border-t border-slate-800">
+          <div className="pt-2 border-t border-white/[0.06]">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase text-sky-400 font-bold">
+              <span className="text-[10px] uppercase text-neutral-400 font-medium tracking-wider">
                 Configurable Connectors &amp; Ports ({ports.length})
               </span>
               <button
                 onClick={handleAddPort}
-                className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 text-[10px] font-bold border border-slate-700 transition-colors"
+                className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-white text-[10px] font-medium border border-white/[0.08] transition-colors"
               >
                 <Plus className="w-3 h-3" />
                 <span>Add Port</span>
@@ -187,7 +187,7 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
               {ports.map((port, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center space-x-2 p-2 bg-slate-950 rounded-lg border border-slate-800"
+                  className="flex items-center space-x-2 p-2 bg-black rounded-lg border border-white/[0.06]"
                 >
                   {/* Port ID/Label */}
                   <input
@@ -195,14 +195,14 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
                     value={port.label}
                     onChange={(e) => handleUpdatePort(idx, { label: e.target.value, id: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
                     placeholder="Port Label (e.g. IN 1)"
-                    className="flex-1 px-2 py-1 bg-slate-900 rounded border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-sky-500"
+                    className="flex-1 px-2 py-1 bg-[#0A0A0A] rounded border border-white/[0.08] text-white text-xs focus:outline-none focus:border-white/40"
                   />
 
                   {/* Direction */}
                   <select
                     value={port.direction}
                     onChange={(e) => handleUpdatePort(idx, { direction: e.target.value as any })}
-                    className="w-20 px-2 py-1 bg-slate-900 rounded border border-slate-800 text-slate-300 text-xs focus:outline-none focus:border-sky-500"
+                    className="w-20 px-2 py-1 bg-[#0A0A0A] rounded border border-white/[0.08] text-neutral-300 text-xs focus:outline-none focus:border-white/40"
                   >
                     <option value="in">IN</option>
                     <option value="out">OUT</option>
@@ -213,7 +213,7 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
                   <select
                     value={port.connector}
                     onChange={(e) => handleUpdatePort(idx, { connector: e.target.value as any })}
-                    className="w-36 px-2 py-1 bg-slate-900 rounded border border-slate-800 text-slate-300 text-xs focus:outline-none focus:border-sky-500"
+                    className="w-36 px-2 py-1 bg-[#0A0A0A] rounded border border-white/[0.08] text-neutral-300 text-xs focus:outline-none focus:border-white/40"
                   >
                     <option value="xlr">XLR (3-Pin)</option>
                     <option value="trs">1/4" TRS Jack</option>
@@ -227,7 +227,7 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
                   <button
                     onClick={() => handleRemovePort(idx)}
                     disabled={ports.length <= 1}
-                    className="text-slate-500 hover:text-rose-400 p-1 rounded disabled:opacity-30 transition-colors"
+                    className="text-neutral-500 hover:text-red-400 p-1 rounded disabled:opacity-30 transition-colors"
                     title="Remove Port"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -239,16 +239,16 @@ export const CustomNodeEditorModal: React.FC<CustomNodeEditorModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="h-14 bg-slate-950 border-t border-slate-800 px-5 flex items-center justify-end space-x-3 shrink-0">
+        <div className="h-14 bg-black/40 border-t border-white/[0.06] px-5 flex items-center justify-end space-x-3 shrink-0">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded text-xs font-mono font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors"
+            className="px-4 py-1.5 rounded-lg text-xs font-mono text-neutral-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex items-center space-x-1.5 px-4 py-1.5 rounded text-xs font-mono font-bold text-white bg-sky-600 hover:bg-sky-500 shadow-lg shadow-sky-950 transition-all"
+            className="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs font-mono font-medium text-black bg-white hover:bg-neutral-200 transition-all cursor-pointer"
           >
             <Check className="w-3.5 h-3.5" />
             <span>Create &amp; Add to Catalog</span>

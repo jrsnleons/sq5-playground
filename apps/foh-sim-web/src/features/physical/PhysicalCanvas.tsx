@@ -3,7 +3,6 @@ import {
   ReactFlow,
   ReactFlowProvider,
   Background,
-  Controls,
   MiniMap,
   Node,
   Edge,
@@ -165,6 +164,7 @@ const PhysicalCanvasContent: React.FC = () => {
 
   const handleEdgeClick = useCallback(
     (_event: React.MouseEvent, edge: Edge) => {
+      setSelectedNodeId(null);
       setEdges((eds) =>
         eds.map((e) => ({
           ...e,
@@ -172,7 +172,7 @@ const PhysicalCanvasContent: React.FC = () => {
         }))
       );
     },
-    [setEdges]
+    [setEdges, setSelectedNodeId]
   );
 
   const handleConnect = useCallback(
@@ -235,29 +235,29 @@ const PhysicalCanvasContent: React.FC = () => {
   }, [clearTrace, setSelectedNodeId]);
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-slate-950 select-none">
+    <div className="w-full h-full relative overflow-hidden bg-black select-none">
       {/* Logical Zone Labels Background */}
       <div className="absolute inset-0 pointer-events-none flex z-0">
         {/* STAGE ZONE */}
-        <div className="w-1/2 h-full border-r border-slate-800/60 p-6 flex flex-col justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-3xl font-black text-slate-800 tracking-wider font-mono">
+        <div className="w-1/2 h-full border-r border-dashed border-white/[0.12] p-6 flex flex-col justify-between">
+          <div className="flex items-center space-x-2.5">
+            <span className="text-xl font-bold text-neutral-400/80 tracking-widest font-mono uppercase">
               STAGE ZONE
             </span>
-            <span className="text-[11px] text-slate-600 uppercase font-mono">
-              (Sources, DIs, AR2412)
+            <span className="text-[11px] text-neutral-400 uppercase font-mono bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.08]">
+              Sources &bull; DIs &bull; AR2412
             </span>
           </div>
         </div>
 
         {/* FOH ZONE */}
         <div className="w-1/2 h-full p-6 flex flex-col justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-3xl font-black text-slate-800 tracking-wider font-mono">
+          <div className="flex items-center space-x-2.5">
+            <span className="text-xl font-bold text-neutral-400/80 tracking-widest font-mono uppercase">
               FOH / CONSOLE ZONE
             </span>
-            <span className="text-[11px] text-slate-600 uppercase font-mono">
-              (SQ-5 Local I/O, PA &amp; Stream)
+            <span className="text-[11px] text-neutral-400 uppercase font-mono bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.08]">
+              SQ-5 Local I/O &bull; PA &bull; Broadcast
             </span>
           </div>
         </div>
@@ -265,17 +265,17 @@ const PhysicalCanvasContent: React.FC = () => {
 
       {/* Guest Read-Only Mode Banner */}
       {isGuest && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center space-x-3 bg-slate-900/95 border border-amber-500/40 px-4 py-2 rounded-lg shadow-xl backdrop-blur-sm">
-          <div className="flex items-center space-x-1.5 text-xs font-mono text-amber-300">
-            <Lock className="w-3.5 h-3.5 shrink-0" />
-            <span className="font-bold">READ-ONLY PREVIEW:</span>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center space-x-3 bg-[#0A0A0A]/95 border border-white/[0.08] px-4 py-2 rounded-lg shadow-xl backdrop-blur-md">
+          <div className="flex items-center space-x-1.5 text-xs font-mono text-neutral-300">
+            <Lock className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
+            <span className="font-semibold">PREVIEW:</span>
           </div>
-          <span className="text-slate-300 text-xs font-sans hidden sm:inline">
+          <span className="text-neutral-400 text-xs font-sans hidden sm:inline">
             Sign in as Member or Admin to position equipment and patch cables on stage.
           </span>
           <button
             onClick={() => setAuthModalOpen(true)}
-            className="px-2.5 py-1 text-xs font-mono font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded transition-colors shadow"
+            className="px-2.5 py-1 text-xs font-mono font-semibold bg-white hover:bg-neutral-200 text-black rounded-md transition-colors"
           >
             Sign In
           </button>
@@ -326,17 +326,17 @@ const PhysicalCanvasContent: React.FC = () => {
               }
             : undefined
         }
+        proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#1e293b" />
-        <Controls className="!bg-slate-900 !border-slate-700 !fill-slate-300" />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="#333338" />
         <MiniMap
           nodeColor={(node) => {
-            if (node.type === 'ar2412') return '#38bdf8';
-            if (node.type === 'sq5rear') return '#34d399';
-            return '#f59e0b';
+            if (node.type === 'ar2412') return '#ffffff';
+            if (node.type === 'sq5rear') return '#e5e5e5';
+            return '#a3a3a3';
           }}
-          maskColor="rgba(15, 23, 42, 0.7)"
-          className="!bottom-4 !right-4"
+          maskColor="rgba(0, 0, 0, 0.85)"
+          className="!bottom-4 !right-4 !bg-[#141417] !border-white/[0.12]"
         />
       </ReactFlow>
 

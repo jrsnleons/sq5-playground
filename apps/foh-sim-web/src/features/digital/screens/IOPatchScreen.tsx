@@ -214,100 +214,102 @@ export const IOPatchScreen: React.FC = () => {
       });
 
   return (
-    <div className="w-full h-full bg-slate-950 flex flex-col overflow-hidden select-none font-sans text-slate-100">
+    <div className="w-full h-full bg-black flex flex-col overflow-hidden select-none font-sans text-neutral-100">
       {/* Top Console Command Header */}
-      <div className="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0">
+      <div className="h-12 bg-[#0A0A0A] border-b border-white/[0.08] px-4 flex items-center justify-between shrink-0">
         {/* Category Tabs: Inputs / Outputs / Tie Lines */}
         <div className="flex items-center space-x-2">
-          <span className="text-[10px] font-mono uppercase text-slate-400 font-bold mr-1">
+          <span className="text-[10px] font-mono uppercase text-neutral-400 font-medium mr-1">
             I/O MATRIX:
           </span>
-          <button
-            onClick={() => setActiveCategory('inputs')}
-            className={`px-3 py-1.5 text-xs font-bold font-mono rounded transition-colors ${
-              activeCategory === 'inputs'
-                ? 'bg-sky-600 text-white shadow'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            INPUTS (48-CH)
-          </button>
-          <button
-            onClick={() => setActiveCategory('outputs')}
-            className={`px-3 py-1.5 text-xs font-bold font-mono rounded transition-colors ${
-              activeCategory === 'outputs'
-                ? 'bg-teal-600 text-white shadow'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            OUTPUTS (12-BUS)
-          </button>
-          <button
-            onClick={() => setActiveCategory('tielines')}
-            className={`px-3 py-1.5 text-xs font-bold font-mono rounded transition-colors ${
-              activeCategory === 'tielines'
-                ? 'bg-indigo-600 text-white shadow'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            TIE LINES
-          </button>
+          <div className="p-0.5 bg-black rounded-lg border border-white/[0.08] flex items-center">
+            <button
+              onClick={() => setActiveCategory('inputs')}
+              className={`px-3 py-1 text-xs font-medium font-mono rounded-md transition-colors ${
+                activeCategory === 'inputs'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              INPUTS (48-CH)
+            </button>
+            <button
+              onClick={() => setActiveCategory('outputs')}
+              className={`px-3 py-1 text-xs font-medium font-mono rounded-md transition-colors ${
+                activeCategory === 'outputs'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              OUTPUTS (12-BUS)
+            </button>
+            <button
+              onClick={() => setActiveCategory('tielines')}
+              className={`px-3 py-1 text-xs font-medium font-mono rounded-md transition-colors ${
+                activeCategory === 'tielines'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              TIE LINES
+            </button>
+          </div>
         </div>
 
         {/* Center: Source / Destination Sockets Selector */}
         {activeCategory === 'inputs' ? (
-          <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-            <span className="text-[9px] text-slate-400 font-mono uppercase px-1.5">SOURCE:</span>
+          <div className="flex items-center space-x-1 bg-black p-0.5 rounded-lg border border-white/[0.08]">
+            <span className="text-[9px] text-neutral-400 font-mono uppercase px-1.5 font-medium">SOURCE:</span>
             <button
               onClick={() => setSourceBank('slink')}
-              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
+              className={`px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors ${
                 sourceBank === 'slink'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-neutral-400 hover:text-white'
               }`}
             >
               SLink (AR2412 1–24)
             </button>
             <button
               onClick={() => setSourceBank('local')}
-              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
+              className={`px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors ${
                 sourceBank === 'local'
-                  ? 'bg-sky-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-neutral-400 hover:text-white'
               }`}
             >
               Local (SQ-5 1–16)
             </button>
             <button
               onClick={() => setSourceBank('usb')}
-              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
+              className={`px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors ${
                 sourceBank === 'usb'
-                  ? 'bg-amber-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-neutral-400 hover:text-white'
               }`}
             >
               USB-B (1–32)
             </button>
           </div>
         ) : activeCategory === 'outputs' ? (
-          <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-            <span className="text-[9px] text-slate-400 font-mono uppercase px-1.5">OUTPUT PORT:</span>
+          <div className="flex items-center space-x-1 bg-black p-0.5 rounded-lg border border-white/[0.08]">
+            <span className="text-[9px] text-neutral-400 font-mono uppercase px-1.5 font-medium">OUTPUT PORT:</span>
             <button
               onClick={() => setOutputDestBank('local')}
-              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
+              className={`px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors ${
                 outputDestBank === 'local'
-                  ? 'bg-teal-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-neutral-400 hover:text-white'
               }`}
             >
               SQ-5 Local Out (1–12)
             </button>
             <button
               onClick={() => setOutputDestBank('slink')}
-              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
+              className={`px-2.5 py-1 text-xs font-mono font-medium rounded-md transition-colors ${
                 outputDestBank === 'slink'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-neutral-400 hover:text-white'
               }`}
             >
               AR2412 SLink Out (1–12)
@@ -323,10 +325,10 @@ export const IOPatchScreen: React.FC = () => {
                 onClick={handleAutoPatch1to1}
                 disabled={isGuest}
                 title={isGuest ? 'Patching locked in Guest mode' : 'Patch sockets 1-to-1 to input channels'}
-                className={`flex items-center space-x-1 px-3 py-1.5 rounded text-xs font-mono font-bold border transition-colors ${
+                className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-mono font-medium border transition-colors ${
                   isGuest
-                    ? 'opacity-50 cursor-not-allowed bg-slate-900 border-slate-800 text-slate-500'
-                    : 'bg-slate-800 hover:bg-slate-700 text-sky-400 border-slate-700'
+                    ? 'opacity-40 cursor-not-allowed bg-white/[0.02] border-white/[0.04] text-neutral-500'
+                    : 'bg-white/[0.04] hover:bg-white/[0.08] text-white border-white/[0.08]'
                 }`}
               >
                 <Zap className="w-3.5 h-3.5" />
@@ -336,10 +338,10 @@ export const IOPatchScreen: React.FC = () => {
                 onClick={handleUnpatchAll}
                 disabled={isGuest}
                 title={isGuest ? 'Patching locked in Guest mode' : 'Clear all input channel assignments'}
-                className={`flex items-center space-x-1 px-2.5 py-1.5 rounded text-xs font-mono border transition-colors ${
+                className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-mono border transition-colors ${
                   isGuest
-                    ? 'opacity-50 cursor-not-allowed bg-slate-900 border-slate-800 text-slate-500'
-                    : 'bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border-slate-700'
+                    ? 'opacity-40 cursor-not-allowed bg-white/[0.02] border-white/[0.04] text-neutral-500'
+                    : 'bg-white/[0.04] hover:bg-red-500/10 text-neutral-400 hover:text-red-300 border-white/[0.08]'
                 }`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -352,10 +354,10 @@ export const IOPatchScreen: React.FC = () => {
           <button
             onClick={() => setSafeIOLocked(!safeIOLocked)}
             title={safeIOLocked ? 'Safe I/O Lock is ON (Editing blocked)' : 'Safe I/O Lock is OFF (Editing enabled)'}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded text-xs font-mono font-bold transition-all border ${
+            className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all border ${
               safeIOLocked
-                ? 'bg-rose-950 text-rose-300 border-rose-800 shadow-[0_0_6px_#f43f5e]'
-                : 'bg-slate-800 text-emerald-400 border-slate-700 hover:border-emerald-500'
+                ? 'bg-red-500/10 text-red-300 border-red-500/20'
+                : 'bg-white/[0.04] text-neutral-300 border-white/[0.08] hover:border-white/20'
             }`}
           >
             {safeIOLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
@@ -366,36 +368,36 @@ export const IOPatchScreen: React.FC = () => {
 
       {/* Lock Notice Warning Banner */}
       {lockNotice && (
-        <div className="bg-amber-950/90 border-b border-amber-700 px-4 py-1.5 text-xs text-amber-200 flex items-center space-x-2 shrink-0 animate-in fade-in">
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 text-xs text-amber-200 flex items-center space-x-2 shrink-0 animate-in fade-in">
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-          <span className="font-semibold">{lockNotice}</span>
+          <span className="font-medium">{lockNotice}</span>
         </div>
       )}
 
       {/* dSNAKE Disconnected Warning */}
       {activeCategory === 'inputs' && sourceBank === 'slink' && !isDsnakeConnected && (
-        <div className="bg-amber-950/80 border-b border-amber-800 px-4 py-2 text-xs text-amber-200 flex items-center justify-between shrink-0">
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-xs text-amber-200 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
             <span>AR2412 dSNAKE connection is unlinked. Remote SLink patches are offline.</span>
           </div>
-          <span className="font-mono text-[10px] text-amber-400 font-bold">
+          <span className="font-mono text-[10px] text-amber-400 font-medium">
             CONNECT CAT5E CABLE ON STAGE CANVAS TO RESTORE
           </span>
         </div>
       )}
 
       {/* Main Fullscreen Crosspoint Matrix Grid */}
-      <div className="flex-1 overflow-auto bg-slate-950 p-4">
+      <div className="flex-1 overflow-auto bg-black p-4">
         {activeCategory === 'inputs' ? (
           /* Single Continuous 48-Channel Vertical Scroll Grid */
-          <div className="inline-block border border-slate-800 rounded-xl overflow-hidden bg-slate-900/90 shadow-2xl">
+          <div className="inline-block border border-white/[0.08] rounded-xl overflow-hidden bg-[#0A0A0A] shadow-2xl">
             {/* Header Row: Socket Columns (Sticky Top) */}
-            <div className="flex bg-slate-950 sticky top-0 z-30 border-b border-slate-800 shadow-md">
+            <div className="flex bg-black sticky top-0 z-30 border-b border-white/[0.08]">
               {/* Top-Left Header: Channels Column Info */}
-              <div className="w-56 p-2.5 font-mono text-[11px] font-bold text-slate-300 border-r border-slate-800 shrink-0 bg-slate-950 flex items-center justify-between sticky left-0 z-40">
+              <div className="w-56 p-2.5 font-mono text-[10px] font-medium text-neutral-400 border-r border-white/[0.08] shrink-0 bg-black flex items-center justify-between sticky left-0 z-40">
                 <span>DEST CHANNEL (1–48)</span>
-                <span className="text-slate-500 text-[9px]">{isGuest ? 'READ-ONLY' : 'DOUBLE-CLICK TO RENAME'}</span>
+                <span className="text-neutral-500 text-[9px]">{isGuest ? 'READ-ONLY' : 'DOUBLE-CLICK TO RENAME'}</span>
               </div>
 
               {/* Socket Headers with Live Status LEDs */}
@@ -407,16 +409,16 @@ export const IOPatchScreen: React.FC = () => {
                   return (
                     <div
                       key={sock.id}
-                      className="w-12 h-14 border-r border-slate-800 flex flex-col items-center justify-between py-1.5 shrink-0 bg-slate-950/95 group hover:bg-slate-900 transition-colors"
+                      className="w-12 h-14 border-r border-white/[0.06] flex flex-col items-center justify-between py-1.5 shrink-0 bg-black group hover:bg-white/[0.03] transition-colors"
                     >
                       {/* Live LED Status */}
                       <div
                         className={`w-2 h-2 rounded-full transition-all ${
                           hasSignal
-                            ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]'
+                            ? 'bg-emerald-400'
                             : cabled
-                            ? 'bg-sky-500/60'
-                            : 'bg-slate-800'
+                            ? 'bg-white/40'
+                            : 'bg-neutral-800'
                         }`}
                         title={
                           hasSignal
@@ -428,12 +430,12 @@ export const IOPatchScreen: React.FC = () => {
                       />
 
                       {/* Socket Number */}
-                      <span className="text-xs font-mono font-bold text-slate-200 group-hover:text-white">
+                      <span className="text-xs font-mono font-medium text-neutral-200 group-hover:text-white">
                         {String(sock.index).padStart(2, '0')}
                       </span>
 
                       {/* Port Type */}
-                      <span className="text-[8px] font-mono text-slate-500 uppercase">
+                      <span className="text-[8px] font-mono text-neutral-500 uppercase">
                         {sock.type === 'usb' ? 'USB' : 'XLR'}
                       </span>
                     </div>
@@ -453,32 +455,33 @@ export const IOPatchScreen: React.FC = () => {
                 <div
                   key={ch.id}
                   onClick={() => setSelectedRowChId(ch.id)}
-                  className={`flex border-b border-slate-800/80 transition-colors ${
+                  className={`flex border-b border-white/[0.04] transition-colors ${
                     isRowSelected
-                      ? 'bg-sky-950/50 border-y border-sky-500/50 shadow-inner'
-                      : 'hover:bg-slate-800/30'
+                      ? 'bg-white/[0.05]'
+                      : 'hover:bg-white/[0.02]'
                   }`}
                 >
                   {/* Sticky Channel Row Header with Inline Renaming */}
                   <div
-                    className={`w-56 p-2 text-xs font-mono border-r border-slate-800 shrink-0 flex items-center justify-between sticky left-0 z-20 transition-colors ${
-                      isRowSelected ? 'bg-slate-900 text-sky-300' : 'bg-slate-950/90'
+                    className={`w-56 p-2 text-xs font-mono border-r border-white/[0.06] shrink-0 flex items-center justify-between sticky left-0 z-20 transition-colors ${
+                      isRowSelected ? 'bg-[#141414] text-white' : 'bg-[#0A0A0A]'
                     }`}
                   >
                     <div className="flex items-center space-x-2 truncate flex-1 mr-1">
-                      <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-sky-400 shrink-0">
+                      <span className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono text-neutral-300 shrink-0">
                         {String(ch.channelNumber).padStart(2, '0')}
                       </span>
                       {ch.stereo && (
                         <span
-                          className="px-1 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-800 text-[8px] font-bold shrink-0"
+                          className="px-1 py-0.5 rounded bg-white/[0.06] text-neutral-300 border border-white/[0.08] text-[8px] font-mono shrink-0"
                           title={ch.isStereoSlave ? 'Stereo Pair: Right Channel' : 'Stereo Pair: Left Channel'}
                         >
                           {ch.isStereoSlave ? 'ST-R' : 'ST-L'}
                         </span>
                       )}
 
-                      {isEditingThisCh && !isGuest ? (
+                      {/* Channel Name with Double Click Renaming */}
+                      {isEditingThisCh ? (
                         <div className="flex items-center space-x-1 flex-1">
                           <input
                             type="text"
@@ -489,12 +492,12 @@ export const IOPatchScreen: React.FC = () => {
                               if (e.key === 'Escape') setEditingChId(null);
                             }}
                             onBlur={() => saveChannelName(ch.id)}
+                            className="bg-black text-white text-xs px-1.5 py-0.5 rounded border border-white/40 focus:outline-none w-28 font-mono"
                             autoFocus
-                            className="w-full px-1.5 py-0.5 bg-slate-900 text-white rounded border border-sky-500 text-xs font-mono focus:outline-none"
                           />
                           <button
                             onClick={() => saveChannelName(ch.id)}
-                            className="text-emerald-400 hover:text-white p-0.5"
+                            className="text-emerald-400 hover:text-emerald-300 p-0.5"
                           >
                             <Check className="w-3 h-3" />
                           </button>
@@ -502,8 +505,8 @@ export const IOPatchScreen: React.FC = () => {
                       ) : (
                         <span
                           onDoubleClick={(e) => !isGuest && startEditingChannel(ch.id, ch.name, e)}
-                          className={`font-semibold text-slate-200 truncate text-[11px] ${
-                            isGuest ? 'cursor-default' : 'cursor-pointer hover:text-sky-300'
+                          className={`font-medium text-neutral-200 truncate text-[11px] ${
+                            isGuest ? 'cursor-default' : 'cursor-pointer hover:text-white'
                           }`}
                           title={isGuest ? ch.name : 'Double-click to rename'}
                         >
@@ -517,13 +520,13 @@ export const IOPatchScreen: React.FC = () => {
                         <button
                           onClick={(e) => startEditingChannel(ch.id, ch.name, e)}
                           title="Rename channel"
-                          className="text-slate-600 hover:text-sky-400 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-neutral-500 hover:text-white p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="w-2.5 h-2.5" />
                         </button>
                       )}
                       {isChActive && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
                       )}
                     </div>
                   </div>
@@ -538,14 +541,14 @@ export const IOPatchScreen: React.FC = () => {
                         <div
                           key={sock.id}
                           onClick={() => handleCellClick(ch.id, sock, ch.name)}
-                          className={`w-12 h-10 border-r border-slate-800/60 flex items-center justify-center cursor-pointer transition-all ${
+                          className={`w-12 h-10 border-r border-white/[0.04] flex items-center justify-center cursor-pointer transition-all ${
                             isPatched
                               ? isSlinkBlocked
-                                ? 'bg-amber-950/70 border-amber-600 text-amber-300'
-                                : 'bg-sky-600 text-white shadow-inner font-bold'
+                                ? 'bg-amber-500/20 border border-amber-500/30 text-amber-300'
+                                : 'bg-white text-black font-semibold'
                               : isRowSelected
-                              ? 'hover:bg-sky-900/40'
-                              : 'hover:bg-slate-800/60'
+                              ? 'hover:bg-white/[0.08]'
+                              : 'hover:bg-white/[0.04]'
                           }`}
                           title={
                             isPatched
@@ -558,13 +561,13 @@ export const IOPatchScreen: React.FC = () => {
                               {isSlinkBlocked ? (
                                 <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
                               ) : (
-                                <span className="text-[10px] font-mono font-black tracking-tighter">
+                                <span className="text-[10px] font-mono font-bold tracking-tight">
                                   {String(sock.index).padStart(2, '0')}
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <span className="w-1 h-1 rounded-full bg-slate-800 group-hover:bg-slate-600" />
+                            <span className="w-1 h-1 rounded-full bg-neutral-800 group-hover:bg-neutral-600" />
                           )}
                         </div>
                       );
@@ -576,28 +579,28 @@ export const IOPatchScreen: React.FC = () => {
           </div>
         ) : activeCategory === 'outputs' ? (
           /* Output 2D Patch Matrix with Local Out 7–12 Stream/Monitor/Record Badges */
-          <div className="inline-block border border-slate-800 rounded-xl overflow-hidden bg-slate-900/90 shadow-2xl">
+          <div className="inline-block border border-white/[0.08] rounded-xl overflow-hidden bg-[#0A0A0A] shadow-2xl">
             {/* Output Header Row: Sockets */}
-            <div className="flex bg-slate-950 sticky top-0 z-30 border-b border-slate-800">
-              <div className="w-60 p-2.5 font-mono text-[10px] font-bold text-slate-400 border-r border-slate-800 shrink-0 bg-slate-950 flex items-center justify-between sticky left-0 z-40">
+            <div className="flex bg-black sticky top-0 z-30 border-b border-white/[0.08]">
+              <div className="w-60 p-2.5 font-mono text-[10px] font-medium text-neutral-400 border-r border-white/[0.08] shrink-0 bg-black flex items-center justify-between sticky left-0 z-40">
                 <span>SOURCE BUS</span>
-                <span className="text-slate-600">▼</span>
+                <span className="text-neutral-500">▼</span>
               </div>
               <div className="flex">
                 {outputSockets.map((sock) => (
                   <div
                     key={sock.id}
-                    className="w-24 h-16 border-r border-slate-800 flex flex-col items-center justify-center p-1 shrink-0 bg-slate-950 text-center"
+                    className="w-24 h-16 border-r border-white/[0.06] flex flex-col items-center justify-center p-1 shrink-0 bg-black text-center"
                   >
-                    <span className="text-[11px] font-mono font-bold text-teal-400">
+                    <span className="text-[11px] font-mono font-medium text-white">
                       {sock.label}
                     </span>
                     {sock.roleBadge && (
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-800 font-bold mt-0.5">
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-neutral-300 border border-white/[0.08] font-medium mt-0.5">
                         {sock.roleBadge}
                       </span>
                     )}
-                    <span className="text-[8px] font-mono text-slate-500 mt-0.5">XLR OUT</span>
+                    <span className="text-[8px] font-mono text-neutral-500 mt-0.5">XLR OUT</span>
                   </div>
                 ))}
               </div>
@@ -607,11 +610,11 @@ export const IOPatchScreen: React.FC = () => {
             {outputBuses.map((bus) => (
               <div
                 key={bus.id}
-                className="flex border-b border-slate-800/80 hover:bg-slate-800/30 transition-colors"
+                className="flex border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors"
               >
-                <div className="w-60 p-2 text-xs font-mono border-r border-slate-800 shrink-0 bg-slate-950/90 flex items-center justify-between sticky left-0 z-20">
-                  <span className="font-bold text-slate-200 truncate">{bus.name}</span>
-                  <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
+                <div className="w-60 p-2 text-xs font-mono border-r border-white/[0.06] shrink-0 bg-[#0A0A0A] flex items-center justify-between sticky left-0 z-20">
+                  <span className="font-medium text-neutral-200 truncate">{bus.name}</span>
+                  <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-white/[0.06] text-neutral-400 font-mono">
                     {bus.type}
                   </span>
                 </div>
@@ -645,20 +648,20 @@ export const IOPatchScreen: React.FC = () => {
                             patchOutputSocket(sock.id, bus.type, bus.id, bus.name);
                           }
                         }}
-                        className={`w-24 h-10 border-r border-slate-800/60 flex items-center justify-center transition-all ${
+                        className={`w-24 h-10 border-r border-white/[0.04] flex items-center justify-center transition-all ${
                           isGuest ? 'cursor-default' : 'cursor-pointer'
                         } ${
                           isPatched
-                            ? 'bg-teal-600 text-white font-bold shadow-inner'
+                            ? 'bg-white text-black font-semibold'
                             : isGuest
                             ? ''
-                            : 'hover:bg-slate-800/60'
+                            : 'hover:bg-white/[0.04]'
                         }`}
                       >
                         {isPatched && (
                           <div className="flex items-center space-x-1">
-                            <CheckCircle2 className="w-4 h-4 text-white" />
-                            <span className="text-[10px] font-mono uppercase">PATCHED</span>
+                            <CheckCircle2 className="w-4 h-4 text-black" />
+                            <span className="text-[10px] font-mono uppercase font-semibold">PATCHED</span>
                           </div>
                         )}
                       </div>
@@ -670,28 +673,28 @@ export const IOPatchScreen: React.FC = () => {
           </div>
         ) : (
           /* Tie Lines View */
-          <div className="max-w-2xl bg-slate-900/90 rounded-xl border border-slate-800 p-6 space-y-4">
-            <div className="flex items-center space-x-2 border-b border-slate-800 pb-3">
-              <ArrowRightLeft className="w-5 h-5 text-indigo-400" />
-              <h3 className="text-sm font-bold text-white uppercase font-mono">
+          <div className="max-w-2xl bg-[#0A0A0A] rounded-xl border border-white/[0.08] p-6 space-y-4">
+            <div className="flex items-center space-x-2 border-b border-white/[0.06] pb-3">
+              <ArrowRightLeft className="w-4 h-4 text-white" />
+              <h3 className="text-xs font-semibold text-white uppercase font-mono tracking-wider">
                 SQ-5 Digital Tie Lines (Point-to-Point Pass-Through)
               </h3>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-neutral-400">
               Tie lines bypass all console input processing and DSP cores, routing physical input sockets directly to digital output ports or option cards (e.g. SLink to USB-B or Local In to Dante).
             </p>
-            <div className="p-4 bg-slate-950 rounded-lg border border-slate-800/80 font-mono text-xs text-slate-300 space-y-2">
+            <div className="p-4 bg-black rounded-lg border border-white/[0.06] font-mono text-xs text-neutral-300 space-y-2">
               <div className="flex justify-between">
-                <span className="text-slate-500">Tie Line 01:</span>
-                <span className="text-indigo-400">AR-IN 01 ──► USB-OUT 01</span>
+                <span className="text-neutral-500">Tie Line 01:</span>
+                <span className="text-neutral-200">AR-IN 01 → USB-OUT 01</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Tie Line 02:</span>
-                <span className="text-indigo-400">AR-IN 02 ──► USB-OUT 02</span>
+                <span className="text-neutral-500">Tie Line 02:</span>
+                <span className="text-neutral-200">AR-IN 02 → USB-OUT 02</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Tie Line 03:</span>
-                <span className="text-slate-600">Unassigned</span>
+                <span className="text-neutral-500">Tie Line 03:</span>
+                <span className="text-neutral-600">Unassigned</span>
               </div>
             </div>
           </div>

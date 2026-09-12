@@ -5,8 +5,7 @@ import {
   Sliders,
   Package,
   Bookmark,
-  Settings,
-  HelpCircle
+  Settings
 } from 'lucide-react';
 
 export const LeftRail: React.FC = () => {
@@ -18,7 +17,6 @@ export const LeftRail: React.FC = () => {
     { id: 'inventory', label: 'Inventory', icon: Package, roles: ['member', 'admin'] },
     { id: 'scenes', label: 'Scenes', icon: Bookmark, roles: ['member', 'admin'] },
     { id: 'setup', label: 'Settings', icon: Settings, roles: ['guest', 'member', 'admin'] }
-    // help tab hidden for now as requested
   ] as const;
 
   const visibleNavItems = allNavItems.filter((item) =>
@@ -26,7 +24,7 @@ export const LeftRail: React.FC = () => {
   );
 
   return (
-    <aside className="w-16 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-2 space-y-1.5 shrink-0 z-20 select-none">
+    <aside className="w-14 bg-black border-r border-white/[0.08] flex flex-col items-center py-3 space-y-1.5 shrink-0 z-20 select-none">
       {visibleNavItems.map((item) => {
         const Icon = item.icon;
         const isActive = activeTab === item.id;
@@ -34,13 +32,13 @@ export const LeftRail: React.FC = () => {
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id as any)}
-            className={`w-13 h-13 flex flex-col items-center justify-center rounded-lg text-[10px] font-medium transition-all ${
+            className={`w-11 h-11 flex flex-col items-center justify-center rounded-lg text-[9px] font-medium tracking-tight transition-colors ${
               isActive
-                ? 'bg-sky-600 text-white shadow-lg shadow-sky-950/50'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80'
+                ? 'bg-white/10 text-white border border-white/10'
+                : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] border border-transparent'
             }`}
           >
-            <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+            <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'text-white' : 'text-zinc-500'}`} />
             <span>{item.label}</span>
           </button>
         );
