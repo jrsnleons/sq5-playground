@@ -166,6 +166,7 @@ interface SimulationStoreState {
   removeStageItem: (id: string) => void;
   connectCable: (fromNode: string, fromPort: string, toNode: string, toPort: string, signalType: SignalType) => boolean;
   removeCable: (cableId: string) => void;
+  saveActiveStageLayout: () => void;
 
   // Wire Tracing & Physical Inspection
   activeTrace: {
@@ -285,7 +286,51 @@ const defaultInventory: Record<string, { totalStock: number; notes?: string }> =
   'waves-superrack-pc': { totalStock: 1, notes: 'Waves SuperRack Live PC (USB 32x32)' }
 };
 
-const initialSim = createInitialState('church');
+export const saveActiveStageLayoutToStorage = (sim: any) => {
+  try {
+    const layout = {
+      stageItems: sim.physical.stageItems,
+      cables: sim.physical.cables,
+      stageBox: sim.physical.stageBox,
+      console: sim.physical.console
+    };
+    localStorage.setItem('foh_sim_active_stage_layout', JSON.stringify(layout));
+  } catch (e) {
+    // Ignore storage quota or disabled storage
+  }
+};
+
+const getInitialSim = () => {
+  const sim = createInitialState('church');
+  try {
+    const activeLayout = localStorage.getItem('foh_sim_active_stage_layout');
+    const customPreset = localStorage.getItem('foh_sim_custom_default_preset');
+    const saved = activeLayout || customPreset;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.stageItems && Array.isArray(parsed.stageItems) && parsed.stageItems.length > 0) {
+        sim.physical.stageItems = parsed.stageItems;
+      }
+      if (parsed.cables && Array.isArray(parsed.cables)) {
+        sim.physical.cables = parsed.cables;
+      }
+      if (parsed.stageBox?.position) {
+        sim.physical.stageBox.position = parsed.stageBox.position;
+      }
+      if (parsed.console?.position) {
+        sim.physical.console.position = parsed.console.position;
+      }
+      if (parsed.ioPatch) {
+        sim.digital.ioPatch = parsed.ioPatch;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load initial stage layout from storage', e);
+  }
+  return sim;
+};
+
+const initialSim = getInitialSim();
 const initialPresence = computeSignalPresence(initialSim);
 const initialNotices = validateSystemState(initialSim);
 
@@ -422,13 +467,21 @@ export const useSimulationStore = create<SimulationStoreState>()(
           cables: JSON.parse(JSON.stringify(state.sim.physical.cables)),
           ioPatch: JSON.parse(JSON.stringify(state.sim.digital.ioPatch)),
           customCatalog: JSON.parse(JSON.stringify(state.customCatalog)),
-          inventory: JSON.parse(JSON.stringify(state.inventory))
+          inventory: JSON.parse(JSON.stringify(state.inventory)),
+          stageBox: JSON.parse(JSON.stringify(state.sim.physical.stageBox)),
+          console: JSON.parse(JSON.stringify(state.sim.physical.console))
         };
         try {
           localStorage.setItem('foh_sim_custom_default_preset', JSON.stringify(customPreset));
+          saveActiveStageLayoutToStorage(state.sim);
         } catch (e) {
           console.warn('LocalStorage save failed', e);
         }
+      }),
+
+    saveActiveStageLayout: () =>
+      set((state) => {
+        saveActiveStageLayoutToStorage(state.sim);
       }),
 
     setActiveTab: (tab) =>
@@ -699,6 +752,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         state.sim.physical.stageItems.push(newItem);
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
+        saveActiveStageLayoutToStorage(state.sim);
       }),
 
     updateStageItemPosition: (id, position) =>
@@ -711,6 +765,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         } else if (id === 'console-sq5') {
           state.sim.physical.console.position = position;
         }
+        saveActiveStageLayoutToStorage(state.sim);
       }),
 
     updateStageItemDetails: (id, updates) =>
@@ -719,6 +774,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         if (item) {
           if (updates.name !== undefined) item.name = updates.name;
           if (updates.notes !== undefined) item.notes = updates.notes;
+          saveActiveStageLayoutToStorage(state.sim);
         }
       }),
 
@@ -731,6 +787,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         if (state.selectedNodeId === id) state.selectedNodeId = null;
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
+        saveActiveStageLayoutToStorage(state.sim);
       }),
 
     connectCable: (fromNode, fromPort, toNode, toPort, signalType) => {
@@ -772,6 +829,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
 
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
+        saveActiveStageLayoutToStorage(state.sim);
         allowed = true;
       });
       return allowed;
@@ -789,6 +847,7 @@ export const useSimulationStore = create<SimulationStoreState>()(
         }
         state.signalPresence = computeSignalPresence(state.sim);
         state.validationNotices = validateSystemState(state.sim);
+        saveActiveStageLayoutToStorage(state.sim);
       }),
 
     // Tracing is purely click-activated to prevent hover flickering/shakiness
@@ -1420,14 +1479,24 @@ export const useSimulationStore = create<SimulationStoreState>()(
           if (d.mainLR) state.sim.digital.mainLR = JSON.parse(JSON.stringify(d.mainLR));
           if (d.muteGroups) state.sim.digital.muteGroups = JSON.parse(JSON.stringify(d.muteGroups));
           state.sim.digital.activeSceneId = scene.scene_number;
-          state.signalPresence = computeSignalPresence(state.sim);
-          state.validationNotices = validateSystemState(state.sim);
-          state.toastNotice = {
-            id: String(Date.now()),
-            message: `Recalled Scene: ${scene.name}`,
-            type: 'info'
-          };
         }
+
+        if (scene.scene_data?.physical) {
+          const p = scene.scene_data.physical;
+          if (p.stageItems) state.sim.physical.stageItems = JSON.parse(JSON.stringify(p.stageItems));
+          if (p.cables) state.sim.physical.cables = JSON.parse(JSON.stringify(p.cables));
+          if (p.stageBox?.position) state.sim.physical.stageBox.position = p.stageBox.position;
+          if (p.console?.position) state.sim.physical.console.position = p.console.position;
+          saveActiveStageLayoutToStorage(state.sim);
+        }
+
+        state.signalPresence = computeSignalPresence(state.sim);
+        state.validationNotices = validateSystemState(state.sim);
+        state.toastNotice = {
+          id: String(Date.now()),
+          message: `Recalled Scene: ${scene.name}`,
+          type: 'info'
+        };
       }),
 
     saveUserScene: async (
@@ -1448,6 +1517,12 @@ export const useSimulationStore = create<SimulationStoreState>()(
           matrices: JSON.parse(JSON.stringify(currentState.digital.matrices)),
           mainLR: JSON.parse(JSON.stringify(currentState.digital.mainLR)),
           muteGroups: JSON.parse(JSON.stringify(currentState.digital.muteGroups))
+        },
+        physical: {
+          stageItems: JSON.parse(JSON.stringify(currentState.physical.stageItems)),
+          cables: JSON.parse(JSON.stringify(currentState.physical.cables)),
+          stageBox: JSON.parse(JSON.stringify(currentState.physical.stageBox)),
+          console: JSON.parse(JSON.stringify(currentState.physical.console))
         },
         description
       };

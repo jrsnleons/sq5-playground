@@ -22,12 +22,14 @@ import { BezierCableEdge } from './edges/BezierCableEdge';
 import { NodeDetailModal } from './NodeDetailModal';
 import { CableTraceBadge } from './components/CableTraceBadge';
 import { SignalType } from '@foh-sim/simulation-core';
-import { Lock } from 'lucide-react';
+import { Lock, Save, Bookmark, Check } from 'lucide-react';
 
 const PhysicalCanvasContent: React.FC = () => {
   const userRole = useSimulationStore((s) => s.userRole);
   const setAuthModalOpen = useSimulationStore((s) => s.setAuthModalOpen);
   const isGuest = userRole === 'guest';
+
+  const [savedNotice, setSavedNotice] = React.useState<string | null>(null);
 
   const stageItems = useSimulationStore((s) => s.sim.physical.stageItems);
   const cables = useSimulationStore((s) => s.sim.physical.cables);
@@ -39,6 +41,21 @@ const PhysicalCanvasContent: React.FC = () => {
   const removeCable = useSimulationStore((s) => s.removeCable);
   const setSelectedNodeId = useSimulationStore((s) => s.setSelectedNodeId);
   const clearTrace = useSimulationStore((s) => s.clearTrace);
+  const saveActiveStageLayout = useSimulationStore((s) => s.saveActiveStageLayout);
+  const saveStageAsDefaultPreset = useSimulationStore((s) => s.saveStageAsDefaultPreset);
+  const setActiveTab = useSimulationStore((s) => s.setActiveTab);
+
+  const handleSaveStage = () => {
+    saveActiveStageLayout();
+    setSavedNotice('Stage layout saved');
+    setTimeout(() => setSavedNotice(null), 3000);
+  };
+
+  const handleSetDefaultRig = () => {
+    saveStageAsDefaultPreset();
+    setSavedNotice('Saved as master default rig');
+    setTimeout(() => setSavedNotice(null), 3000);
+  };
 
   const nodeTypes = useMemo(
     () => ({
@@ -290,6 +307,46 @@ const PhysicalCanvasContent: React.FC = () => {
           >
             Sign In
           </button>
+        </div>
+      )}
+
+      {/* Stage Toolbar (Save Stage / Store as Scene / Set Default) */}
+      {!isGuest && (
+        <div className="absolute top-3 right-4 z-30 flex items-center space-x-2 bg-[#0A0A0A]/95 border border-white/[0.08] px-3 py-1.5 rounded-lg shadow-xl backdrop-blur-md font-mono text-xs">
+          {savedNotice ? (
+            <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-emerald-950/60 border border-emerald-800 text-emerald-300 font-semibold animate-in fade-in">
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{savedNotice}</span>
+            </div>
+          ) : (
+            <button
+              onClick={handleSaveStage}
+              title="Save current stage equipment positions and cables to browser storage"
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-200 hover:text-white border border-white/[0.08] transition-colors cursor-pointer"
+            >
+              <Save className="w-3.5 h-3.5 text-neutral-400" />
+              <span>Save Stage</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setActiveTab('scenes')}
+            title="Open Scenes snapshot manager to save or recall complete stage & console setups"
+            className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/[0.08] transition-colors cursor-pointer"
+          >
+            <Bookmark className="w-3.5 h-3.5 text-neutral-400" />
+            <span>Store as Scene</span>
+          </button>
+
+          {userRole === 'admin' && (
+            <button
+              onClick={handleSetDefaultRig}
+              title="Save current stage and console layout as the default starting rig for all users"
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-white hover:bg-neutral-200 text-black font-semibold transition-colors cursor-pointer"
+            >
+              <span>Set as Default Rig</span>
+            </button>
+          )}
         </div>
       )}
 
