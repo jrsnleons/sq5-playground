@@ -32,10 +32,8 @@ export const AuthModal: React.FC = () => {
     setActiveTab
   } = useSimulationStore();
 
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -61,10 +59,8 @@ export const AuthModal: React.FC = () => {
     if (authModalOpen) {
       setErrorMessage(null);
       setSuccessMessage(null);
-      setMode('signin');
       setEmail('');
       setPassword('');
-      setDisplayName('');
     }
   }, [authModalOpen]);
 
@@ -89,94 +85,39 @@ export const AuthModal: React.FC = () => {
       return;
     }
 
-    if (mode === 'signup' && password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters.');
-      setLoading(false);
-      return;
-    }
-
     try {
-      if (mode === 'signup') {
-        const trimmedEmail = email.trim();
-        const trimmedName = displayName.trim() || trimmedEmail.split('@')[0];
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password
+      });
 
-        const { data, error } = await supabase.auth.signUp({
-          email: trimmedEmail,
-          password,
-          options: {
-            data: { display_name: trimmedName }
+      if (error) throw error;
+
+      if (data.user) {
+        let profile = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const { data: p } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .maybeSingle();
+          if (p) {
+            profile = p;
+            break;
           }
-        });
-
-        if (error) throw error;
-
-        if (data.user) {
-          if (data.session) {
-            // Retrieve created profile from PostgreSQL
-            let profile = null;
-            for (let attempt = 0; attempt < 3; attempt++) {
-              const { data: p } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', data.user.id)
-                .maybeSingle();
-              if (p) {
-                profile = p;
-                break;
-              }
-              await new Promise((r) => setTimeout(r, 250));
-            }
-
-            const role = profile?.role === 'admin' ? 'admin' : 'member';
-            setUserProfile({
-              id: data.user.id,
-              email: data.user.email || trimmedEmail,
-              displayName: profile?.display_name || trimmedName,
-              role
-            });
-            setSyncStatus('synced');
-            setSuccessMessage(`Account created! Welcome, ${profile?.display_name || trimmedName} (${role.toUpperCase()})`);
-            setTimeout(() => setAuthModalOpen(false), 900);
-          } else {
-            setSuccessMessage('Account registered! Please check your email inbox to confirm your account.');
-            setMode('signin');
-          }
+          await new Promise((r) => setTimeout(r, 250));
         }
-      } else {
-        const trimmedEmail = email.trim();
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: trimmedEmail,
-          password
+
+        const role = profile?.role === 'admin' ? 'admin' : 'member';
+        setUserProfile({
+          id: data.user.id,
+          email: data.user.email || trimmedEmail,
+          displayName: profile?.display_name || data.user.email?.split('@')[0] || 'Member',
+          role
         });
-
-        if (error) throw error;
-
-        if (data.user) {
-          let profile = null;
-          for (let attempt = 0; attempt < 3; attempt++) {
-            const { data: p } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', data.user.id)
-              .maybeSingle();
-            if (p) {
-              profile = p;
-              break;
-            }
-            await new Promise((r) => setTimeout(r, 250));
-          }
-
-          const role = profile?.role === 'admin' ? 'admin' : 'member';
-          setUserProfile({
-            id: data.user.id,
-            email: data.user.email || trimmedEmail,
-            displayName: profile?.display_name || data.user.email?.split('@')[0] || 'Member',
-            role
-          });
-          setSyncStatus('synced');
-          setSuccessMessage(`Signed in as ${role.toUpperCase()}`);
-          setTimeout(() => setAuthModalOpen(false), 800);
-        }
+        setSyncStatus('synced');
+        setSuccessMessage(`Signed in as ${role.toUpperCase()}`);
+        setTimeout(() => setAuthModalOpen(false), 800);
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Authentication failed. Please check your credentials.');
@@ -463,59 +404,15 @@ export const AuthModal: React.FC = () => {
             /* Unauthenticated / Guest View */
             <div className="space-y-4">
               {/* Guest Notice */}
-              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-start space-x-2.5">
+              <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 flex items-start space-x-2.5 shadow-sm">
                 <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  You are currently exploring in <strong className="text-white">Guest (Read-Only)</strong> mode. Sign in to patch instruments on stage, operate console faders, and manage scenes.
+                  You are currently exploring in <strong className="text-white font-mono">Guest (Read-Only)</strong> mode. Sign in to patch instruments on stage, operate console faders, and recall scenes.
                 </p>
               </div>
 
-              {/* Mode Switcher Tabs */}
-              <div className="grid grid-cols-2 bg-slate-950 p-1 rounded-lg border border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setMode('signin')}
-                  className={`py-1.5 text-xs font-mono font-medium rounded-md transition-all ${
-                    mode === 'signin'
-                      ? 'bg-sky-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('signup')}
-                  className={`py-1.5 text-xs font-mono font-medium rounded-md transition-all ${
-                    mode === 'signup'
-                      ? 'bg-sky-600 text-white shadow'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Register
-                </button>
-              </div>
-
               {/* Form */}
-              <form onSubmit={handleAuthSubmit} className="space-y-3">
-                {mode === 'signup' && (
-                  <div>
-                    <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                      Display Name / Team Title
-                    </label>
-                    <div className="relative">
-                      <UserCheck className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
-                      <input
-                        type="text"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        placeholder="e.g. David Miller (Sound Lead)"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none placeholder:text-slate-600"
-                      />
-                    </div>
-                  </div>
-                )}
-
+              <form onSubmit={handleAuthSubmit} className="space-y-3.5">
                 <div>
                   <label className="block text-[11px] font-mono text-slate-400 mb-1">
                     Email Address
@@ -528,7 +425,7 @@ export const AuthModal: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="tech.volunteer@church.org"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none placeholder:text-slate-600"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none placeholder:text-slate-600 font-mono transition-colors"
                     />
                   </div>
                 </div>
@@ -546,21 +443,21 @@ export const AuthModal: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none placeholder:text-slate-600"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none placeholder:text-slate-600 font-mono transition-colors"
                     />
                   </div>
                 </div>
 
-                {mode === 'signup' && (
+                <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/80">
                   <p className="text-[10px] text-slate-400 leading-relaxed font-mono">
-                    * The first account registered is automatically granted the <strong className="text-amber-300">Administrator</strong> role.
+                    * Accounts are provisioned directly by the Administrator. If you do not have an account, please contact your audio team lead.
                   </p>
-                )}
+                </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 px-4 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center space-x-1.5 shadow-lg shadow-sky-950 cursor-pointer mt-1"
+                  className="w-full py-2.5 px-4 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold transition-all active:scale-[0.96] disabled:opacity-50 flex items-center justify-center space-x-1.5 shadow-lg shadow-sky-950 cursor-pointer mt-1"
                 >
                   {loading ? (
                     <>
@@ -568,7 +465,7 @@ export const AuthModal: React.FC = () => {
                       <span>Authenticating...</span>
                     </>
                   ) : (
-                    <span>{mode === 'signin' ? 'Sign In' : 'Create Account'}</span>
+                    <span>Sign In</span>
                   )}
                 </button>
               </form>
@@ -579,7 +476,7 @@ export const AuthModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAuthModalOpen(false)}
-                  className="text-xs font-mono text-slate-300 hover:text-white px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 transition-colors"
+                  className="text-xs font-mono text-slate-300 hover:text-white px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 active:scale-[0.96] transition-all cursor-pointer"
                 >
                   Continue as Guest
                 </button>

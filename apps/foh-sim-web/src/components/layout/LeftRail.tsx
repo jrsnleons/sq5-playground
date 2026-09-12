@@ -17,7 +17,7 @@ export const LeftRail: React.FC = () => {
     { id: 'console', label: 'Console', icon: Sliders, roles: ['guest', 'member', 'admin'] },
     { id: 'inventory', label: 'Inventory', icon: Package, roles: ['member', 'admin'] },
     { id: 'scenes', label: 'Scenes', icon: Bookmark, roles: ['member', 'admin'] },
-    { id: 'setup', label: 'Settings', icon: Settings, roles: ['member', 'admin'] }
+    { id: 'setup', label: 'Settings', icon: Settings, roles: ['guest', 'member', 'admin'] }
     // help tab hidden for now as requested
   ] as const;
 

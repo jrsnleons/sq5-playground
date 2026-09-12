@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useSimulationStore } from '../../../store/simulationStore';
 import {
   Settings,
-  Sliders,
   Save,
   CheckCircle2,
   ShieldCheck,
@@ -17,7 +16,11 @@ import {
   AlertCircle,
   Loader2,
   ShieldAlert,
-  ArrowRightLeft
+  ArrowRightLeft,
+  RotateCcw,
+  Church,
+  Sparkles,
+  FolderOpen
 } from 'lucide-react';
 import { ConfirmDialogModal } from '../../../components/modals/ConfirmDialogModal';
 import { UserProfile } from '../../../services/supabase';
@@ -27,15 +30,9 @@ export const SetupScreen: React.FC = () => {
     sim,
     userRole,
     currentUser,
-    cycleGeqFlip,
-    toggleInputChannelStereo,
-    toggleMixStereo,
-    toggleMixMode,
-    toggleMatrixStereo,
-    setGlobalAuxPreFade,
-    adminMode,
-    toggleAdminMode,
     saveStageAsDefaultPreset,
+    loadPreset,
+    resetCurrentPreset,
     teamProfiles,
     teamProfilesLoading,
     fetchTeamProfiles,
@@ -45,11 +42,13 @@ export const SetupScreen: React.FC = () => {
     changePassword
   } = useSimulationStore();
 
-  const [activeTab, setActiveTab] = useState<'admin' | 'mixer-config' | 'surface' | 'account'>(
-    userRole === 'admin' ? 'admin' : 'account'
+  const [activeTab, setActiveTab] = useState<'admin' | 'presets' | 'account'>(
+    userRole === 'admin' ? 'admin' : 'presets'
   );
 
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  const [resetNotice, setResetNotice] = useState<string | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Admin User Creation Form State
   const [newEmail, setNewEmail] = useState('');
@@ -77,18 +76,28 @@ export const SetupScreen: React.FC = () => {
 
   // Adjust active tab if role changes
   useEffect(() => {
-    if (userRole === 'member' && (activeTab === 'admin' || activeTab === 'mixer-config')) {
-      setActiveTab('account');
+    if (userRole !== 'admin' && activeTab === 'admin') {
+      setActiveTab('presets');
     }
   }, [userRole, activeTab]);
-
-  const geqFlipActive = sim.digital.session.geqFlipActive;
-  const geqPage = sim.digital.session.geqFlipPage;
 
   const handleSavePreset = () => {
     saveStageAsDefaultPreset();
     setSaveNotice('Current stage layout, cables, custom items, and digital patch successfully saved as Default Preset!');
     setTimeout(() => setSaveNotice(null), 4000);
+  };
+
+  const handleLoadPreset = (mode: 'church' | 'scratch') => {
+    loadPreset(mode);
+    setResetNotice(`Switched rig configuration to ${mode === 'church' ? 'Church Rig Default' : 'Scratch Mode'}.`);
+    setTimeout(() => setResetNotice(null), 4000);
+  };
+
+  const handleResetPreset = () => {
+    resetCurrentPreset();
+    setShowResetConfirm(false);
+    setResetNotice('Current rig and mixer configuration have been reset to factory defaults.');
+    setTimeout(() => setResetNotice(null), 4000);
   };
 
   // Handle Admin User Creation
@@ -197,18 +206,6 @@ export const SetupScreen: React.FC = () => {
     }
   };
 
-  const channelPairs = Array.from({ length: 24 }, (_, idx) => {
-    const oddNum = idx * 2 + 1;
-    const oddCh = sim.digital.channels.find((c) => c.channelNumber === oddNum);
-    const evenCh = sim.digital.channels.find((c) => c.channelNumber === oddNum + 1);
-    return {
-      pairIndex: idx + 1,
-      oddCh,
-      evenCh,
-      isStereo: !!oddCh?.stereo
-    };
-  });
-
   return (
     <div className="w-full h-full bg-slate-950 flex flex-col overflow-hidden select-none font-sans text-slate-100">
       {/* Header */}
@@ -225,9 +222,9 @@ export const SetupScreen: React.FC = () => {
           {userRole === 'admin' && (
             <button
               onClick={() => setActiveTab('admin')}
-              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
+              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-all active:scale-[0.96] cursor-pointer ${
                 activeTab === 'admin'
-                  ? 'bg-amber-600 text-white shadow'
+                  ? 'bg-amber-600 text-white shadow-md shadow-amber-950/50'
                   : 'bg-slate-800 text-slate-400 hover:text-white'
               }`}
             >
@@ -235,35 +232,22 @@ export const SetupScreen: React.FC = () => {
             </button>
           )}
 
-          {userRole === 'admin' && (
-            <button
-              onClick={() => setActiveTab('mixer-config')}
-              className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
-                activeTab === 'mixer-config'
-                  ? 'bg-sky-600 text-white shadow'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
-              }`}
-            >
-              MIXER CONFIG (BUSES)
-            </button>
-          )}
-
           <button
-            onClick={() => setActiveTab('surface')}
-            className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
-              activeTab === 'surface'
-                ? 'bg-teal-600 text-white shadow'
+            onClick={() => setActiveTab('presets')}
+            className={`px-3 py-1 text-xs font-mono font-bold rounded transition-all active:scale-[0.96] cursor-pointer ${
+              activeTab === 'presets'
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-950/50'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
-            SURFACE &amp; GEQ
+            PRESETS &amp; CONFIGURATION
           </button>
 
           <button
             onClick={() => setActiveTab('account')}
-            className={`px-3 py-1 text-xs font-mono font-bold rounded transition-colors ${
+            className={`px-3 py-1 text-xs font-mono font-bold rounded transition-all active:scale-[0.96] cursor-pointer ${
               activeTab === 'account'
-                ? 'bg-sky-600 text-white shadow'
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-950/50'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
@@ -706,244 +690,165 @@ export const SetupScreen: React.FC = () => {
         )}
 
         {/* ==================================================================== */}
-        {/* 3. MIXER CONFIG TAB (BUS ARCHITECTURE - ADMIN ONLY)                  */}
+        {/* 3. PRESETS & RIG CONFIGURATION TAB                                   */}
         {/* ==================================================================== */}
-        {activeTab === 'mixer-config' && userRole === 'admin' && (
+        {activeTab === 'presets' && (
           <div className="space-y-6 max-w-5xl mx-auto">
-            {/* Input Channels 1–48 Stereo / Mono Pairing Configuration */}
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <div>
-                  <span className="text-sm font-bold text-teal-400 uppercase font-mono block">
-                    Input Channels 1–48 Configuration (Stereo / Mono Pairing)
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Pair adjacent odd/even channels into stereo inputs (e.g. ProPresenter PC on CH 25-26). Stereo pairs share fader, mute, processing, and display combined meters.
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800">
-                  24 Channel Pairs (48 Inputs)
-                </span>
+            {/* Reset / Load Notice */}
+            {resetNotice && (
+              <div className="bg-emerald-950/90 border border-emerald-700 rounded-xl px-4 py-3 text-xs font-mono text-emerald-200 flex items-center space-x-2 animate-in fade-in shadow-lg">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="font-bold">{resetNotice}</span>
               </div>
+            )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 font-mono text-xs max-h-[380px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-700">
-                {channelPairs.map(({ pairIndex, oddCh, evenCh, isStereo }) => {
-                  if (!oddCh || !evenCh) return null;
-                  return (
-                    <div
-                      key={pairIndex}
-                      className={`p-2.5 rounded-lg border transition-colors flex flex-col justify-between space-y-2 ${
-                        isStereo
-                          ? 'bg-slate-950 border-teal-600/80 shadow-[0_0_8px_rgba(20,184,166,0.15)]'
-                          : 'bg-slate-950 border-slate-800'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-[11px] font-bold ${isStereo ? 'text-teal-300' : 'text-slate-300'}`}>
-                            CH {String(oddCh.channelNumber).padStart(2, '0')}-{String(evenCh.channelNumber).padStart(2, '0')}
-                          </span>
-                          <span
-                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                              isStereo
-                                ? 'bg-teal-950 text-teal-300 border border-teal-700 shadow-[0_0_4px_#14b8a6]'
-                                : 'bg-slate-900 text-slate-500 border border-slate-800'
-                            }`}
-                          >
-                            {isStereo ? 'STEREO' : 'MONO'}
-                          </span>
-                        </div>
-
-                        <div className="text-[10px] text-slate-400 truncate mt-1">
-                          L: <span className="text-slate-200">{oddCh.name}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 truncate">
-                          R: <span className="text-slate-200">{evenCh.name}</span>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-900">
-                        <button
-                          onClick={() => {
-                            if (isStereo) toggleInputChannelStereo(oddCh.channelNumber);
-                          }}
-                          className={`py-1 rounded text-[10px] font-bold border transition-all ${
-                            !isStereo
-                              ? 'bg-slate-800 text-slate-200 border-slate-700 shadow'
-                              : 'bg-slate-900/60 text-slate-500 border-slate-800 hover:text-slate-300'
-                          }`}
-                        >
-                          MONO
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (!isStereo) toggleInputChannelStereo(oddCh.channelNumber);
-                          }}
-                          className={`py-1 rounded text-[10px] font-bold border transition-all ${
-                            isStereo
-                              ? 'bg-teal-950 text-teal-300 border-teal-700 shadow-[0_0_6px_#14b8a6]'
-                              : 'bg-slate-900/60 text-slate-500 border-slate-800 hover:text-slate-300'
-                          }`}
-                        >
-                          STEREO
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Mix Buses 1–12 Configuration */}
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <div>
-                  <span className="text-sm font-bold text-sky-400 uppercase font-mono block">
-                    Mix Buses 1–12 Configuration (Stereo / Aux / Group)
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Switch mix buses between Aux (musician monitor / livestream mix) and Group (subgroup summing), or pair into stereo IEM feeds.
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800">
-                  12 Mix Buses
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 font-mono text-xs">
-                {sim.digital.mixes.map((mix) => (
-                  <div
-                    key={mix.id}
-                    className="p-3 bg-slate-950 rounded-lg border border-slate-800 flex flex-col justify-between space-y-2.5"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-white">MIX {mix.mixNumber}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-900 text-sky-400 border border-slate-800 uppercase">
-                          {mix.mode}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-slate-300 truncate block mt-0.5">
-                        {mix.name}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1.5 pt-1 border-t border-slate-900">
-                      <div className="grid grid-cols-2 gap-1">
-                        <button
-                          onClick={() => toggleMixMode(mix.id)}
-                          className={`py-1 rounded text-[10px] font-bold border transition-colors ${
-                            mix.mode === 'aux'
-                              ? 'bg-sky-950 text-sky-300 border-sky-800'
-                              : 'bg-purple-950 text-purple-300 border-purple-800'
-                          }`}
-                        >
-                          {mix.mode.toUpperCase()}
-                        </button>
-                        <button
-                          onClick={() => toggleMixStereo(mix.id)}
-                          className={`py-1 rounded text-[10px] font-bold border transition-colors ${
-                            mix.stereo
-                              ? 'bg-teal-950 text-teal-300 border-teal-800'
-                              : 'bg-slate-800 text-slate-400 border-slate-700'
-                          }`}
-                        >
-                          {mix.stereo ? 'STEREO' : 'MONO'}
-                        </button>
-                      </div>
-                    </div>
+            {/* Presets Selection Section */}
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-5 shadow-xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-2 rounded-lg bg-sky-950/80 border border-sky-800/80 text-sky-400">
+                    <FolderOpen className="w-5 h-5" />
                   </div>
-                ))}
+                  <div>
+                    <h3 className="text-sm font-bold text-white uppercase font-mono tracking-wide">
+                      Rig Starting Presets
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Select your starting simulation template for the SQ-5 digital console and AR2412 stage box.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-slate-950 text-slate-400 border border-slate-800">
+                  Current: <strong className="text-white">{sim.entryMode === 'church-preset' ? 'Church Rig Default' : 'Scratch Mode'}</strong>
+                </span>
               </div>
-            </div>
 
-            {/* Global Aux Pre/Post Fade Utility */}
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-5 flex items-center justify-between shadow-xl">
-              <div>
-                <span className="text-sm font-bold text-amber-400 uppercase font-mono block">
-                  Global Aux Pre/Post Fade Utility
-                </span>
-                <span className="text-xs text-slate-400">
-                  Set all 12 Mix sends across all 48 channels to Pre-Fade (standard for IEM stage monitors) or Post-Fade.
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setGlobalAuxPreFade(true)}
-                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 font-mono text-xs font-bold rounded-lg border border-slate-700 transition-colors shadow"
-                >
-                  SET ALL AUX TO PRE-FADE
-                </button>
-                <button
-                  onClick={() => setGlobalAuxPreFade(false)}
-                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs font-bold rounded-lg border border-slate-700 transition-colors shadow"
-                >
-                  SET ALL SENDS TO POST-FADE
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ==================================================================== */}
-        {/* 4. SURFACE & GEQ FLIP TAB                                            */}
-        {/* ==================================================================== */}
-        {activeTab === 'surface' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-            {/* GEQ Fader Flip */}
-            <div className="p-5 bg-slate-900 rounded-xl border border-slate-800 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-amber-400 uppercase font-mono">
-                  28-Band GEQ Fader Flip
-                </span>
-                <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
-                    geqFlipActive
-                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                      : 'bg-slate-950 text-slate-500'
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Church Rig Default */}
+                <div
+                  className={`p-5 rounded-xl border transition-all flex flex-col justify-between space-y-4 ${
+                    sim.entryMode === 'church-preset'
+                      ? 'bg-slate-950 border-sky-500/80 shadow-[0_0_12px_rgba(14,165,233,0.15)]'
+                      : 'bg-slate-950/80 hover:bg-slate-950 border-slate-800 hover:border-slate-700'
                   }`}
                 >
-                  {geqFlipActive ? `PAGE ${geqPage} (BANDS ${geqPage === 1 ? '1–14' : '15–28'})` : 'OFF'}
-                </span>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 rounded-lg bg-sky-950 border border-sky-800 flex items-center justify-center text-sky-400">
+                          <Church className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-bold text-sm text-white font-mono">Church Rig Default</h4>
+                      </div>
+                      {sim.entryMode === 'church-preset' && (
+                        <span className="text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-700">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Complete church Sunday service configuration: 24 stage inputs, active DI boxes, 7 IEM monitor mixes, click/comms routing, front fills, subwoofers, and broadcast streaming feed.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleLoadPreset('church')}
+                    disabled={sim.entryMode === 'church-preset'}
+                    className="w-full py-2 px-3 rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-mono font-bold transition-all active:scale-[0.96] shadow cursor-pointer flex items-center justify-center space-x-1.5"
+                  >
+                    <span>{sim.entryMode === 'church-preset' ? 'Currently Loaded' : 'Load Church Rig'}</span>
+                  </button>
+                </div>
+
+                {/* Start from Scratch */}
+                <div
+                  className={`p-5 rounded-xl border transition-all flex flex-col justify-between space-y-4 ${
+                    sim.entryMode === 'scratch'
+                      ? 'bg-slate-950 border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                      : 'bg-slate-950/80 hover:bg-slate-950 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 rounded-lg bg-amber-950 border border-amber-800 flex items-center justify-center text-amber-400">
+                          <Sparkles className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-bold text-sm text-white font-mono">Start from Scratch</h4>
+                      </div>
+                      {sim.entryMode === 'scratch' && (
+                        <span className="text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Clean blank stage with only the AR2412 stage box and SQ-5 console. Drag microphones, instruments, and patch cables from the stage palette to configure from scratch.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleLoadPreset('scratch')}
+                    disabled={sim.entryMode === 'scratch'}
+                    className="w-full py-2 px-3 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-mono font-bold transition-all active:scale-[0.96] shadow cursor-pointer flex items-center justify-center space-x-1.5"
+                  >
+                    <span>{sim.entryMode === 'scratch' ? 'Currently Loaded' : 'Load Scratch Template'}</span>
+                  </button>
+                </div>
               </div>
 
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Flips physical fader strips into a 28-band 1/3-octave graphic equalizer (31 Hz – 16 kHz) for the currently selected mix bus.
-              </p>
-
-              <button
-                onClick={cycleGeqFlip}
-                className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-mono font-bold transition-all shadow-lg flex items-center justify-center space-x-2 cursor-pointer"
-              >
-                <Sliders className="w-4 h-4" />
-                <span>
-                  CYCLE GEQ FLIP (PRESS: {geqPage === 0 ? '1 (Bands 1–14)' : geqPage === 1 ? '2 (Bands 15–28)' : '3 (Exit)'})
-                </span>
-              </button>
+              {/* Admin Save Preset Action */}
+              {userRole === 'admin' && (
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-slate-200 block font-mono">
+                      Master Church Preset Management
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Save current stage equipment, cables, and console patch as the master default for all users.
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleSavePreset}
+                    className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono font-semibold text-slate-200 hover:text-white transition-all active:scale-[0.96] flex items-center space-x-1.5 cursor-pointer shrink-0"
+                  >
+                    <Save className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Save as Default Preset</span>
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Architecture Overview */}
-            <div className="p-5 bg-slate-900 rounded-xl border border-slate-800 space-y-4 shadow-xl">
-              <span className="text-sm font-bold text-sky-400 uppercase font-mono block">
-                SQ-5 Hardware Core Specifications
-              </span>
-              <div className="space-y-2 text-xs font-mono">
-                <div className="flex items-center justify-between p-2 bg-slate-950 rounded border border-slate-800">
-                  <span className="text-slate-400">Processing Core:</span>
-                  <span className="text-white font-bold">XCVI 96kHz FPGA</span>
+            {/* Reset Configuration Card */}
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-4 shadow-xl">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 rounded-lg bg-rose-950/80 border border-rose-800/80 text-rose-400">
+                  <RotateCcw className="w-5 h-5" />
                 </div>
-                <div className="flex items-center justify-between p-2 bg-slate-950 rounded border border-slate-800">
-                  <span className="text-slate-400">SLink Protocol:</span>
-                  <span className="text-emerald-400 font-bold">dSnake 48kHz (AR2412)</span>
+                <div>
+                  <h3 className="text-sm font-bold text-white uppercase font-mono tracking-wide">
+                    Reset Configuration
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Revert all physical patch cables, custom items, digital routing, and channel names back to the preset defaults.
+                  </p>
                 </div>
-                <div className="flex items-center justify-between p-2 bg-slate-950 rounded border border-slate-800">
-                  <span className="text-slate-400">Main Stereo Bus:</span>
-                  <span className="text-white font-bold">Main LR</span>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-slate-950 rounded border border-slate-800">
-                  <span className="text-slate-400">DCA &amp; Mute Groups:</span>
-                  <span className="text-white font-bold">8 DCAs + 8 Mute Groups</span>
-                </div>
+              </div>
+
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-1">
+                <p>
+                  This action clears all unsaved routing, stage placements, and console adjustments made during this session, restoring the selected template to its initial clean state.
+                </p>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  onClick={() => setShowResetConfirm(true)}
+                  className="px-4 py-2.5 rounded-lg bg-rose-950/90 hover:bg-rose-900 border border-rose-800 hover:border-rose-700 text-rose-200 text-xs font-mono font-bold transition-all active:scale-[0.96] flex items-center space-x-2 shadow-lg cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Reset Configuration to Defaults</span>
+                </button>
               </div>
             </div>
           </div>
@@ -959,6 +864,17 @@ export const SetupScreen: React.FC = () => {
         isDestructive={true}
         onConfirm={handleConfirmDelete}
         onCancel={() => setUserToDelete(null)}
+      />
+
+      {/* Reset Preset Confirmation Modal */}
+      <ConfirmDialogModal
+        isOpen={showResetConfirm}
+        title="Reset Configuration"
+        message="Are you sure you want to reset the current rig and mixer settings back to the preset defaults? All unsaved routing and patch changes will be lost."
+        confirmLabel="Reset Defaults"
+        isDestructive={true}
+        onConfirm={handleResetPreset}
+        onCancel={() => setShowResetConfirm(false)}
       />
     </div>
   );
